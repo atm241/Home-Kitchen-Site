@@ -8,8 +8,9 @@ const pool = new Pool({
 });
 
 pool.on('error', (err: Error) => {
-  console.error('Unexpected error on idle client', err);
-  process.exit(-1);
+  console.error('❌ Database connection error:', err.message);
+  console.error('Full error:', err);
+  // Don't exit immediately - let the application handle it gracefully
 });
 
 export default pool;
