@@ -2,18 +2,28 @@
 
 ## Quick Start
 
-Simply run the startup script from the project root:
-
+**Start the server:**
 ```bash
 ./start-server.sh
 ```
 
-This will:
+**Stop the server:**
+```bash
+./stop-server.sh
+```
+
+### What `start-server.sh` does:
 - ✅ Automatically switch to Node.js 20
 - ✅ Install Node 20 if not already installed
 - ✅ Check and install dependencies if needed
 - ✅ Display version information
 - ✅ Start the development server
+
+### What `stop-server.sh` does:
+- ✅ Finds and stops processes on port 5000
+- ✅ Kills any ts-node server processes
+- ✅ Cleans up any npm dev processes
+- ✅ Ensures clean shutdown
 
 ## Manual Startup
 
