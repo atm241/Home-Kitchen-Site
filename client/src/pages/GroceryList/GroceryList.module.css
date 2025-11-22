@@ -1,0 +1,284 @@
+.container {
+  padding: 24px 0;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.header h1 {
+  margin: 0;
+}
+
+.generateButton {
+  padding: 12px 24px;
+  background-color: #E67E22;
+  color: #FFFFFF;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.generateButton:hover:not(:disabled) {
+  background-color: #D35400;
+}
+
+.generateButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.summary {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  gap: 32px;
+}
+
+.summaryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summaryLabel {
+  font-size: 14px;
+  color: #7F8C8D;
+}
+
+.summaryValue {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2C3E50;
+}
+
+.categoriesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.categoryCard {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.categoryCard h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: #628141;
+  font-size: 18px;
+}
+
+.itemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: #F8F9FA;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.item.purchased {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+.deleteButton {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #E74C3C;
+  color: #FFFFFF;
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 0.8;
+  padding-bottom: 2px;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.deleteButton:hover {
+  background-color: #C0392B;
+  transform: scale(1.1);
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.itemInfo {
+  flex: 1;
+}
+
+.itemName {
+  font-weight: 500;
+  color: #2C3E50;
+  margin-bottom: 4px;
+}
+
+.itemDetails {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #7F8C8D;
+}
+
+.price {
+  font-weight: 600;
+  color: #628141;
+}
+
+.empty {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  color: #7F8C8D;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.empty p {
+  margin: 8px 0;
+}
+
+.loading {
+  text-align: center;
+  padding: 48px;
+  color: #7F8C8D;
+  font-size: 18px;
+}
+
+.manualEntrySection {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.manualEntrySection h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 18px;
+  color: #2C3E50;
+}
+
+.manualEntryForm {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.input {
+  flex: 2;
+  padding: 10px 16px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #628141;
+}
+
+.inputSmall {
+  flex: 1;
+  max-width: 100px;
+  padding: 10px 16px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.inputSmall:focus {
+  outline: none;
+  border-color: #628141;
+}
+
+.select {
+  flex: 1;
+  max-width: 150px;
+  padding: 10px 12px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 16px;
+  background-color: #FFFFFF;
+  transition: border-color 0.2s ease;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #628141;
+}
+
+.addButton {
+  padding: 10px 24px;
+  background-color: #628141;
+  color: #EBD5AB;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+
+.addButton:hover {
+  background-color: #8BAE66;
+  color: #2C3E50;
+}
+
+@media (max-width: 768px) {
+  .summary {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .generateButton {
+    width: 100%;
+  }
+
+  .manualEntryForm {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .input,
+  .inputSmall,
+  .select,
+  .addButton {
+    max-width: 100%;
+    width: 100%;
+  }
+}

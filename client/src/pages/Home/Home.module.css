@@ -1,0 +1,234 @@
+.container {
+  padding: 24px 0;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.header h1 {
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  gap: 12px;
+}
+
+.link {
+  padding: 10px 20px;
+  background-color: #628141;
+  color: #EBD5AB;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.link:hover {
+  background-color: #8BAE66;
+  color: #2C3E50;
+}
+
+.budgetCard {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.budgetCard h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.budgetInfo {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 16px;
+}
+
+.budgetItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.budgetLabel {
+  font-size: 14px;
+  color: #7F8C8D;
+}
+
+.budgetValue {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2C3E50;
+}
+
+.budgetBar {
+  height: 8px;
+  background-color: #E0E0E0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.budgetProgress {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.weekGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.dayCard {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.dayCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.dayCard.today {
+  border: 2px solid #E67E22;
+}
+
+.dayHeader {
+  background-color: #628141;
+  color: #EBD5AB;
+  padding: 12px;
+  text-align: center;
+}
+
+.dayName {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.dayDate {
+  font-size: 12px;
+}
+
+.dayContent {
+  padding: 12px;
+  min-height: 100px;
+}
+
+.noMeals {
+  color: #7F8C8D;
+  font-size: 14px;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.mealItem {
+  border-left: 3px solid;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background-color: #F8F9FA;
+  border-radius: 4px;
+}
+
+.mealItem:last-child {
+  margin-bottom: 0;
+}
+
+.mealType {
+  font-size: 12px;
+  font-weight: 600;
+  color: #7F8C8D;
+  text-transform: capitalize;
+  margin-bottom: 4px;
+}
+
+.mealTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: #2C3E50;
+  margin-bottom: 2px;
+}
+
+.mealServings {
+  font-size: 12px;
+  color: #7F8C8D;
+}
+
+.quickActions {
+  margin-top: 32px;
+}
+
+.quickActions h2 {
+  margin-bottom: 16px;
+}
+
+.actionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.actionCard {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.actionCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.actionCard h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: #628141;
+}
+
+.actionCard p {
+  margin: 0;
+  color: #7F8C8D;
+  font-size: 14px;
+}
+
+@media (max-width: 1024px) {
+  .weekGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .weekGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .budgetInfo {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .weekGrid {
+    grid-template-columns: 1fr;
+  }
+}

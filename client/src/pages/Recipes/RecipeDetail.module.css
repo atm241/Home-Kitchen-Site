@@ -1,0 +1,400 @@
+.container {
+  padding: 24px 0;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.backButton,
+.deleteButton {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.backButton {
+  background-color: #628141;
+  color: #EBD5AB;
+}
+
+.backButton:hover {
+  background-color: #8BAE66;
+  color: #2C3E50;
+}
+
+.deleteButton {
+  background-color: #E74C3C;
+  color: #FFFFFF;
+}
+
+.deleteButton:hover {
+  background-color: #C0392B;
+}
+
+.content {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.titleSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.content h1 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.categoryDisplay {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.categoryBadge {
+  display: inline-block;
+  background-color: #628141;
+  color: #EBD5AB;
+  padding: 6px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.editCategoryButton,
+.addCategoryButton {
+  padding: 6px 16px;
+  background-color: #E67E22;
+  color: #FFFFFF;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.editCategoryButton:hover,
+.addCategoryButton:hover {
+  background-color: #D35400;
+}
+
+.description {
+  color: #7F8C8D;
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.metadata {
+  display: flex;
+  gap: 32px;
+  padding: 16px 0;
+  border-top: 1px solid #E0E0E0;
+  border-bottom: 1px solid #E0E0E0;
+  margin-bottom: 24px;
+}
+
+.metaItem {
+  display: flex;
+  gap: 8px;
+}
+
+.metaLabel {
+  font-weight: 600;
+  color: #7F8C8D;
+}
+
+.metaValue {
+  color: #2C3E50;
+}
+
+.nutrition {
+  background-color: #F8F9FA;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.nutrition h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 18px;
+}
+
+.nutritionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 16px;
+}
+
+.nutritionItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.nutritionValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #E67E22;
+}
+
+.nutritionLabel {
+  font-size: 14px;
+  color: #7F8C8D;
+}
+
+.section {
+  margin-bottom: 32px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section h2 {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-size: 20px;
+}
+
+.groceryButton {
+  padding: 8px 16px;
+  background-color: #8BAE66;
+  color: #2C3E50;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+.groceryButton:hover {
+  background-color: #628141;
+  color: #EBD5AB;
+}
+
+.ingredientsList {
+  list-style-position: inside;
+  padding-left: 0;
+}
+
+.ingredientsList li {
+  padding: 8px 0;
+  border-bottom: 1px solid #F0F0F0;
+}
+
+.ingredientsList li:last-child {
+  border-bottom: none;
+}
+
+.instructionsList {
+  padding-left: 24px;
+  counter-reset: step-counter;
+}
+
+.instructionsList li {
+  padding: 12px 0;
+  line-height: 1.6;
+  color: #2C3E50;
+  margin-bottom: 8px;
+}
+
+.instructionsList li:last-child {
+  margin-bottom: 0;
+}
+
+.instructions {
+  white-space: pre-line;
+  line-height: 1.8;
+  color: #2C3E50;
+}
+
+.source {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #E0E0E0;
+}
+
+.source a {
+  color: #628141;
+  font-weight: 500;
+}
+
+.source a:hover {
+  color: #8BAE66;
+}
+
+.loading,
+.notFound {
+  text-align: center;
+  padding: 48px;
+  color: #7F8C8D;
+  font-size: 18px;
+}
+
+.cookSection {
+  background-color: #F8F9FA;
+  border-radius: 8px;
+  padding: 24px;
+  margin-top: 32px;
+}
+
+.cookSection h2 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 20px;
+  color: #2C3E50;
+}
+
+.cookSection p {
+  margin-bottom: 16px;
+  color: #7F8C8D;
+  font-size: 14px;
+}
+
+.cookForm {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.servingsInput {
+  flex: 1;
+  max-width: 200px;
+  padding: 10px 16px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.servingsInput:focus {
+  outline: none;
+  border-color: #628141;
+}
+
+.cookButton {
+  padding: 10px 24px;
+  background-color: #E67E22;
+  color: #FFFFFF;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+.cookButton:hover {
+  background-color: #D35400;
+}
+
+@media (max-width: 768px) {
+  .cookForm {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .servingsInput {
+    max-width: 100%;
+  }
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.modalContent h2 {
+  margin-top: 0;
+  margin-bottom: 24px;
+  color: #2C3E50;
+}
+
+.formGroup {
+  margin-bottom: 24px;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #2C3E50;
+}
+
+.select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 16px;
+  background-color: #FFFFFF;
+  transition: border-color 0.2s ease;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #8BAE66;
+}
+
+.modalActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.cancelButton,
+.saveButton {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.cancelButton {
+  background-color: #E0E0E0;
+  color: #2C3E50;
+}
+
+.cancelButton:hover {
+  background-color: #D0D0D0;
+}
+
+.saveButton {
+  background-color: #628141;
+  color: #EBD5AB;
+}
+
+.saveButton:hover {
+  background-color: #8BAE66;
+  color: #2C3E50;
+}

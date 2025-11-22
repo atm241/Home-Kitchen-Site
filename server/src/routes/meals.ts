@@ -1,0 +1,176 @@
+import express, { Request, Response } from 'express';
+import pool from '../config/database';
+
+const router = express.Router();
+
+// Get all scheduled meals
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const { start_date, end_date } = req.query;
+
+    let query = `
+      SELECT sm.*, r.name as recipe_name, r.description as recipe_description
+      FROM scheduled_meals sm
+      JOIN recipes r ON sm.recipe_id = r.id
+    `;
+
+    const params: any[] = [];
+    const conditions: string[] = [];
+
+    if (start_date) {
+      params.push(start_date);
+      conditions.push(`sm.meal_date >= $${params.length}`);
+    }
+
+    if (end_date) {
+      params.push(end_date);
+      conditions.push(`sm.meal_date <= $${params.length}`);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(' AND ')}`;
+    }
+
+    query += ' ORDER BY sm.meal_date ASC, sm.meal_type ASC';
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching scheduled meals:', error);
+    res.status(500).json({ error: 'Failed to fetch scheduled meals' });
+  }
+});
+
+// Get single scheduled meal
+router.get('/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(`
+      SELECT sm.*, r.name as recipe_name, r.description as recipe_description
+      FROM scheduled_meals sm
+      JOIN recipes r ON sm.recipe_id = r.id
+      WHERE sm.id = $1
+    `, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Scheduled meal not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching scheduled meal:', error);
+    res.status(500).json({ error: 'Failed to fetch scheduled meal' });
+  }
+});
+
+// Schedule a meal
+router.post('/', async (req: Request, res: Response) => {
+  try {
+    const {
+      recipe_id,
+      meal_date,
+      meal_type,
+      servings,
+      is_recurring,
+      recurrence_pattern,
+      recurrence_end_date,
+      notes
+    } = req.body;
+
+    const result = await pool.query(`
+      INSERT INTO scheduled_meals (
+        recipe_id, meal_date, meal_type, servings, is_recurring,
+        recurrence_pattern, recurrence_end_date, notes
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *
+    `, [
+      recipe_id,
+      meal_date,
+      meal_type,
+      servings,
+      is_recurring || false,
+      recurrence_pattern,
+      recurrence_end_date,
+      notes
+    ]);
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error scheduling meal:', error);
+    res.status(500).json({ error: 'Failed to schedule meal' });
+  }
+});
+
+// Update scheduled meal
+router.put('/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const {
+      recipe_id,
+      meal_date,
+      meal_type,
+      servings,
+      is_recurring,
+      recurrence_pattern,
+      recurrence_end_date,
+      notes
+    } = req.body;
+
+    const result = await pool.query(`
+      UPDATE scheduled_meals
+      SET recipe_id = $1, meal_date = $2, meal_type = $3, servings = $4,
+          is_recurring = $5, recurrence_pattern = $6, recurrence_end_date = $7, notes = $8
+      WHERE id = $9
+      RETURNING *
+    `, [
+      recipe_id,
+      meal_date,
+      meal_type,
+      servings,
+      is_recurring,
+      recurrence_pattern,
+      recurrence_end_date,
+      notes,
+      id
+    ]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Scheduled meal not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error updating scheduled meal:', error);
+    res.status(500).json({ error: 'Failed to update scheduled meal' });
+  }
+});
+
+// Delete scheduled meal
+router.delete('/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM scheduled_meals WHERE id = $1', [id]);
+    res.json({ message: 'Scheduled meal deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting scheduled meal:', error);
+    res.status(500).json({ error: 'Failed to delete scheduled meal' });
+  }
+});
+
+// Get meal portions (leftovers tracking)
+router.get('/portions/:scheduled_meal_id', async (req: Request, res: Response) => {
+  try {
+    const { scheduled_meal_id } = req.params;
+    const result = await pool.query(
+      'SELECT * FROM meal_portions WHERE scheduled_meal_id = $1 ORDER BY date_made DESC',
+      [scheduled_meal_id]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching meal portions:', error);
+    res.status(500).json({ error: 'Failed to fetch meal portions' });
+  }
+});
+
+export default router;
