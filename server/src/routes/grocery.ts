@@ -356,19 +356,7 @@ router.put('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Delete grocery item
-router.delete('/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    await pool.query('DELETE FROM grocery_list WHERE id = $1', [id]);
-    res.json({ message: 'Grocery item deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting grocery item:', error);
-    res.status(500).json({ error: 'Failed to delete grocery item' });
-  }
-});
-
-// Clear entire grocery list for a week
+// Clear entire grocery list for a week (must be before /:id route)
 router.delete('/clear', async (req: Request, res: Response) => {
   try {
     const { week_start_date } = req.query;
@@ -382,6 +370,18 @@ router.delete('/clear', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error clearing grocery list:', error);
     res.status(500).json({ error: 'Failed to clear grocery list' });
+  }
+});
+
+// Delete grocery item
+router.delete('/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM grocery_list WHERE id = $1', [id]);
+    res.json({ message: 'Grocery item deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting grocery item:', error);
+    res.status(500).json({ error: 'Failed to delete grocery item' });
   }
 });
 
