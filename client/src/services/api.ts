@@ -95,6 +95,8 @@ export const groceryApi = {
     api.patch<GroceryItem>(`/grocery/${id}/purchase`, { is_purchased: isPurchased }),
   update: (id: number, item: Partial<GroceryItem>) => api.put<GroceryItem>(`/grocery/${id}`, item),
   delete: (id: number) => api.delete(`/grocery/${id}`),
+  clearList: (weekStartDate: string) => api.delete('/grocery/clear', { params: { week_start_date: weekStartDate } }),
+  addPurchasedToPantry: (weekStartDate: string) => api.post('/grocery/add-to-pantry', { week_start_date: weekStartDate }),
   getPrices: (storeName?: string) =>
     api.get<GroceryPrice[]>('/grocery/prices', { params: storeName ? { store_name: storeName } : {} }),
   addPrice: (price: Partial<GroceryPrice>) => api.post<GroceryPrice>('/grocery/prices', price),

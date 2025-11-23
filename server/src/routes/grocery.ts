@@ -368,6 +368,85 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 });
 
+// Clear entire grocery list for a week
+router.delete('/clear', async (req: Request, res: Response) => {
+  try {
+    const { week_start_date } = req.query;
+
+    if (!week_start_date) {
+      return res.status(400).json({ error: 'week_start_date is required' });
+    }
+
+    await pool.query('DELETE FROM grocery_list WHERE week_start_date = $1', [week_start_date]);
+    res.json({ message: 'Grocery list cleared successfully' });
+  } catch (error) {
+    console.error('Error clearing grocery list:', error);
+    res.status(500).json({ error: 'Failed to clear grocery list' });
+  }
+});
+
+// Add purchased items to pantry
+router.post('/add-to-pantry', async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { week_start_date } = req.body;
+
+    if (!week_start_date) {
+      return res.status(400).json({ error: 'week_start_date is required' });
+    }
+
+    // Get all purchased items from grocery list
+    const purchasedItems = await client.query(`
+      SELECT gl.*, i.name as ingredient_name
+      FROM grocery_list gl
+      JOIN ingredients i ON gl.ingredient_id = i.id
+      WHERE gl.week_start_date = $1 AND gl.is_purchased = true
+    `, [week_start_date]);
+
+    let addedCount = 0;
+
+    for (const item of purchasedItems.rows) {
+      // Check if item already exists in pantry
+      const existingPantry = await client.query(
+        'SELECT id, quantity FROM pantry WHERE ingredient_id = $1',
+        [item.ingredient_id]
+      );
+
+      if (existingPantry.rows.length > 0) {
+        // Update existing pantry item quantity
+        const newQuantity = (existingPantry.rows[0].quantity || 0) + (item.quantity || 0);
+        await client.query(
+          'UPDATE pantry SET quantity = $1 WHERE id = $2',
+          [newQuantity, existingPantry.rows[0].id]
+        );
+      } else {
+        // Add new item to pantry
+        await client.query(
+          'INSERT INTO pantry (ingredient_id, quantity, unit, is_staple) VALUES ($1, $2, $3, false)',
+          [item.ingredient_id, item.quantity, item.unit]
+        );
+      }
+
+      addedCount++;
+    }
+
+    await client.query('COMMIT');
+
+    res.json({
+      message: `Added ${addedCount} purchased items to pantry`,
+      count: addedCount
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error adding purchased items to pantry:', error);
+    res.status(500).json({ error: 'Failed to add items to pantry' });
+  } finally {
+    client.release();
+  }
+});
+
 // Get/update grocery prices
 router.get('/prices', async (req: Request, res: Response) => {
   try {

@@ -91,6 +91,41 @@ const GroceryList: React.FC = () => {
     }
   };
 
+  const handleClearList = async () => {
+    if (!window.confirm('Are you sure you want to clear the entire grocery list?')) {
+      return;
+    }
+
+    try {
+      await groceryApi.clearList(weekStartDate);
+      setGroceryItems([]);
+    } catch (error) {
+      console.error('Error clearing grocery list:', error);
+      alert('Failed to clear grocery list');
+    }
+  };
+
+  const handleAddToPantry = async () => {
+    const purchasedItems = groceryItems.filter(item => item.is_purchased);
+
+    if (purchasedItems.length === 0) {
+      alert('No purchased items to add to pantry. Please check off items first.');
+      return;
+    }
+
+    if (!window.confirm(`Add ${purchasedItems.length} purchased items to pantry?`)) {
+      return;
+    }
+
+    try {
+      const response = await groceryApi.addPurchasedToPantry(weekStartDate);
+      alert(`Successfully added ${response.data.count} items to pantry!`);
+    } catch (error) {
+      console.error('Error adding items to pantry:', error);
+      alert('Failed to add items to pantry');
+    }
+  };
+
   const groupedItems = groceryItems.reduce((acc, item) => {
     const category = item.category || 'Other';
     if (!acc[category]) {
@@ -115,13 +150,32 @@ const GroceryList: React.FC = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1>Grocery List</h1>
-        <button
-          onClick={handleGenerate}
-          className={styles.generateButton}
-          disabled={generating}
-        >
-          {generating ? 'Generating...' : 'Generate from Meals'}
-        </button>
+        <div className={styles.buttonGroup}>
+          <button
+            onClick={handleGenerate}
+            className={styles.generateButton}
+            disabled={generating}
+          >
+            {generating ? 'Generating...' : 'Generate from Meals'}
+          </button>
+          {groceryItems.length > 0 && (
+            <>
+              <button
+                onClick={handleAddToPantry}
+                className={styles.addToPantryButton}
+                disabled={purchasedCount === 0}
+              >
+                Add to Pantry ({purchasedCount})
+              </button>
+              <button
+                onClick={handleClearList}
+                className={styles.clearButton}
+              >
+                Clear List
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {groceryItems.length > 0 && (

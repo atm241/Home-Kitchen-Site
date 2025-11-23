@@ -13,6 +13,12 @@
   margin: 0;
 }
 
+.buttonGroup {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
 .generateButton {
   padding: 12px 24px;
   background-color: #E67E22;
@@ -30,6 +36,40 @@
 .generateButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.addToPantryButton {
+  padding: 12px 24px;
+  background-color: #628141;
+  color: #EBD5AB;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.addToPantryButton:hover:not(:disabled) {
+  background-color: #8BAE66;
+  color: #2C3E50;
+}
+
+.addToPantryButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.clearButton {
+  padding: 12px 24px;
+  background-color: #E74C3C;
+  color: #FFFFFF;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.clearButton:hover {
+  background-color: #C0392B;
 }
 
 .summary {
@@ -265,7 +305,14 @@
     gap: 16px;
   }
 
-  .generateButton {
+  .buttonGroup {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .generateButton,
+  .addToPantryButton,
+  .clearButton {
     width: 100%;
   }
 
