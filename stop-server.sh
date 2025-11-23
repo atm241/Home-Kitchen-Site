@@ -2,13 +2,13 @@
 
 echo "🛑 Stopping Home Kitchen Server..."
 
-# Find and kill the process running on port 5000
-PORT_PID=$(lsof -ti:5000)
+# Find and kill the process running on port 5001
+PORT_PID=$(lsof -ti:5001)
 
 if [ -z "$PORT_PID" ]; then
-    echo "ℹ️  No server running on port 5000"
+    echo "ℹ️  No server running on port 5001"
 else
-    echo "📍 Found server process on port 5000 (PID: $PORT_PID)"
+    echo "📍 Found server process on port 5001 (PID: $PORT_PID)"
     kill -9 $PORT_PID
     echo "✅ Server stopped successfully"
 fi

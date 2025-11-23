@@ -89,9 +89,9 @@ Now using node v20.19.5 (npm v10.8.2)
 ✅ npm version: 10.8.2
 
 🏃 Starting development server...
-⚡️[server]: Server is running at http://localhost:5000
+⚡️[server]: Server is running at http://localhost:5001
 Node version: 20.19.5
 Environment: development
 ```
 
-The server is now running and listening on port 5000!
+The server is now running and listening on port 5001!
