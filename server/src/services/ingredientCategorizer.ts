@@ -22,6 +22,7 @@ const CATEGORIES = [
 
 export async function categorizeIngredient(ingredientName: string): Promise<string> {
   try {
+    console.log(`🤖 Using AI to categorize: "${ingredientName}"`);
     const message = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
       max_tokens: 50,
@@ -38,17 +39,21 @@ Respond with ONLY the category name, nothing else.`
     const response = message.content[0];
     if (response.type === 'text') {
       const category = response.text.trim();
+      console.log(`✅ AI categorized "${ingredientName}" as: ${category}`);
 
       // Validate that the response is one of our categories
       if (CATEGORIES.includes(category)) {
         return category;
       }
+      console.log(`⚠️  AI response "${category}" not in valid categories, using fallback`);
     }
 
     // Fallback to rule-based categorization if AI fails
+    console.log(`⚠️  Using fallback categorization for: "${ingredientName}"`);
     return fallbackCategorize(ingredientName);
   } catch (error) {
-    console.error('Error categorizing ingredient with AI:', error);
+    console.error('❌ Error categorizing ingredient with AI:', error);
+    console.log(`⚠️  Using fallback categorization for: "${ingredientName}"`);
     // Fallback to rule-based categorization
     return fallbackCategorize(ingredientName);
   }
