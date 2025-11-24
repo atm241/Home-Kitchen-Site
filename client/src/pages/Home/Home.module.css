@@ -109,6 +109,10 @@
   color: #EBD5AB;
   padding: 12px;
   text-align: center;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .dayName {
@@ -119,6 +123,32 @@
 
 .dayDate {
   font-size: 12px;
+}
+
+.addMealButton {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #EBD5AB;
+  color: #628141;
+  font-size: 20px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.addMealButton:hover {
+  background-color: #E67E22;
+  color: #FFFFFF;
+  transform: translateY(-50%) scale(1.1);
 }
 
 .dayContent {

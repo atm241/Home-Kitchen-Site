@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { calendarApi, budgetApi } from '../../services/api';
 import { CombinedCalendarItem, Budget } from '../../types';
 import {
@@ -12,6 +12,7 @@ import {
 import styles from './Home.module.css';
 
 const Home: React.FC = () => {
+  const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [weekItems, setWeekItems] = useState<CombinedCalendarItem[]>([]);
   const [budget, setBudget] = useState<Budget | null>(null);
@@ -60,6 +61,11 @@ const Home: React.FC = () => {
       default:
         return '#7F8C8D';
     }
+  };
+
+  const handleAddMeal = (day: Date) => {
+    // Navigate to calendar page with selected date
+    navigate('/calendar', { state: { selectedDate: day.toISOString() } });
   };
 
   const budgetPercentage = budget
@@ -121,6 +127,13 @@ const Home: React.FC = () => {
               <div className={styles.dayHeader}>
                 <div className={styles.dayName}>{formatDate(day, 'EEEE')}</div>
                 <div className={styles.dayDate}>{formatDate(day, 'MMM d')}</div>
+                <button
+                  onClick={() => handleAddMeal(day)}
+                  className={styles.addMealButton}
+                  title="Add meal"
+                >
+                  +
+                </button>
               </div>
               <div className={styles.dayContent}>
                 {items.length === 0 ? (

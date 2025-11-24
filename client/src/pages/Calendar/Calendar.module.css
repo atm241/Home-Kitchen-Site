@@ -61,11 +61,14 @@
   border-radius: 8px;
   background-color: #FFFFFF;
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .dayCell:hover {
   background-color: #F8F9FA;
   border-color: #8BAE66;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .dayCell.otherMonth {
@@ -75,6 +78,11 @@
 .dayCell.today {
   border: 2px solid #E67E22;
   background-color: #FFF5EB;
+}
+
+.dayCell.selected {
+  border: 2px solid #628141;
+  background-color: #F0F7E8;
 }
 
 .dayNumber {
@@ -106,6 +114,136 @@
   padding: 4px 6px;
 }
 
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  color: #628141;
+}
+
+.closeButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #E0E0E0;
+  color: #2C3E50;
+  font-size: 24px;
+  line-height: 1;
+  transition: all 0.2s ease;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:hover {
+  background-color: #E74C3C;
+  color: #FFFFFF;
+}
+
+.selectedDateText {
+  font-size: 16px;
+  color: #7F8C8D;
+  margin-bottom: 24px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formGroup label {
+  font-weight: 600;
+  color: #2C3E50;
+  font-size: 14px;
+}
+
+.select,
+.input {
+  padding: 12px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.select:focus,
+.input:focus {
+  outline: none;
+  border-color: #628141;
+}
+
+.modalActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.cancelButton,
+.submitButton {
+  flex: 1;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.cancelButton {
+  background-color: #E0E0E0;
+  color: #2C3E50;
+}
+
+.cancelButton:hover {
+  background-color: #BDBDBD;
+}
+
+.submitButton {
+  background-color: #628141;
+  color: #EBD5AB;
+}
+
+.submitButton:hover {
+  background-color: #8BAE66;
+  color: #2C3E50;
+}
+
 @media (max-width: 768px) {
   .dayCell {
     min-height: 80px;
@@ -119,5 +257,14 @@
 
   .dayNumber {
     font-size: 14px;
+  }
+
+  .modal {
+    padding: 24px;
+    width: 95%;
+  }
+
+  .modalActions {
+    flex-direction: column;
   }
 }
