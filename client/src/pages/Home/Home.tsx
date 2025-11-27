@@ -50,6 +50,13 @@ const Home: React.FC = () => {
     return weekItems.filter((item) => isSameDayUtil(item.date, day));
   };
 
+  const getCaloriesForDay = (day: Date) => {
+    const items = getItemsForDay(day);
+    return items.reduce((total, item) => {
+      return total + (item.calories || 0);
+    }, 0);
+  };
+
   const getMealTypeColor = (mealType?: string) => {
     switch (mealType?.toLowerCase()) {
       case 'breakfast':
@@ -118,6 +125,8 @@ const Home: React.FC = () => {
         {weekDays.map((day) => {
           const items = getItemsForDay(day);
           const isToday = isSameDayUtil(day, new Date());
+          const dayCalories = getCaloriesForDay(day);
+          const dailyCalorieBudget = budget?.calorie_budget || 2000;
 
           return (
             <div
@@ -139,25 +148,42 @@ const Home: React.FC = () => {
                 {items.length === 0 ? (
                   <div className={styles.noMeals}>No meals scheduled</div>
                 ) : (
-                  items.map((item) => (
-                    <div
-                      key={`${item.type}-${item.id}`}
-                      className={styles.mealItem}
-                      style={{
-                        borderLeftColor: getMealTypeColor(item.meal_type),
-                      }}
-                    >
-                      <div className={styles.mealType}>
-                        {item.meal_type || 'Event'}
-                      </div>
-                      <div className={styles.mealTitle}>{item.title}</div>
-                      {item.servings && (
-                        <div className={styles.mealServings}>
-                          {item.servings} serving{item.servings > 1 ? 's' : ''}
+                  <>
+                    {items.map((item) => (
+                      <div
+                        key={`${item.type}-${item.id}`}
+                        className={styles.mealItem}
+                        style={{
+                          borderLeftColor: getMealTypeColor(item.meal_type),
+                        }}
+                      >
+                        <div className={styles.mealType}>
+                          {item.meal_type || 'Event'}
                         </div>
-                      )}
-                    </div>
-                  ))
+                        <div className={styles.mealTitle}>{item.title}</div>
+                        {item.servings && (
+                          <div className={styles.mealServings}>
+                            {item.servings} serving{item.servings > 1 ? 's' : ''}
+                          </div>
+                        )}
+                        {item.calories && (
+                          <div className={styles.mealCalories}>
+                            {item.calories} cal
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {dayCalories > 0 && (
+                      <div className={styles.dayCalorieTotal}>
+                        <span className={styles.calorieLabel}>Total:</span>
+                        <span className={`${styles.calorieValue} ${
+                          dayCalories > dailyCalorieBudget ? styles.overBudget : ''
+                        }`}>
+                          {dayCalories} / {dailyCalorieBudget} cal
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

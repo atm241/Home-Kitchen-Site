@@ -197,6 +197,38 @@
   color: #7F8C8D;
 }
 
+.mealCalories {
+  font-size: 11px;
+  color: #8BAE66;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.dayCalorieTotal {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #E0E0E0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.calorieLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2C3E50;
+}
+
+.calorieValue {
+  font-size: 12px;
+  font-weight: 700;
+  color: #628141;
+}
+
+.calorieValue.overBudget {
+  color: #E74C3C;
+}
+
 .quickActions {
   margin-top: 32px;
 }

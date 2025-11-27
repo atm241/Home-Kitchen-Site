@@ -65,7 +65,12 @@ router.get('/combined', async (req: Request, res: Response) => {
         r.name as title,
         sm.servings,
         sm.notes,
-        sm.recipe_id
+        sm.recipe_id,
+        CASE
+          WHEN r.calories IS NOT NULL AND r.servings > 0
+          THEN ROUND((r.calories::numeric / r.servings) * sm.servings)
+          ELSE NULL
+        END as calories
       FROM scheduled_meals sm
       JOIN recipes r ON sm.recipe_id = r.id
       ${whereClause.replace(/date/g, 'sm.meal_date')}
@@ -80,7 +85,8 @@ router.get('/combined', async (req: Request, res: Response) => {
         ce.title,
         NULL as servings,
         ce.notes,
-        NULL as recipe_id
+        NULL as recipe_id,
+        NULL as calories
       FROM calendar_events ce
       ${whereClause.replace(/date/g, 'ce.event_date')}
 

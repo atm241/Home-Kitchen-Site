@@ -105,6 +105,7 @@ export interface CombinedCalendarItem {
   servings?: number;
   notes?: string;
   recipe_id?: number;
+  calories?: number;
 }
 
 export interface GroceryItem {
@@ -127,6 +128,7 @@ export interface Budget {
   budget_amount: number;
   estimated_cost: number;
   actual_cost: number;
+  calorie_budget?: number;
   created_at?: string;
 }
 
