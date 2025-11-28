@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import pool from '../config/database';
 import { scrapeRecipe } from '../services/recipeScraper';
 import { categorizeIngredient } from '../services/ingredientCategorizer';
+import { getRecipeDetails } from '../services/spoonacularService';
 
 const router = express.Router();
 
@@ -408,6 +409,92 @@ router.get('/filter/nutritional', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error filtering recipes:', error);
     res.status(500).json({ error: 'Failed to filter recipes' });
+  }
+});
+
+// Import recipe from Spoonacular by ID
+router.post('/import-spoonacular/:id', async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  try {
+    const spoonacularId = parseInt(req.params.id);
+    console.log(`📥 Importing recipe from Spoonacular ID: ${spoonacularId}`);
+
+    // Get recipe details from Spoonacular
+    const spoonacularRecipe = await getRecipeDetails(spoonacularId);
+
+    await client.query('BEGIN');
+
+    // Insert recipe into database
+    const recipeResult = await client.query(`
+      INSERT INTO recipes (
+        name, description, source_url, servings, prep_time, cook_time,
+        instructions, calories, protein, carbs, fat, fiber
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      RETURNING *
+    `, [
+      spoonacularRecipe.title,
+      spoonacularRecipe.summary.replace(/<[^>]*>/g, '').substring(0, 500),
+      spoonacularRecipe.sourceUrl,
+      spoonacularRecipe.servings,
+      spoonacularRecipe.readyInMinutes,
+      spoonacularRecipe.readyInMinutes, // Using readyInMinutes for both prep and cook
+      spoonacularRecipe.instructions || '',
+      spoonacularRecipe.nutrition?.nutrients.find((n: any) => n.name === 'Calories')?.amount || null,
+      spoonacularRecipe.nutrition?.nutrients.find((n: any) => n.name === 'Protein')?.amount || null,
+      spoonacularRecipe.nutrition?.nutrients.find((n: any) => n.name === 'Carbohydrates')?.amount || null,
+      spoonacularRecipe.nutrition?.nutrients.find((n: any) => n.name === 'Fat')?.amount || null,
+      spoonacularRecipe.nutrition?.nutrients.find((n: any) => n.name === 'Fiber')?.amount || null,
+    ]);
+
+    const recipe = recipeResult.rows[0];
+    console.log(`✅ Recipe created with ID: ${recipe.id}`);
+
+    // Insert ingredients
+    for (const ingredient of spoonacularRecipe.extendedIngredients) {
+      // Find or create ingredient
+      let ingredientResult = await client.query(
+        'SELECT id FROM ingredients WHERE LOWER(name) = LOWER($1)',
+        [ingredient.name]
+      );
+
+      let ingredientId: number;
+      if (ingredientResult.rows.length > 0) {
+        ingredientId = ingredientResult.rows[0].id;
+      } else {
+        // Create new ingredient with AI categorization
+        const category = await categorizeIngredient(ingredient.name);
+        const newIngredient = await client.query(
+          'INSERT INTO ingredients (name, category) VALUES ($1, $2) RETURNING id',
+          [ingredient.name, category]
+        );
+        ingredientId = newIngredient.rows[0].id;
+        console.log(`✅ Created ingredient: ${ingredient.name} (${category})`);
+      }
+
+      // Insert recipe ingredient
+      await client.query(`
+        INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit, notes)
+        VALUES ($1, $2, $3, $4, $5)
+      `, [
+        recipe.id,
+        ingredientId,
+        ingredient.amount || null,
+        ingredient.unit || null,
+        null
+      ]);
+    }
+
+    await client.query('COMMIT');
+    console.log(`✅ Successfully imported recipe: ${recipe.name}`);
+
+    res.status(201).json(recipe);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Error importing recipe from Spoonacular:', error);
+    res.status(500).json({ error: 'Failed to import recipe from Spoonacular' });
+  } finally {
+    client.release();
   }
 });
 

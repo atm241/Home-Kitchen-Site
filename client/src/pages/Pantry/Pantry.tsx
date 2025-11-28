@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { pantryApi, ingredientsApi, groceryApi } from '../../services/api';
+import { pantryApi, ingredientsApi, groceryApi, recommendationsApi, RecipeRecommendation } from '../../services/api';
 import { PantryItem, Ingredient } from '../../types';
 import { getWeekStartDate } from '../../utils/dateUtils';
 import styles from './Pantry.module.css';
@@ -10,6 +10,8 @@ const Pantry: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingItem, setEditingItem] = useState<PantryItem | null>(null);
+  const [recommendations, setRecommendations] = useState<RecipeRecommendation[]>([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [newItem, setNewItem] = useState({
     ingredient_name: '',
     quantity: '',
@@ -21,7 +23,37 @@ const Pantry: React.FC = () => {
   useEffect(() => {
     loadPantry();
     loadIngredients();
+    loadRecommendations();
   }, []);
+
+  const loadRecommendations = async () => {
+    try {
+      setLoadingRecommendations(true);
+      const response = await recommendationsApi.get();
+      setRecommendations(response.data);
+    } catch (error) {
+      console.error('Error loading recommendations:', error);
+    } finally {
+      setLoadingRecommendations(false);
+    }
+  };
+
+  const handleAddRecipe = async (recipeId: number) => {
+    try {
+      const response = await fetch(`http://localhost:5001/api/recipes/import-spoonacular/${recipeId}`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        alert('Recipe added successfully!');
+      } else {
+        throw new Error('Failed to import recipe');
+      }
+    } catch (error) {
+      console.error('Error adding recipe:', error);
+      alert('Failed to add recipe');
+    }
+  };
 
   const loadPantry = async () => {
     try {
@@ -176,6 +208,77 @@ const Pantry: React.FC = () => {
           {showAddForm ? 'Cancel' : 'Add Item'}
         </button>
       </div>
+
+      {/* Recommended Recipes Section */}
+      {pantryItems.length > 0 && (
+        <div className={styles.recommendationsSection}>
+          <div className={styles.recommendationsHeader}>
+            <h2>Recommended Recipes</h2>
+            <p>Top-rated recipes you can make with your pantry items</p>
+          </div>
+          {loadingRecommendations ? (
+            <div className={styles.loadingRecommendations}>Loading recommendations...</div>
+          ) : recommendations.length === 0 ? (
+            <div className={styles.noRecommendations}>
+              No recipe recommendations found. Add more ingredients to your pantry!
+            </div>
+          ) : (
+            <div className={styles.recommendationsGrid}>
+              {recommendations.map((recipe) => (
+                <div key={recipe.id} className={styles.recipeCard}>
+                  {recipe.image && (
+                    <img src={recipe.image} alt={recipe.name} className={styles.recipeImage} />
+                  )}
+                  <div className={styles.recipeContent}>
+                    <h3 className={styles.recipeName}>{recipe.name}</h3>
+                    <div className={styles.recipeMetadata}>
+                      <span className={styles.recipeRating}>⭐ {recipe.rating.toFixed(1)}</span>
+                      <span className={styles.recipeTime}>🕐 {recipe.prepTime} min</span>
+                      <span className={styles.recipeServings}>🍽️ {recipe.servings} servings</span>
+                      {recipe.calories && (
+                        <span className={styles.recipeCalories}>🔥 {recipe.calories} cal</span>
+                      )}
+                    </div>
+                    <div className={styles.matchPercentage}>
+                      <div className={styles.matchBar}>
+                        <div
+                          className={styles.matchBarFill}
+                          style={{ width: `${recipe.matchPercentage}%` }}
+                        />
+                      </div>
+                      <span className={styles.matchText}>{recipe.matchPercentage}% match</span>
+                    </div>
+                    {recipe.missingIngredients.length > 0 && (
+                      <div className={styles.missingIngredients}>
+                        <strong>Need:</strong> {recipe.missingIngredients.join(', ')}
+                      </div>
+                    )}
+                    <div className={styles.recipeActions}>
+                      {recipe.sourceUrl && (
+                        <a
+                          href={recipe.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={styles.viewRecipeButton}
+                        >
+                          View Recipe
+                        </a>
+                      )}
+                      <button
+                        onClick={() => handleAddRecipe(recipe.id)}
+                        className={styles.addRecipeButton}
+                        title="Add to my recipes"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {showAddForm && (
         <div className={styles.addFormCard}>

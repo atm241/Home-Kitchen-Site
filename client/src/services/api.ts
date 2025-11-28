@@ -112,4 +112,24 @@ export const budgetApi = {
   recalculate: (weekStartDate: string) => api.post<Budget>(`/budget/${weekStartDate}/recalculate`),
 };
 
+// Recommendations
+export interface RecipeRecommendation {
+  id: number;
+  name: string;
+  description: string;
+  image: string;
+  sourceUrl: string;
+  rating: number;
+  prepTime: number;
+  servings: number;
+  matchPercentage: number;
+  missingIngredients: string[];
+  availableIngredients: string[];
+  calories?: number;
+}
+
+export const recommendationsApi = {
+  get: () => api.get<RecipeRecommendation[]>('/recommendations'),
+};
+
 export default api;
