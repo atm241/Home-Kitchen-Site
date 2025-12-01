@@ -382,7 +382,14 @@
 }
 
 .recommendationsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 20px;
+}
+
+.recommendationsHeader .headerContent {
+  flex: 1;
 }
 
 .recommendationsHeader h2 {
@@ -395,6 +402,32 @@
   margin: 0;
   color: #7F8C8D;
   font-size: 14px;
+}
+
+.refreshButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #8BAE66;
+  color: #FFFFFF;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.refreshButton:hover:not(:disabled) {
+  background-color: #628141;
+  transform: rotate(180deg);
+}
+
+.refreshButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .loadingRecommendations {

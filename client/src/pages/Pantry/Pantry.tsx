@@ -26,16 +26,23 @@ const Pantry: React.FC = () => {
     loadRecommendations();
   }, []);
 
-  const loadRecommendations = async () => {
+  const loadRecommendations = async (forceRefresh = false) => {
     try {
       setLoadingRecommendations(true);
-      const response = await recommendationsApi.get();
-      setRecommendations(response.data);
+      const url = forceRefresh ? '/recommendations?refresh=true' : '/recommendations';
+      const response = await fetch(`http://localhost:5001/api${url}`);
+      const data = await response.json();
+      setRecommendations(data);
     } catch (error) {
       console.error('Error loading recommendations:', error);
     } finally {
       setLoadingRecommendations(false);
     }
+  };
+
+  const handleRefreshRecommendations = async () => {
+    await loadRecommendations(true);
+    alert('Recommendations refreshed!');
   };
 
   const handleAddRecipe = async (recipeId: number) => {
@@ -213,8 +220,18 @@ const Pantry: React.FC = () => {
       {pantryItems.length > 0 && (
         <div className={styles.recommendationsSection}>
           <div className={styles.recommendationsHeader}>
-            <h2>Recommended Recipes</h2>
-            <p>Top-rated recipes you can make with your pantry items</p>
+            <div className={styles.headerContent}>
+              <h2>Recommended Recipes</h2>
+              <p>Top-rated recipes you can make with your pantry items</p>
+            </div>
+            <button
+              onClick={handleRefreshRecommendations}
+              className={styles.refreshButton}
+              disabled={loadingRecommendations}
+              title="Get fresh recommendations"
+            >
+              🔄
+            </button>
           </div>
           {loadingRecommendations ? (
             <div className={styles.loadingRecommendations}>Loading recommendations...</div>

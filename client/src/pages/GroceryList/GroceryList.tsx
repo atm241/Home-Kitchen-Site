@@ -18,16 +18,25 @@ const GroceryList: React.FC = () => {
     loadIngredientCombos();
   }, []);
 
-  const loadIngredientCombos = async () => {
+  const loadIngredientCombos = async (forceRefresh = false) => {
     try {
       setLoadingCombos(true);
-      const response = await recommendationsApi.getIngredientCombos();
-      setIngredientCombos(response.data);
+      const url = forceRefresh
+        ? 'http://localhost:5001/api/recommendations/ingredient-combos?refresh=true'
+        : 'http://localhost:5001/api/recommendations/ingredient-combos';
+      const response = await fetch(url);
+      const data = await response.json();
+      setIngredientCombos(data);
     } catch (error) {
       console.error('Error loading ingredient combos:', error);
     } finally {
       setLoadingCombos(false);
     }
+  };
+
+  const handleRefreshCombos = async () => {
+    await loadIngredientCombos(true);
+    alert('Ingredient combos refreshed!');
   };
 
   const handleAddComboToList = async (combo: IngredientCombo) => {
@@ -214,16 +223,29 @@ const GroceryList: React.FC = () => {
       </div>
 
       {/* Ingredient Combo Recommendations */}
-      {ingredientCombos.length > 0 && (
-        <div className={styles.recommendationsSection}>
-          <div className={styles.recommendationsHeader}>
+      <div className={styles.recommendationsSection}>
+        <div className={styles.recommendationsHeader}>
+          <div className={styles.headerContent}>
             <h2>Recommended Ingredient Combos</h2>
             <p>Buy these ingredients to unlock popular recipes</p>
           </div>
-          {loadingCombos ? (
-            <div className={styles.loadingRecommendations}>Loading recommendations...</div>
-          ) : (
-            <div className={styles.combosGrid}>
+          <button
+            onClick={handleRefreshCombos}
+            className={styles.refreshButton}
+            disabled={loadingCombos}
+            title="Get fresh ingredient combos"
+          >
+            🔄
+          </button>
+        </div>
+        {loadingCombos ? (
+          <div className={styles.loadingRecommendations}>Loading recommendations...</div>
+        ) : ingredientCombos.length === 0 ? (
+          <div className={styles.noRecommendations}>
+            No ingredient combo recommendations found. Add more ingredients to your pantry!
+          </div>
+        ) : (
+          <div className={styles.combosGrid}>
               {ingredientCombos.map((combo) => (
                 <div key={combo.id} className={styles.comboCard}>
                   <div className={styles.comboHeader}>
@@ -262,10 +284,9 @@ const GroceryList: React.FC = () => {
                   </button>
                 </div>
               ))}
-            </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       {groceryItems.length > 0 && (
         <div className={styles.summary}>
