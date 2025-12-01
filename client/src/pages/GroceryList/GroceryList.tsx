@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { groceryApi } from '../../services/api';
+import { groceryApi, recommendationsApi, IngredientCombo } from '../../services/api';
 import { GroceryItem } from '../../types';
 import { getWeekStartDate, getWeekEndDate } from '../../utils/dateUtils';
 import styles from './GroceryList.module.css';
@@ -8,12 +8,47 @@ const GroceryList: React.FC = () => {
   const [groceryItems, setGroceryItems] = useState<GroceryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [ingredientCombos, setIngredientCombos] = useState<IngredientCombo[]>([]);
+  const [loadingCombos, setLoadingCombos] = useState(false);
   const weekStartDate = getWeekStartDate();
   const [manualItem, setManualItem] = useState({ name: '', quantity: '1', unit: 'unit' });
 
   useEffect(() => {
     loadGroceryList();
+    loadIngredientCombos();
   }, []);
+
+  const loadIngredientCombos = async () => {
+    try {
+      setLoadingCombos(true);
+      const response = await recommendationsApi.getIngredientCombos();
+      setIngredientCombos(response.data);
+    } catch (error) {
+      console.error('Error loading ingredient combos:', error);
+    } finally {
+      setLoadingCombos(false);
+    }
+  };
+
+  const handleAddComboToList = async (combo: IngredientCombo) => {
+    try {
+      // Add each ingredient in the combo to the grocery list
+      for (const ingredient of combo.ingredients) {
+        await groceryApi.addManual({
+          ingredient_name: ingredient.name,
+          quantity: 1,
+          unit: 'unit',
+          week_start_date: weekStartDate,
+        });
+      }
+
+      alert(`Added ${combo.ingredients.length} ingredients to your grocery list!`);
+      await loadGroceryList(); // Reload the list
+    } catch (error) {
+      console.error('Error adding combo to list:', error);
+      alert('Failed to add ingredients to list');
+    }
+  };
 
   const loadGroceryList = async () => {
     try {
@@ -177,6 +212,60 @@ const GroceryList: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Ingredient Combo Recommendations */}
+      {ingredientCombos.length > 0 && (
+        <div className={styles.recommendationsSection}>
+          <div className={styles.recommendationsHeader}>
+            <h2>Recommended Ingredient Combos</h2>
+            <p>Buy these ingredients to unlock popular recipes</p>
+          </div>
+          {loadingCombos ? (
+            <div className={styles.loadingRecommendations}>Loading recommendations...</div>
+          ) : (
+            <div className={styles.combosGrid}>
+              {ingredientCombos.map((combo) => (
+                <div key={combo.id} className={styles.comboCard}>
+                  <div className={styles.comboHeader}>
+                    <h3>Unlock {combo.recipeCount} Recipe{combo.recipeCount > 1 ? 's' : ''}</h3>
+                  </div>
+
+                  <div className={styles.ingredientsList}>
+                    {combo.ingredients.map((ingredient, idx) => (
+                      <div key={idx} className={styles.ingredientItem}>
+                        {ingredient.image && (
+                          <img
+                            src={ingredient.image}
+                            alt={ingredient.name}
+                            className={styles.ingredientImage}
+                          />
+                        )}
+                        <span className={styles.ingredientName}>{ingredient.name}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className={styles.recipesPreview}>
+                    <strong>You'll be able to make:</strong>
+                    <ul className={styles.recipesList}>
+                      {combo.unlockedRecipes.map((recipe) => (
+                        <li key={recipe.id}>{recipe.title}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <button
+                    onClick={() => handleAddComboToList(combo)}
+                    className={styles.addComboButton}
+                  >
+                    Add All to List
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {groceryItems.length > 0 && (
         <div className={styles.summary}>

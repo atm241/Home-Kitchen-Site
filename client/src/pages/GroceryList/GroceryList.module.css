@@ -329,3 +329,154 @@
     width: 100%;
   }
 }
+
+/* Ingredient Combo Recommendations */
+.recommendationsSection {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.recommendationsHeader {
+  margin-bottom: 20px;
+}
+
+.recommendationsHeader h2 {
+  margin: 0 0 8px 0;
+  color: #628141;
+  font-size: 24px;
+}
+
+.recommendationsHeader p {
+  margin: 0;
+  color: #7F8C8D;
+  font-size: 14px;
+}
+
+.loadingRecommendations {
+  text-align: center;
+  padding: 40px;
+  color: #7F8C8D;
+  font-size: 16px;
+}
+
+.combosGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.comboCard {
+  background-color: #FFFFFF;
+  border: 2px solid #E0E0E0;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.comboCard:hover {
+  border-color: #628141;
+  box-shadow: 0 4px 8px rgba(98, 129, 65, 0.15);
+  transform: translateY(-2px);
+}
+
+.comboHeader {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #EBD5AB;
+}
+
+.comboHeader h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #628141;
+}
+
+.ingredientsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ingredientItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background-color: #F8F9FA;
+  border-radius: 8px;
+}
+
+.ingredientImage {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+  background-color: #FFFFFF;
+}
+
+.ingredientName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2C3E50;
+  text-transform: capitalize;
+}
+
+.recipesPreview {
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #FFF5EB;
+  border-radius: 8px;
+  border-left: 3px solid #E67E22;
+}
+
+.recipesPreview strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #E67E22;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.recipesList {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: #2C3E50;
+}
+
+.recipesList li {
+  margin-bottom: 4px;
+}
+
+.addComboButton {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: #628141;
+  color: #FFFFFF;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: auto;
+}
+
+.addComboButton:hover {
+  background-color: #4A6330;
+  transform: scale(1.02);
+}
+
+@media (max-width: 768px) {
+  .combosGrid {
+    grid-template-columns: 1fr;
+  }
+}

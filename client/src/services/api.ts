@@ -128,8 +128,26 @@ export interface RecipeRecommendation {
   calories?: number;
 }
 
+export interface IngredientCombo {
+  id: string;
+  ingredients: Array<{
+    name: string;
+    image?: string;
+  }>;
+  unlockedRecipes: Array<{
+    id: number;
+    title: string;
+    image: string;
+    usedIngredientCount: number;
+    missedIngredientCount: number;
+  }>;
+  recipeCount: number;
+  impact: number;
+}
+
 export const recommendationsApi = {
   get: () => api.get<RecipeRecommendation[]>('/recommendations'),
+  getIngredientCombos: () => api.get<IngredientCombo[]>('/recommendations/ingredient-combos'),
 };
 
 export default api;
