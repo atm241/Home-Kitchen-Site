@@ -15,7 +15,7 @@ const GroceryList: React.FC = () => {
 
   useEffect(() => {
     loadGroceryList();
-    loadIngredientCombos();
+    loadIngredientCombos(false); // Only load cached combos
   }, []);
 
   const loadIngredientCombos = async (forceRefresh = false) => {
@@ -163,7 +163,10 @@ const GroceryList: React.FC = () => {
 
     try {
       const response = await groceryApi.addPurchasedToPantry(weekStartDate);
-      alert(`Successfully added ${response.data.count} items to pantry!`);
+      alert(`Successfully added ${response.data.count} items to pantry! Recommendations will be refreshed.`);
+
+      // Reload ingredient combos to show updated recommendations
+      await loadIngredientCombos(false);
     } catch (error) {
       console.error('Error adding items to pantry:', error);
       alert('Failed to add items to pantry');

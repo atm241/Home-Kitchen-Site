@@ -1,8 +1,16 @@
 import express, { Request, Response } from 'express';
 import pool from '../config/database';
 import { categorizeIngredient } from '../services/ingredientCategorizer';
+import { findRecipesByIngredients } from '../services/spoonacularService';
+import { findIngredientCombos } from '../services/ingredientRecommender';
+import crypto from 'crypto';
 
 const router = express.Router();
+
+// Helper function to create a signature from pantry items
+function createPantrySignature(ingredientNames: string[]): string {
+  return crypto.createHash('md5').update(ingredientNames.sort().join(',')).digest('hex');
+}
 
 // Get grocery list for a specific week
 router.get('/', async (req: Request, res: Response) => {
@@ -433,6 +441,52 @@ router.post('/add-to-pantry', async (req: Request, res: Response) => {
     }
 
     await client.query('COMMIT');
+
+    // After successfully adding items to pantry, refresh recommendations cache
+    if (addedCount > 0) {
+      console.log('🔄 Refreshing recommendations cache after pantry update...');
+
+      try {
+        // Get updated pantry items
+        const pantryResult = await pool.query(`
+          SELECT i.name
+          FROM pantry p
+          JOIN ingredients i ON p.ingredient_id = i.id
+          WHERE p.quantity > 0 OR p.is_staple = true
+          ORDER BY i.name ASC
+        `);
+
+        const ingredientNames = pantryResult.rows.map(row => row.name);
+        const pantrySignature = createPantrySignature(ingredientNames);
+
+        // Fetch and cache new recipe recommendations
+        const recommendations = await findRecipesByIngredients(ingredientNames, 2);
+        const recipeExpiresAt = new Date();
+        recipeExpiresAt.setFullYear(recipeExpiresAt.getFullYear() + 10);
+
+        await pool.query(`
+          INSERT INTO cached_recipe_recommendations (pantry_signature, recommendations, expires_at)
+          VALUES ($1, $2, $3)
+        `, [pantrySignature, JSON.stringify(recommendations), recipeExpiresAt]);
+
+        console.log(`✅ Cached ${recommendations.length} new recipe recommendations`);
+
+        // Fetch and cache new ingredient combos
+        const combos = await findIngredientCombos(ingredientNames, 5);
+        const combosExpiresAt = new Date();
+        combosExpiresAt.setFullYear(combosExpiresAt.getFullYear() + 10);
+
+        await pool.query(`
+          INSERT INTO cached_ingredient_combos (pantry_signature, combos, expires_at)
+          VALUES ($1, $2, $3)
+        `, [pantrySignature, JSON.stringify(combos), combosExpiresAt]);
+
+        console.log(`✅ Cached ${combos.length} new ingredient combos`);
+      } catch (cacheError) {
+        // Log error but don't fail the request
+        console.error('⚠️  Error refreshing recommendations cache:', cacheError);
+      }
+    }
 
     res.json({
       message: `Added ${addedCount} purchased items to pantry`,

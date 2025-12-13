@@ -23,7 +23,7 @@ const Pantry: React.FC = () => {
   useEffect(() => {
     loadPantry();
     loadIngredients();
-    loadRecommendations();
+    loadRecommendations(false); // Only load cached recommendations
   }, []);
 
   const loadRecommendations = async (forceRefresh = false) => {

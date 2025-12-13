@@ -34,20 +34,25 @@ router.get('/', async (req: Request, res: Response) => {
     const ingredientNames = pantryResult.rows.map(row => row.name);
     const pantrySignature = createPantrySignature(ingredientNames);
 
-    // Check cache unless force refresh
-    if (!forceRefresh) {
-      const cachedResult = await pool.query(`
-        SELECT recommendations
-        FROM cached_recipe_recommendations
-        WHERE pantry_signature = $1 AND expires_at > NOW()
-        ORDER BY created_at DESC
-        LIMIT 1
-      `, [pantrySignature]);
+    // Always check cache first
+    const cachedResult = await pool.query(`
+      SELECT recommendations
+      FROM cached_recipe_recommendations
+      WHERE pantry_signature = $1
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [pantrySignature]);
 
-      if (cachedResult.rows.length > 0) {
-        console.log(`✅ Returning ${cachedResult.rows[0].recommendations.length} cached recipe recommendations`);
-        return res.json(cachedResult.rows[0].recommendations);
-      }
+    // If we have cached data and not forcing refresh, return it
+    if (cachedResult.rows.length > 0 && !forceRefresh) {
+      console.log(`✅ Returning ${cachedResult.rows[0].recommendations.length} cached recipe recommendations`);
+      return res.json(cachedResult.rows[0].recommendations);
+    }
+
+    // Only fetch from API if explicitly requested with refresh=true
+    if (!forceRefresh) {
+      console.log(`ℹ️  No cached recommendations found. Use refresh=true to fetch new recommendations.`);
+      return res.json([]);
     }
 
     console.log(`🔍 Searching for recipes using ${ingredientNames.length} pantry ingredients`);
@@ -55,9 +60,9 @@ router.get('/', async (req: Request, res: Response) => {
     // Get recipe recommendations from Spoonacular
     const recommendations = await findRecipesByIngredients(ingredientNames, 2);
 
-    // Cache the results for 7 days
+    // Cache the results (no expiration - only refresh on demand)
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    expiresAt.setFullYear(expiresAt.getFullYear() + 10); // Set far future expiration
 
     await pool.query(`
       INSERT INTO cached_recipe_recommendations (pantry_signature, recommendations, expires_at)
@@ -96,20 +101,25 @@ router.get('/ingredient-combos', async (req: Request, res: Response) => {
     const ingredientNames = pantryResult.rows.map(row => row.name);
     const pantrySignature = createPantrySignature(ingredientNames);
 
-    // Check cache unless force refresh
-    if (!forceRefresh) {
-      const cachedResult = await pool.query(`
-        SELECT combos
-        FROM cached_ingredient_combos
-        WHERE pantry_signature = $1 AND expires_at > NOW()
-        ORDER BY created_at DESC
-        LIMIT 1
-      `, [pantrySignature]);
+    // Always check cache first
+    const cachedResult = await pool.query(`
+      SELECT combos
+      FROM cached_ingredient_combos
+      WHERE pantry_signature = $1
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [pantrySignature]);
 
-      if (cachedResult.rows.length > 0) {
-        console.log(`✅ Returning ${cachedResult.rows[0].combos.length} cached ingredient combo recommendations`);
-        return res.json(cachedResult.rows[0].combos);
-      }
+    // If we have cached data and not forcing refresh, return it
+    if (cachedResult.rows.length > 0 && !forceRefresh) {
+      console.log(`✅ Returning ${cachedResult.rows[0].combos.length} cached ingredient combo recommendations`);
+      return res.json(cachedResult.rows[0].combos);
+    }
+
+    // Only fetch from API if explicitly requested with refresh=true
+    if (!forceRefresh) {
+      console.log(`ℹ️  No cached ingredient combos found. Use refresh=true to fetch new combos.`);
+      return res.json([]);
     }
 
     console.log(`🔍 Searching for ingredient combos using ${ingredientNames.length} pantry ingredients`);
@@ -117,9 +127,9 @@ router.get('/ingredient-combos', async (req: Request, res: Response) => {
     // Get ingredient combo recommendations
     const combos = await findIngredientCombos(ingredientNames, 5);
 
-    // Cache the results for 7 days
+    // Cache the results (no expiration - only refresh on demand)
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    expiresAt.setFullYear(expiresAt.getFullYear() + 10); // Set far future expiration
 
     await pool.query(`
       INSERT INTO cached_ingredient_combos (pantry_signature, combos, expires_at)
