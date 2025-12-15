@@ -145,17 +145,22 @@ const Pantry: React.FC = () => {
     if (!editingItem) return;
 
     try {
-      // Update the ingredient's category if it changed
+      // Update the ingredient's name and/or category if changed
       const ingredient = ingredients.find(
         (ing) => ing.id === editingItem.ingredient_id
       );
 
-      if (ingredient && editingItem.category !== ingredient.category) {
-        await ingredientsApi.update(ingredient.id, {
-          name: ingredient.name,
-          category: editingItem.category,
-        });
-        await loadIngredients(); // Reload ingredients list
+      if (ingredient) {
+        const nameChanged = editingItem.ingredient_name !== ingredient.name;
+        const categoryChanged = editingItem.category !== ingredient.category;
+
+        if (nameChanged || categoryChanged) {
+          await ingredientsApi.update(ingredient.id, {
+            name: editingItem.ingredient_name,
+            category: editingItem.category,
+          });
+          await loadIngredients(); // Reload ingredients list
+        }
       }
 
       await pantryApi.update(editingItem.id, {
@@ -403,12 +408,16 @@ const Pantry: React.FC = () => {
             <h2>Edit Pantry Item</h2>
             <div className={styles.editForm}>
               <div className={styles.formGroup}>
-                <label>Ingredient Name</label>
+                <label htmlFor="edit_ingredient_name">Ingredient Name</label>
                 <input
                   type="text"
+                  id="edit_ingredient_name"
                   value={editingItem.ingredient_name}
+                  onChange={(e) =>
+                    setEditingItem({ ...editingItem, ingredient_name: e.target.value })
+                  }
                   className={styles.input}
-                  disabled
+                  required
                 />
               </div>
               <div className={styles.formGroup}>
