@@ -2,6 +2,9 @@
 
 A React-based meal planning application that helps you manage recipes, schedule meals, track your pantry, and generate grocery lists within your weekly budget.
 
+## TODO
+- Export Grocery List to phone notes
+
 ## Features
 
 - **Recipe Management**: Import recipes from URLs, view nutritional information, and manage your recipe collection
