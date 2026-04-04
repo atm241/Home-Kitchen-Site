@@ -4,6 +4,8 @@ import { PantryItem, Ingredient } from '../../types';
 import { getWeekStartDate } from '../../utils/dateUtils';
 import styles from './Pantry.module.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const Pantry: React.FC = () => {
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -30,7 +32,7 @@ const Pantry: React.FC = () => {
     try {
       setLoadingRecommendations(true);
       const url = forceRefresh ? '/recommendations?refresh=true' : '/recommendations';
-      const response = await fetch(`http://localhost:5001/api${url}`);
+      const response = await fetch(`${API_BASE_URL}${url}`);
       const data = await response.json();
       setRecommendations(data);
     } catch (error) {
@@ -47,7 +49,7 @@ const Pantry: React.FC = () => {
 
   const handleAddRecipe = async (recipeId: number) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/recipes/import-spoonacular/${recipeId}`, {
+      const response = await fetch(`${API_BASE_URL}/recipes/import-spoonacular/${recipeId}`, {
         method: 'POST',
       });
 

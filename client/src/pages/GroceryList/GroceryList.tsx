@@ -4,6 +4,8 @@ import { GroceryItem } from '../../types';
 import { getWeekStartDate, getWeekEndDate } from '../../utils/dateUtils';
 import styles from './GroceryList.module.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const GroceryList: React.FC = () => {
   const [groceryItems, setGroceryItems] = useState<GroceryItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -22,8 +24,8 @@ const GroceryList: React.FC = () => {
     try {
       setLoadingCombos(true);
       const url = forceRefresh
-        ? 'http://localhost:5001/api/recommendations/ingredient-combos?refresh=true'
-        : 'http://localhost:5001/api/recommendations/ingredient-combos';
+        ? `${API_BASE_URL}/recommendations/ingredient-combos?refresh=true`
+        : `${API_BASE_URL}/recommendations/ingredient-combos`;
       const response = await fetch(url);
       const data = await response.json();
       setIngredientCombos(data);
