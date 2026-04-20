@@ -13,6 +13,7 @@ const RecipeDetail: React.FC = () => {
   const [servingsCooked, setServingsCooked] = useState('');
   const [editingCategory, setEditingCategory] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -31,6 +32,11 @@ const RecipeDetail: React.FC = () => {
     }
   };
 
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
   const handleDelete = async () => {
     if (!recipe || !window.confirm('Are you sure you want to delete this recipe?')) return;
 
@@ -39,19 +45,19 @@ const RecipeDetail: React.FC = () => {
       navigate('/recipes');
     } catch (error) {
       console.error('Error deleting recipe:', error);
-      alert('Failed to delete recipe');
+      showNotification('error', 'Failed to delete recipe');
     }
   };
 
   const handleMarkAsCooked = async () => {
     if (!recipe || !servingsCooked) {
-      alert('Please enter the number of servings you cooked');
+      showNotification('error', 'Please enter the number of servings you cooked');
       return;
     }
 
     const servings = parseFloat(servingsCooked);
     if (servings <= 0) {
-      alert('Servings must be greater than 0');
+      showNotification('error', 'Servings must be greater than 0');
       return;
     }
 
@@ -90,11 +96,11 @@ const RecipeDetail: React.FC = () => {
         }
       }
 
-      alert(`Recipe marked as cooked! Ingredients have been deducted from your pantry.`);
+      showNotification('success', 'Recipe marked as cooked! Ingredients have been deducted from your pantry.');
       setServingsCooked('');
     } catch (error) {
       console.error('Error marking recipe as cooked:', error);
-      alert('Failed to update pantry');
+      showNotification('error', 'Failed to update pantry');
     }
   };
 
@@ -116,7 +122,7 @@ const RecipeDetail: React.FC = () => {
       setEditingCategory(false);
     } catch (error) {
       console.error('Error updating category:', error);
-      alert('Failed to update category');
+      showNotification('error', 'Failed to update category');
     }
   };
 
@@ -142,10 +148,10 @@ const RecipeDetail: React.FC = () => {
         servings: recipe.servings,
       });
 
-      alert('Ingredients added to grocery list!');
+      showNotification('success', 'Ingredients added to grocery list!');
     } catch (error) {
       console.error('Error adding to grocery list:', error);
-      alert('Failed to add ingredients to grocery list');
+      showNotification('error', 'Failed to add ingredients to grocery list');
     }
   };
 
@@ -159,6 +165,11 @@ const RecipeDetail: React.FC = () => {
 
   return (
     <div className={styles.container}>
+      {notification && (
+        <div className={`${styles.notification} ${styles[notification.type]}`}>
+          {notification.message}
+        </div>
+      )}
       <div className={styles.header}>
         <button onClick={() => navigate('/recipes')} className={styles.backButton}>
           ← Back to Recipes

@@ -2,14 +2,9 @@ import express, { Request, Response } from 'express';
 import pool from '../config/database';
 import { findRecipesByIngredients } from '../services/spoonacularService';
 import { findIngredientCombos } from '../services/ingredientRecommender';
-import crypto from 'crypto';
+import { createPantrySignature } from '../utils/pantrySignature';
 
 const router = express.Router();
-
-// Helper function to create a signature from pantry items
-function createPantrySignature(ingredientNames: string[]): string {
-  return crypto.createHash('md5').update(ingredientNames.sort().join(',')).digest('hex');
-}
 
 // Get recipe recommendations based on pantry items
 router.get('/', async (req: Request, res: Response) => {

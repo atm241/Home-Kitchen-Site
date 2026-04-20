@@ -10,6 +10,7 @@ const Recipes: React.FC = () => {
   const [importUrl, setImportUrl] = useState('');
   const [importing, setImporting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     loadRecipes();
@@ -26,6 +27,11 @@ const Recipes: React.FC = () => {
     }
   };
 
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
   const handleImport = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!importUrl) return;
@@ -37,7 +43,7 @@ const Recipes: React.FC = () => {
       loadRecipes();
     } catch (error) {
       console.error('Error importing recipe:', error);
-      alert('Failed to import recipe. Please try again.');
+      showNotification('error', 'Failed to import recipe. Please try again.');
     } finally {
       setImporting(false);
     }
@@ -67,6 +73,11 @@ const Recipes: React.FC = () => {
 
   return (
     <div className={styles.container}>
+      {notification && (
+        <div className={`${styles.notification} ${styles[notification.type]}`}>
+          {notification.message}
+        </div>
+      )}
       <div className={styles.header}>
         <h1>Recipes</h1>
         <Link to="/recipes/new" className={styles.addButton}>

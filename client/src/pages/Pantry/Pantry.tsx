@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { pantryApi, ingredientsApi, groceryApi, recommendationsApi, RecipeRecommendation } from '../../services/api';
+import { pantryApi, ingredientsApi, groceryApi, recipesApi, recommendationsApi, RecipeRecommendation } from '../../services/api';
 import { PantryItem, Ingredient } from '../../types';
 import { getWeekStartDate } from '../../utils/dateUtils';
 import styles from './Pantry.module.css';
@@ -12,6 +12,7 @@ const Pantry: React.FC = () => {
   const [editingItem, setEditingItem] = useState<PantryItem | null>(null);
   const [recommendations, setRecommendations] = useState<RecipeRecommendation[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [newItem, setNewItem] = useState({
     ingredient_name: '',
     quantity: '',
@@ -26,13 +27,16 @@ const Pantry: React.FC = () => {
     loadRecommendations(false); // Only load cached recommendations
   }, []);
 
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
   const loadRecommendations = async (forceRefresh = false) => {
     try {
       setLoadingRecommendations(true);
-      const url = forceRefresh ? '/recommendations?refresh=true' : '/recommendations';
-      const response = await fetch(`http://localhost:5001/api${url}`);
-      const data = await response.json();
-      setRecommendations(data);
+      const response = await recommendationsApi.get(forceRefresh);
+      setRecommendations(response.data);
     } catch (error) {
       console.error('Error loading recommendations:', error);
     } finally {
@@ -42,23 +46,16 @@ const Pantry: React.FC = () => {
 
   const handleRefreshRecommendations = async () => {
     await loadRecommendations(true);
-    alert('Recommendations refreshed!');
+    showNotification('success', 'Recommendations refreshed!');
   };
 
   const handleAddRecipe = async (recipeId: number) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/recipes/import-spoonacular/${recipeId}`, {
-        method: 'POST',
-      });
-
-      if (response.ok) {
-        alert('Recipe added successfully!');
-      } else {
-        throw new Error('Failed to import recipe');
-      }
+      await recipesApi.importFromSpoonacular(recipeId);
+      showNotification('success', 'Recipe added successfully!');
     } catch (error) {
       console.error('Error adding recipe:', error);
-      alert('Failed to add recipe');
+      showNotification('error', 'Failed to add recipe');
     }
   };
 
@@ -121,7 +118,7 @@ const Pantry: React.FC = () => {
       loadPantry();
     } catch (error) {
       console.error('Error adding pantry item:', error);
-      alert('Failed to add item to pantry');
+      showNotification('error', 'Failed to add item to pantry');
     }
   };
 
@@ -133,7 +130,7 @@ const Pantry: React.FC = () => {
       loadPantry();
     } catch (error) {
       console.error('Error removing item:', error);
-      alert('Failed to remove item');
+      showNotification('error', 'Failed to remove item');
     }
   };
 
@@ -172,7 +169,7 @@ const Pantry: React.FC = () => {
       loadPantry();
     } catch (error) {
       console.error('Error updating pantry item:', error);
-      alert('Failed to update item');
+      showNotification('error', 'Failed to update item');
     }
   };
 
@@ -192,10 +189,10 @@ const Pantry: React.FC = () => {
         week_start_date: weekStartDate,
       });
 
-      alert(`${item.ingredient_name} added to grocery list!`);
+      showNotification('success', `${item.ingredient_name} added to grocery list!`);
     } catch (error) {
       console.error('Error adding to grocery list:', error);
-      alert('Failed to add to grocery list');
+      showNotification('error', 'Failed to add to grocery list');
     }
   };
 
@@ -214,6 +211,11 @@ const Pantry: React.FC = () => {
 
   return (
     <div className={styles.container}>
+      {notification && (
+        <div className={`${styles.notification} ${styles[notification.type]}`}>
+          {notification.message}
+        </div>
+      )}
       <div className={styles.header}>
         <h1>Pantry</h1>
         <button onClick={() => setShowAddForm(!showAddForm)} className={styles.addButton}>

@@ -10,6 +10,7 @@ const GroceryList: React.FC = () => {
   const [generating, setGenerating] = useState(false);
   const [ingredientCombos, setIngredientCombos] = useState<IngredientCombo[]>([]);
   const [loadingCombos, setLoadingCombos] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const weekStartDate = getWeekStartDate();
   const [manualItem, setManualItem] = useState({ name: '', quantity: '1', unit: 'unit' });
 
@@ -18,15 +19,16 @@ const GroceryList: React.FC = () => {
     loadIngredientCombos(false); // Only load cached combos
   }, []);
 
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
   const loadIngredientCombos = async (forceRefresh = false) => {
     try {
       setLoadingCombos(true);
-      const url = forceRefresh
-        ? 'http://localhost:5001/api/recommendations/ingredient-combos?refresh=true'
-        : 'http://localhost:5001/api/recommendations/ingredient-combos';
-      const response = await fetch(url);
-      const data = await response.json();
-      setIngredientCombos(data);
+      const response = await recommendationsApi.getIngredientCombos(forceRefresh);
+      setIngredientCombos(response.data);
     } catch (error) {
       console.error('Error loading ingredient combos:', error);
     } finally {
@@ -36,7 +38,7 @@ const GroceryList: React.FC = () => {
 
   const handleRefreshCombos = async () => {
     await loadIngredientCombos(true);
-    alert('Ingredient combos refreshed!');
+    showNotification('success', 'Ingredient combos refreshed!');
   };
 
   const handleAddComboToList = async (combo: IngredientCombo) => {
@@ -51,11 +53,11 @@ const GroceryList: React.FC = () => {
         });
       }
 
-      alert(`Added ${combo.ingredients.length} ingredients to your grocery list!`);
+      showNotification('success', `Added ${combo.ingredients.length} ingredients to your grocery list!`);
       await loadGroceryList(); // Reload the list
     } catch (error) {
       console.error('Error adding combo to list:', error);
-      alert('Failed to add ingredients to list');
+      showNotification('error', 'Failed to add ingredients to list');
     }
   };
 
@@ -82,7 +84,7 @@ const GroceryList: React.FC = () => {
       setGroceryItems(response.data);
     } catch (error) {
       console.error('Error generating grocery list:', error);
-      alert('Failed to generate grocery list');
+      showNotification('error', 'Failed to generate grocery list');
     } finally {
       setGenerating(false);
     }
@@ -105,7 +107,7 @@ const GroceryList: React.FC = () => {
     e.preventDefault();
 
     if (!manualItem.name.trim()) {
-      alert('Please enter an item name');
+      showNotification('error', 'Please enter an item name');
       return;
     }
 
@@ -121,7 +123,7 @@ const GroceryList: React.FC = () => {
       setManualItem({ name: '', quantity: '1', unit: 'unit' });
     } catch (error) {
       console.error('Error adding manual item:', error);
-      alert('Failed to add item');
+      showNotification('error', 'Failed to add item');
     }
   };
 
@@ -131,7 +133,7 @@ const GroceryList: React.FC = () => {
       setGroceryItems(groceryItems.filter((item) => item.id !== id));
     } catch (error) {
       console.error('Error deleting grocery item:', error);
-      alert('Failed to delete item');
+      showNotification('error', 'Failed to delete item');
     }
   };
 
@@ -145,7 +147,7 @@ const GroceryList: React.FC = () => {
       setGroceryItems([]);
     } catch (error) {
       console.error('Error clearing grocery list:', error);
-      alert('Failed to clear grocery list');
+      showNotification('error', 'Failed to clear grocery list');
     }
   };
 
@@ -153,7 +155,7 @@ const GroceryList: React.FC = () => {
     const purchasedItems = groceryItems.filter(item => item.is_purchased);
 
     if (purchasedItems.length === 0) {
-      alert('No purchased items to add to pantry. Please check off items first.');
+      showNotification('error', 'No purchased items to add to pantry. Please check off items first.');
       return;
     }
 
@@ -163,13 +165,13 @@ const GroceryList: React.FC = () => {
 
     try {
       const response = await groceryApi.addPurchasedToPantry(weekStartDate);
-      alert(`Successfully added ${response.data.count} items to pantry! Recommendations will be refreshed.`);
+      showNotification('success', `Successfully added ${response.data.count} items to pantry!`);
 
       // Reload ingredient combos to show updated recommendations
       await loadIngredientCombos(false);
     } catch (error) {
       console.error('Error adding items to pantry:', error);
-      alert('Failed to add items to pantry');
+      showNotification('error', 'Failed to add items to pantry');
     }
   };
 
@@ -195,6 +197,11 @@ const GroceryList: React.FC = () => {
 
   return (
     <div className={styles.container}>
+      {notification && (
+        <div className={`${styles.notification} ${styles[notification.type]}`}>
+          {notification.message}
+        </div>
+      )}
       <div className={styles.header}>
         <h1>Grocery List</h1>
         <div className={styles.buttonGroup}>

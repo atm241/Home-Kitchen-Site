@@ -30,6 +30,7 @@ export const recipesApi = {
   update: (id: number, recipe: Partial<Recipe>) => api.put<Recipe>(`/recipes/${id}`, recipe),
   delete: (id: number) => api.delete(`/recipes/${id}`),
   importFromUrl: (url: string) => api.post<Recipe>('/recipes/import', { url }),
+  importFromSpoonacular: (id: number) => api.post<Recipe>(`/recipes/import-spoonacular/${id}`),
   filterByNutrition: (params: { maxCarbs?: number; minProtein?: number; minVegetables?: number }) =>
     api.get<Recipe[]>('/recipes/filter/nutritional', { params }),
 };
@@ -146,8 +147,10 @@ export interface IngredientCombo {
 }
 
 export const recommendationsApi = {
-  get: () => api.get<RecipeRecommendation[]>('/recommendations'),
-  getIngredientCombos: () => api.get<IngredientCombo[]>('/recommendations/ingredient-combos'),
+  get: (forceRefresh = false) =>
+    api.get<RecipeRecommendation[]>('/recommendations', forceRefresh ? { params: { refresh: true } } : undefined),
+  getIngredientCombos: (forceRefresh = false) =>
+    api.get<IngredientCombo[]>('/recommendations/ingredient-combos', forceRefresh ? { params: { refresh: true } } : undefined),
 };
 
 export default api;

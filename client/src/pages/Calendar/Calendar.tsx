@@ -20,6 +20,7 @@ const Calendar: React.FC = () => {
   const [showMealModal, setShowMealModal] = useState(false);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [formData, setFormData] = useState({
     recipe_id: '',
     meal_type: 'dinner',
@@ -83,11 +84,16 @@ const Calendar: React.FC = () => {
     setShowMealModal(true);
   };
 
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
   const handleScheduleMeal = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!selectedDate || !formData.recipe_id) {
-      alert('Please select a recipe');
+      showNotification('error', 'Please select a recipe');
       return;
     }
 
@@ -106,15 +112,20 @@ const Calendar: React.FC = () => {
       // Close modal and reset
       setShowMealModal(false);
       setFormData({ recipe_id: '', meal_type: 'dinner', servings: '2' });
-      alert('Meal scheduled successfully!');
+      showNotification('success', 'Meal scheduled successfully!');
     } catch (error) {
       console.error('Error scheduling meal:', error);
-      alert('Failed to schedule meal');
+      showNotification('error', 'Failed to schedule meal');
     }
   };
 
   return (
     <div className={styles.container}>
+      {notification && (
+        <div className={`${styles.notification} ${styles[notification.type]}`}>
+          {notification.message}
+        </div>
+      )}
       <div className={styles.header}>
         <button onClick={handlePrevMonth} className={styles.navButton}>
           ← Previous

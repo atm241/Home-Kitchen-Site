@@ -31,6 +31,7 @@ const AddRecipe: React.FC = () => {
 
   const [instructions, setInstructions] = useState<string[]>(['']);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleAddIngredient = () => {
     setIngredients([...ingredients, { name: '', quantity: '', unit: 'cup', notes: '' }]);
@@ -64,10 +65,11 @@ const AddRecipe: React.FC = () => {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      alert('Please enter a recipe name');
+      setError('Please enter a recipe name');
       return;
     }
 
+    setError(null);
     try {
       setSubmitting(true);
 
@@ -105,7 +107,7 @@ const AddRecipe: React.FC = () => {
       navigate(`/recipes/${response.data.id}`);
     } catch (error) {
       console.error('Error creating recipe:', error);
-      alert('Failed to create recipe. Please try again.');
+      setError('Failed to create recipe. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -113,6 +115,11 @@ const AddRecipe: React.FC = () => {
 
   return (
     <div className={styles.container}>
+      {error && (
+        <div className={styles.notification} style={{ backgroundColor: '#e74c3c', color: '#fff' }}>
+          {error}
+        </div>
+      )}
       <div className={styles.header}>
         <button onClick={() => navigate('/recipes')} className={styles.backButton}>
           ← Back to Recipes
