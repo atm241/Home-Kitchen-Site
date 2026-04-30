@@ -44,7 +44,8 @@ router.get('/', async (req: Request, res: Response) => {
 // Get single scheduled meal
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     const result = await pool.query(`
       SELECT sm.*, r.name as recipe_name, r.description as recipe_description
       FROM scheduled_meals sm
@@ -105,7 +106,8 @@ router.post('/', async (req: Request, res: Response) => {
 // Update scheduled meal
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     const {
       recipe_id,
       meal_date,
@@ -149,7 +151,8 @@ router.put('/:id', async (req: Request, res: Response) => {
 // Delete scheduled meal
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     await pool.query('DELETE FROM scheduled_meals WHERE id = $1', [id]);
     res.json({ message: 'Scheduled meal deleted successfully' });
   } catch (error) {
@@ -161,7 +164,8 @@ router.delete('/:id', async (req: Request, res: Response) => {
 // Get meal portions (leftovers tracking)
 router.get('/portions/:scheduled_meal_id', async (req: Request, res: Response) => {
   try {
-    const { scheduled_meal_id } = req.params;
+    const scheduled_meal_id = parseInt(req.params.scheduled_meal_id, 10);
+    if (isNaN(scheduled_meal_id) || scheduled_meal_id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     const result = await pool.query(
       'SELECT * FROM meal_portions WHERE scheduled_meal_id = $1 ORDER BY date_made DESC',
       [scheduled_meal_id]

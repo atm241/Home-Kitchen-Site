@@ -57,8 +57,9 @@ router.post('/generate', async (req: Request, res: Response) => {
 
     const meals = mealsResult.rows;
 
-    // Aggregate ingredients needed
-    const ingredientMap = new Map<number, { quantity: number; unit: string }>();
+    // Aggregate ingredients needed — keyed by ingredientId+unit so mismatched
+    // units are kept as separate line items rather than summed incorrectly.
+    const ingredientMap = new Map<string, { ingredientId: number; quantity: number; unit: string }>();
 
     for (const meal of meals) {
       const ingredientsResult = await client.query(`
@@ -71,15 +72,16 @@ router.post('/generate', async (req: Request, res: Response) => {
       for (const ing of ingredientsResult.rows) {
         const scaleFactor = meal.servings / meal.recipe_servings;
         const scaledQuantity = (ing.quantity || 0) * scaleFactor;
+        const unit = ing.unit || 'unit';
+        const key = `${ing.ingredient_id}_${unit}`;
 
-        if (ingredientMap.has(ing.ingredient_id)) {
-          const existing = ingredientMap.get(ing.ingredient_id)!;
-          // TODO: Handle unit conversion if units differ
-          existing.quantity += scaledQuantity;
+        if (ingredientMap.has(key)) {
+          ingredientMap.get(key)!.quantity += scaledQuantity;
         } else {
-          ingredientMap.set(ing.ingredient_id, {
+          ingredientMap.set(key, {
+            ingredientId: ing.ingredient_id,
             quantity: scaledQuantity,
-            unit: ing.unit
+            unit,
           });
         }
       }
@@ -92,12 +94,13 @@ router.post('/generate', async (req: Request, res: Response) => {
     );
 
     // Insert into grocery list (subtract pantry quantities)
-    for (const [ingredientId, data] of ingredientMap.entries()) {
+    for (const [, data] of ingredientMap.entries()) {
+      const ingredientId = data.ingredientId;
       let neededQuantity = data.quantity;
-      const pantryItem = pantryMap.get(ingredientId);
+      const pantryItem = pantryMap.get(data.ingredientId);
 
       if (pantryItem && !pantryItem.is_staple) {
-        // Subtract what's in pantry (TODO: handle unit conversion)
+        // Only subtract pantry quantity when units match
         if (pantryItem.unit === data.unit) {
           neededQuantity = Math.max(0, data.quantity - (pantryItem.quantity || 0));
         }
@@ -110,14 +113,14 @@ router.post('/generate', async (req: Request, res: Response) => {
           WHERE ingredient_id = $1 AND store_name = 'Smiths'
           ORDER BY last_updated DESC
           LIMIT 1
-        `, [ingredientId]);
+        `, [data.ingredientId]);
 
         const estimatedPrice = priceResult.rows[0]?.price || 0;
 
         await client.query(`
           INSERT INTO grocery_list (ingredient_id, quantity, unit, estimated_price, week_start_date)
           VALUES ($1, $2, $3, $4, $5)
-        `, [ingredientId, neededQuantity, data.unit, estimatedPrice, week_start_date]);
+        `, [data.ingredientId, neededQuantity, data.unit, estimatedPrice, week_start_date]);
       }
     }
 
@@ -314,7 +317,8 @@ router.post('/from-recipe', async (req: Request, res: Response) => {
 // Mark item as purchased
 router.patch('/:id/purchase', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     const { is_purchased } = req.body;
 
     const result = await pool.query(`
@@ -338,7 +342,8 @@ router.patch('/:id/purchase', async (req: Request, res: Response) => {
 // Update grocery item
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     const { quantity, unit, estimated_price } = req.body;
 
     const result = await pool.query(`
@@ -379,7 +384,8 @@ router.delete('/clear', async (req: Request, res: Response) => {
 // Delete grocery item
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     await pool.query('DELETE FROM grocery_list WHERE id = $1', [id]);
     res.json({ message: 'Grocery item deleted successfully' });
   } catch (error) {

@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS recipes (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     source_url TEXT,
+    category VARCHAR(100),
     servings INTEGER NOT NULL DEFAULT 1,
     prep_time INTEGER, -- in minutes
     cook_time INTEGER, -- in minutes
@@ -34,8 +35,7 @@ CREATE TABLE IF NOT EXISTS recipe_ingredients (
     ingredient_id INTEGER REFERENCES ingredients(id) ON DELETE CASCADE,
     quantity DECIMAL(10, 2),
     unit VARCHAR(50), -- e.g., 'cup', 'tbsp', 'oz', 'piece', etc.
-    notes TEXT, -- e.g., 'chopped', 'diced', 'to taste'
-    UNIQUE(recipe_id, ingredient_id)
+    notes TEXT -- e.g., 'chopped', 'diced', 'to taste'
 );
 
 -- Pantry items (what you currently have)
@@ -106,6 +106,7 @@ CREATE TABLE IF NOT EXISTS budgets (
     budget_amount DECIMAL(10, 2) NOT NULL,
     estimated_cost DECIMAL(10, 2) DEFAULT 0,
     actual_cost DECIMAL(10, 2) DEFAULT 0,
+    calorie_budget INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

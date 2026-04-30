@@ -1,6 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { categorizeIngredient } from './ingredientCategorizer';
+import { cleanText } from '../utils/cleanText';
 
 export interface ScrapedRecipe {
   name: string;
@@ -50,8 +51,8 @@ export async function scrapeRecipe(url: string): Promise<ScrapedRecipe> {
 
           if (recipeSchema) {
             console.log('Found Recipe schema in JSON-LD');
-            recipe.name = recipeSchema.name || '';
-            recipe.description = recipeSchema.description || '';
+            recipe.name = cleanText(recipeSchema.name);
+            recipe.description = cleanText(recipeSchema.description);
             console.log(`  - Name: ${recipe.name}`);
 
             // Parse servings/yield - can be a number, string, or array
@@ -86,12 +87,12 @@ export async function scrapeRecipe(url: string): Promise<ScrapedRecipe> {
                 console.log(`  - Found ${recipeSchema.recipeInstructions.length} instruction steps in JSON-LD`);
                 recipe.instructions = recipeSchema.recipeInstructions
                   .map((step: any) =>
-                    typeof step === 'string' ? step : step.text || step.name
+                    cleanText(typeof step === 'string' ? step : step.text || step.name)
                   )
                   .join('\n');
               } else if (typeof recipeSchema.recipeInstructions === 'string') {
                 console.log('  - Found instructions (as string) in JSON-LD');
-                recipe.instructions = recipeSchema.recipeInstructions;
+                recipe.instructions = cleanText(recipeSchema.recipeInstructions);
               }
             } else {
               console.log('  - No recipeInstructions found in JSON-LD');
@@ -101,7 +102,7 @@ export async function scrapeRecipe(url: string): Promise<ScrapedRecipe> {
             if (recipeSchema.recipeIngredient && Array.isArray(recipeSchema.recipeIngredient)) {
               console.log(`  - Found ${recipeSchema.recipeIngredient.length} ingredients in JSON-LD`);
               recipe.ingredients = recipeSchema.recipeIngredient.map((ing: string) => {
-                return parseIngredientString(ing);
+                return parseIngredientString(cleanText(ing));
               });
             } else {
               console.log('  - No recipeIngredient found in JSON-LD');
@@ -124,16 +125,16 @@ export async function scrapeRecipe(url: string): Promise<ScrapedRecipe> {
 
     // Fallback to common HTML selectors if JSON-LD didn't work
     if (!recipe.name) {
-      recipe.name = $('h1').first().text().trim() ||
-                    $('.recipe-title').first().text().trim() ||
-                    $('[itemprop="name"]').first().text().trim();
+      recipe.name = cleanText($('h1').first().text() ||
+                    $('.recipe-title').first().text() ||
+                    $('[itemprop="name"]').first().text());
     }
 
     if (!recipe.description) {
-      recipe.description = $('[itemprop="description"]').first().text().trim() ||
-                          $('.recipe-description').first().text().trim() ||
+      recipe.description = cleanText($('[itemprop="description"]').first().text() ||
+                          $('.recipe-description').first().text() ||
                           $('meta[name="description"]').attr('content') ||
-                          '';
+                          '');
     }
 
     if (!recipe.ingredients || recipe.ingredients.length === 0) {
@@ -154,7 +155,7 @@ export async function scrapeRecipe(url: string): Promise<ScrapedRecipe> {
 
       for (const selector of ingredientSelectors) {
         $(selector).each((_, element) => {
-          const text = $(element).text().trim();
+          const text = cleanText($(element).text());
           if (text) {
             ingredientsList.push(parseIngredientString(text));
           }
@@ -192,7 +193,7 @@ export async function scrapeRecipe(url: string): Promise<ScrapedRecipe> {
 
       for (const selector of instructionSelectors) {
         $(selector).each((_, element) => {
-          const text = $(element).text().trim();
+          const text = cleanText($(element).text());
           if (text && text.length > 10) { // Filter out very short text that's probably not instructions
             instructionsList.push(text);
           }

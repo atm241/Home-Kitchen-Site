@@ -64,7 +64,8 @@ router.post('/', async (req: Request, res: Response) => {
 // Update pantry item
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     const { quantity, unit, expiration_date, is_staple } = req.body;
 
     const result = await pool.query(`
@@ -88,7 +89,8 @@ router.put('/:id', async (req: Request, res: Response) => {
 // Remove item from pantry
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     await pool.query('DELETE FROM pantry WHERE id = $1', [id]);
     res.json({ message: 'Pantry item removed successfully' });
   } catch (error) {

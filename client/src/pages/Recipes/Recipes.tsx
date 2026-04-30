@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { recipesApi } from '../../services/api';
 import { Recipe } from '../../types';
+import sanitizeHtml from 'sanitize-html';
 import styles from './Recipes.module.css';
 
 const Recipes: React.FC = () => {

@@ -3,6 +3,7 @@ import pool from '../config/database';
 import { scrapeRecipe } from '../services/recipeScraper';
 import { categorizeIngredient } from '../services/ingredientCategorizer';
 import { getRecipeDetails } from '../services/spoonacularService';
+import { cleanText } from '../utils/cleanText';
 
 const router = express.Router();
 
@@ -36,7 +37,8 @@ router.get('/', async (req: Request, res: Response) => {
 // Get single recipe
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     const result = await pool.query(`
       SELECT r.*,
         json_agg(
@@ -253,7 +255,8 @@ router.put('/:id', async (req: Request, res: Response) => {
   try {
     await client.query('BEGIN');
 
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
 
     // Get existing recipe first for partial updates
     const existingRecipe = await client.query('SELECT * FROM recipes WHERE id = $1', [id]);
@@ -354,7 +357,8 @@ router.put('/:id', async (req: Request, res: Response) => {
 // Delete recipe
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     await pool.query('DELETE FROM recipes WHERE id = $1', [id]);
     res.json({ message: 'Recipe deleted successfully' });
   } catch (error) {
@@ -434,7 +438,7 @@ router.post('/import-spoonacular/:id', async (req: Request, res: Response) => {
       RETURNING *
     `, [
       spoonacularRecipe.title,
-      spoonacularRecipe.summary.replace(/<[^>]*>/g, '').substring(0, 500),
+      cleanText(spoonacularRecipe.summary).substring(0, 500),
       spoonacularRecipe.sourceUrl,
       spoonacularRecipe.servings,
       spoonacularRecipe.readyInMinutes,

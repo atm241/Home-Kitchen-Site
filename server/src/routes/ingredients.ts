@@ -17,7 +17,8 @@ router.get('/', async (req: Request, res: Response) => {
 // Get single ingredient
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     const result = await pool.query('SELECT * FROM ingredients WHERE id = $1', [id]);
 
     if (result.rows.length === 0) {
@@ -51,7 +52,8 @@ router.post('/', async (req: Request, res: Response) => {
 // Update ingredient
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     const { name, category } = req.body;
 
     const result = await pool.query(
@@ -73,7 +75,8 @@ router.put('/:id', async (req: Request, res: Response) => {
 // Delete ingredient
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     await pool.query('DELETE FROM ingredients WHERE id = $1', [id]);
     res.json({ message: 'Ingredient deleted successfully' });
   } catch (error) {

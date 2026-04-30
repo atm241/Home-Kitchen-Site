@@ -294,3 +294,31 @@
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+.errorState {
+  text-align: center;
+  padding: 60px 24px;
+  color: #7F8C8D;
+}
+
+.errorState p {
+  margin-bottom: 16px;
+  font-size: 16px;
+}
+
+.retryButton {
+  padding: 10px 24px;
+  background-color: #628141;
+  color: #EBD5AB;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retryButton:hover {
+  background-color: #8BAE66;
+  color: #2C3E50;
+}

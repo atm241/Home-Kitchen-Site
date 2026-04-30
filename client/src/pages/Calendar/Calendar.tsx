@@ -20,6 +20,7 @@ const Calendar: React.FC = () => {
   const [showMealModal, setShowMealModal] = useState(false);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [formData, setFormData] = useState({
     recipe_id: '',
@@ -47,6 +48,7 @@ const Calendar: React.FC = () => {
   const loadCalendarData = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const firstDay = monthDays[0];
       const lastDay = monthDays[monthDays.length - 1];
 
@@ -62,6 +64,7 @@ const Calendar: React.FC = () => {
       setRecipes(recipesResponse.data);
     } catch (error) {
       console.error('Error loading calendar:', error);
+      setLoadError('Failed to load calendar. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -118,6 +121,17 @@ const Calendar: React.FC = () => {
       showNotification('error', 'Failed to schedule meal');
     }
   };
+
+  if (loadError) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.errorState}>
+          <p>{loadError}</p>
+          <button onClick={loadCalendarData} className={styles.retryButton}>Try Again</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>

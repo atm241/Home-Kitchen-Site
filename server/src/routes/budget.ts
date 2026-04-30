@@ -48,7 +48,7 @@ router.get('/all', async (req: Request, res: Response) => {
 // Create or update budget
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { week_start_date, budget_amount } = req.body;
+    const { week_start_date, budget_amount, calorie_budget } = req.body;
 
     if (!week_start_date || budget_amount === undefined) {
       return res.status(400).json({ error: 'week_start_date and budget_amount are required' });
@@ -63,14 +63,15 @@ router.post('/', async (req: Request, res: Response) => {
     const estimatedCost = groceryResult.rows[0]?.total || 0;
 
     const result = await pool.query(`
-      INSERT INTO budgets (week_start_date, budget_amount, estimated_cost)
-      VALUES ($1, $2, $3)
+      INSERT INTO budgets (week_start_date, budget_amount, estimated_cost, calorie_budget)
+      VALUES ($1, $2, $3, $4)
       ON CONFLICT (week_start_date)
       DO UPDATE SET
         budget_amount = EXCLUDED.budget_amount,
-        estimated_cost = EXCLUDED.estimated_cost
+        estimated_cost = EXCLUDED.estimated_cost,
+        calorie_budget = EXCLUDED.calorie_budget
       RETURNING *
-    `, [week_start_date, budget_amount, estimatedCost]);
+    `, [week_start_date, budget_amount, estimatedCost, calorie_budget ?? null]);
 
     res.status(201).json(result.rows[0]);
   } catch (error) {

@@ -17,13 +17,15 @@
   "type": "commonjs",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.70.1",
+    "@types/sanitize-html": "^2.16.1",
     "axios": "^1.13.2",
     "cheerio": "^1.1.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "pg": "^8.16.3",
-    "recipe-scraper": "^2.1.1"
+    "recipe-scraper": "^2.1.1",
+    "sanitize-html": "^2.17.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

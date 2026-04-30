@@ -122,7 +122,8 @@ router.post('/', async (req: Request, res: Response) => {
 // Update calendar event
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     const { title, event_date, event_type, meal_type, notes } = req.body;
 
     const result = await pool.query(`
@@ -146,7 +147,8 @@ router.put('/:id', async (req: Request, res: Response) => {
 // Delete calendar event
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     await pool.query('DELETE FROM calendar_events WHERE id = $1', [id]);
     res.json({ message: 'Calendar event deleted successfully' });
   } catch (error) {

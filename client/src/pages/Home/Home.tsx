@@ -17,6 +17,10 @@ const Home: React.FC = () => {
   const [weekItems, setWeekItems] = useState<CombinedCalendarItem[]>([]);
   const [budget, setBudget] = useState<Budget | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [editingBudget, setEditingBudget] = useState(false);
+  const [budgetForm, setBudgetForm] = useState({ budget_amount: '', calorie_budget: '' });
+  const [budgetNotification, setBudgetNotification] = useState<string | null>(null);
 
   const weekDays = getWeekDays(currentDate);
   const weekStartDate = getWeekStartDate(currentDate);
@@ -29,6 +33,7 @@ const Home: React.FC = () => {
   const loadWeekData = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const [calendarResponse, budgetResponse] = await Promise.all([
         calendarApi.getCombined({
           start_date: weekStartDate,
@@ -41,6 +46,7 @@ const Home: React.FC = () => {
       setBudget(budgetResponse.data);
     } catch (error) {
       console.error('Error loading week data:', error);
+      setLoadError('Failed to load this week\'s data. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -71,13 +77,50 @@ const Home: React.FC = () => {
   };
 
   const handleAddMeal = (day: Date) => {
-    // Navigate to calendar page with selected date
     navigate('/calendar', { state: { selectedDate: day.toISOString() } });
   };
 
-  const budgetPercentage = budget
+  const handleEditBudget = () => {
+    setBudgetForm({
+      budget_amount: budget?.budget_amount ? budget.budget_amount.toString() : '',
+      calorie_budget: budget?.calorie_budget ? budget.calorie_budget.toString() : '',
+    });
+    setEditingBudget(true);
+  };
+
+  const handleSaveBudget = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await budgetApi.createOrUpdate({
+        week_start_date: weekStartDate,
+        budget_amount: parseFloat(budgetForm.budget_amount) || 0,
+        calorie_budget: budgetForm.calorie_budget ? parseInt(budgetForm.calorie_budget, 10) : undefined,
+      });
+      setBudget(response.data);
+      setEditingBudget(false);
+      setBudgetNotification('Budget saved!');
+      setTimeout(() => setBudgetNotification(null), 3000);
+    } catch (error) {
+      console.error('Error saving budget:', error);
+      setBudgetNotification('Failed to save budget.');
+      setTimeout(() => setBudgetNotification(null), 3000);
+    }
+  };
+
+  const budgetPercentage = budget && budget.budget_amount > 0
     ? (budget.estimated_cost / budget.budget_amount) * 100
     : 0;
+
+  if (loadError) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.errorState}>
+          <p>{loadError}</p>
+          <button onClick={loadWeekData} className={styles.retryButton}>Try Again</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -90,36 +133,83 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {budget && budget.budget_amount > 0 && (
-        <div className={styles.budgetCard}>
+      <div className={styles.budgetCard}>
+        <div className={styles.budgetCardHeader}>
           <h2>Weekly Budget</h2>
-          <div className={styles.budgetInfo}>
-            <div className={styles.budgetItem}>
-              <span className={styles.budgetLabel}>Budget:</span>
-              <span className={styles.budgetValue}>${budget.budget_amount.toFixed(2)}</span>
-            </div>
-            <div className={styles.budgetItem}>
-              <span className={styles.budgetLabel}>Estimated:</span>
-              <span className={styles.budgetValue}>${budget.estimated_cost.toFixed(2)}</span>
-            </div>
-            <div className={styles.budgetItem}>
-              <span className={styles.budgetLabel}>Remaining:</span>
-              <span className={styles.budgetValue}>
-                ${(budget.budget_amount - budget.estimated_cost).toFixed(2)}
-              </span>
-            </div>
-          </div>
-          <div className={styles.budgetBar}>
-            <div
-              className={styles.budgetProgress}
-              style={{
-                width: `${Math.min(budgetPercentage, 100)}%`,
-                backgroundColor: budgetPercentage > 100 ? '#E74C3C' : '#8BAE66',
-              }}
-            />
-          </div>
+          {!editingBudget && (
+            <button onClick={handleEditBudget} className={styles.editBudgetButton}>
+              {budget && budget.budget_amount > 0 ? 'Edit' : 'Set Budget'}
+            </button>
+          )}
         </div>
-      )}
+        {budgetNotification && (
+          <p className={styles.budgetNotification}>{budgetNotification}</p>
+        )}
+        {editingBudget ? (
+          <form onSubmit={handleSaveBudget} className={styles.budgetForm}>
+            <div className={styles.budgetFormRow}>
+              <label className={styles.budgetFormLabel}>
+                Weekly Budget ($)
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={budgetForm.budget_amount}
+                  onChange={(e) => setBudgetForm({ ...budgetForm, budget_amount: e.target.value })}
+                  className={styles.budgetInput}
+                  placeholder="0.00"
+                  autoFocus
+                />
+              </label>
+              <label className={styles.budgetFormLabel}>
+                Daily Calorie Goal
+                <input
+                  type="number"
+                  min="0"
+                  value={budgetForm.calorie_budget}
+                  onChange={(e) => setBudgetForm({ ...budgetForm, calorie_budget: e.target.value })}
+                  className={styles.budgetInput}
+                  placeholder="2000"
+                />
+              </label>
+            </div>
+            <div className={styles.budgetFormActions}>
+              <button type="submit" className={styles.saveBudgetButton}>Save</button>
+              <button type="button" onClick={() => setEditingBudget(false)} className={styles.cancelBudgetButton}>Cancel</button>
+            </div>
+          </form>
+        ) : budget && budget.budget_amount > 0 ? (
+          <>
+            <div className={styles.budgetInfo}>
+              <div className={styles.budgetItem}>
+                <span className={styles.budgetLabel}>Budget:</span>
+                <span className={styles.budgetValue}>${budget.budget_amount.toFixed(2)}</span>
+              </div>
+              <div className={styles.budgetItem}>
+                <span className={styles.budgetLabel}>Estimated:</span>
+                <span className={styles.budgetValue}>${budget.estimated_cost.toFixed(2)}</span>
+              </div>
+              <div className={styles.budgetItem}>
+                <span className={styles.budgetLabel}>Remaining:</span>
+                <span className={styles.budgetValue}>
+                  ${(budget.budget_amount - budget.estimated_cost).toFixed(2)}
+                </span>
+              </div>
+            </div>
+            <div className={styles.budgetBar}>
+              <div
+                className={styles.budgetProgress}
+                style={{
+                  width: `${Math.min(budgetPercentage, 100)}%`,
+                  backgroundColor: budgetPercentage > 100 ? '#E74C3C' : '#8BAE66',
+                }}
+              />
+            </div>
+          </>
+        ) : (
+          <p className={styles.noBudget}>No budget set for this week. Click "Set Budget" to get started.</p>
+        )}
+      </div>
 
       <div className={styles.weekGrid}>
         {weekDays.map((day) => {
