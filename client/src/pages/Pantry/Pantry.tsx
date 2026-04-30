@@ -4,6 +4,16 @@ import { PantryItem, Ingredient } from '../../types';
 import { getWeekStartDate } from '../../utils/dateUtils';
 import styles from './Pantry.module.css';
 
+const getExpiryStatus = (expiration_date?: string): 'expired' | 'soon' | null => {
+  if (!expiration_date) return null;
+  const now = new Date();
+  const exp = new Date(expiration_date);
+  const diffDays = Math.floor((exp.getTime() - now.getTime()) / 86400000);
+  if (diffDays < 0) return 'expired';
+  if (diffDays <= 3) return 'soon';
+  return null;
+};
+
 const Pantry: React.FC = () => {
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -19,6 +29,7 @@ const Pantry: React.FC = () => {
     unit: 'cup',
     category: 'Other',
     is_staple: false,
+    expiration_date: '',
   });
 
   useEffect(() => {
@@ -104,6 +115,7 @@ const Pantry: React.FC = () => {
         quantity: parseFloat(newItem.quantity),
         unit: newItem.unit,
         is_staple: newItem.is_staple,
+        expiration_date: newItem.expiration_date || undefined,
       });
 
       // Reset form and reload pantry
@@ -113,6 +125,7 @@ const Pantry: React.FC = () => {
         unit: 'cup',
         category: 'Other',
         is_staple: false,
+        expiration_date: '',
       });
       setShowAddForm(false);
       loadPantry();
@@ -164,12 +177,36 @@ const Pantry: React.FC = () => {
         quantity: editingItem.quantity,
         unit: editingItem.unit,
         is_staple: editingItem.is_staple,
+        expiration_date: editingItem.expiration_date || undefined,
       });
       setEditingItem(null);
       loadPantry();
     } catch (error) {
       console.error('Error updating pantry item:', error);
       showNotification('error', 'Failed to update item');
+    }
+  };
+
+  const handleAddAllStaplesToGrocery = async () => {
+    const lowStockStaples = pantryItems.filter(item => item.is_staple && (item.quantity || 0) < 5);
+    if (lowStockStaples.length === 0) {
+      showNotification('error', 'No low-stock staples to add');
+      return;
+    }
+    try {
+      const weekStartDate = getWeekStartDate();
+      for (const item of lowStockStaples) {
+        await groceryApi.addManual({
+          ingredient_name: item.ingredient_name,
+          quantity: 5,
+          unit: item.unit || 'unit',
+          week_start_date: weekStartDate,
+        });
+      }
+      showNotification('success', `Added ${lowStockStaples.length} low-stock staple${lowStockStaples.length > 1 ? 's' : ''} to grocery list!`);
+    } catch (error) {
+      console.error('Error adding staples to grocery:', error);
+      showNotification('error', 'Failed to add staples to grocery list');
     }
   };
 
@@ -218,9 +255,16 @@ const Pantry: React.FC = () => {
       )}
       <div className={styles.header}>
         <h1>Pantry</h1>
-        <button onClick={() => setShowAddForm(!showAddForm)} className={styles.addButton}>
-          {showAddForm ? 'Cancel' : 'Add Item'}
-        </button>
+        <div className={styles.headerActions}>
+          {pantryItems.some(item => item.is_staple && (item.quantity || 0) < 5) && (
+            <button onClick={handleAddAllStaplesToGrocery} className={styles.staplesButton}>
+              + Restock Staples
+            </button>
+          )}
+          <button onClick={() => setShowAddForm(!showAddForm)} className={styles.addButton}>
+            {showAddForm ? 'Cancel' : 'Add Item'}
+          </button>
+        </div>
       </div>
 
       {/* Recommended Recipes Section */}
@@ -384,18 +428,30 @@ const Pantry: React.FC = () => {
                 </select>
               </div>
             </div>
-            <div className={styles.formGroup}>
-              <label className={styles.checkboxLabel}>
+            <div className={styles.formRow}>
+              <div className={styles.formGroup}>
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={newItem.is_staple}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, is_staple: e.target.checked })
+                    }
+                    className={styles.checkbox}
+                  />
+                  <span>Mark as staple (always keep in stock)</span>
+                </label>
+              </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="expiration_date">Expiration Date (optional)</label>
                 <input
-                  type="checkbox"
-                  checked={newItem.is_staple}
-                  onChange={(e) =>
-                    setNewItem({ ...newItem, is_staple: e.target.checked })
-                  }
-                  className={styles.checkbox}
+                  type="date"
+                  id="expiration_date"
+                  value={newItem.expiration_date}
+                  onChange={(e) => setNewItem({ ...newItem, expiration_date: e.target.value })}
+                  className={styles.input}
                 />
-                <span>Mark as staple (always keep in stock)</span>
-              </label>
+              </div>
             </div>
             <button type="submit" className={styles.submitButton}>
               Add to Pantry
@@ -496,6 +552,16 @@ const Pantry: React.FC = () => {
                   <span>Mark as staple</span>
                 </label>
               </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="edit_expiration_date">Expiration Date (optional)</label>
+                <input
+                  type="date"
+                  id="edit_expiration_date"
+                  value={editingItem.expiration_date || ''}
+                  onChange={(e) => setEditingItem({ ...editingItem, expiration_date: e.target.value })}
+                  className={styles.input}
+                />
+              </div>
               <div className={styles.modalActions}>
                 <button onClick={handleUpdateItem} className={styles.submitButton}>
                   Save Changes
@@ -524,16 +590,24 @@ const Pantry: React.FC = () => {
               <div className={styles.itemsList}>
                 {items.map((item) => {
                   const isLowStock = (item.quantity || 0) < 5;
+                  const expiryStatus = getExpiryStatus(item.expiration_date);
                   return (
-                    <div key={item.id} className={`${styles.item} ${isLowStock ? styles.lowStock : ''}`}>
+                    <div key={item.id} className={`${styles.item} ${isLowStock ? styles.lowStock : ''} ${expiryStatus === 'expired' ? styles.expired : expiryStatus === 'soon' ? styles.expiringSoon : ''}`}>
                       <div className={styles.itemContent}>
                         <div className={styles.itemInfo}>
                           <div className={styles.itemName}>
                             {item.ingredient_name}
                             {item.is_staple && <span className={styles.staple}>Staple</span>}
+                            {expiryStatus === 'expired' && <span className={styles.expiredBadge}>Expired</span>}
+                            {expiryStatus === 'soon' && <span className={styles.expiringSoonBadge}>Exp. soon</span>}
                           </div>
                           <div className={styles.itemQuantity}>
                             {item.quantity} {item.unit}
+                            {item.expiration_date && (
+                              <span className={styles.expiryDate}>
+                                exp. {new Date(item.expiration_date).toLocaleDateString()}
+                              </span>
+                            )}
                             {isLowStock && <span className={styles.lowStockIndicator}>!</span>}
                           </div>
                         </div>

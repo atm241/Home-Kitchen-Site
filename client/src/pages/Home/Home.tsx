@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { calendarApi, budgetApi } from '../../services/api';
+import { calendarApi, budgetApi, mealsApi } from '../../services/api';
 import { CombinedCalendarItem, Budget } from '../../types';
 import {
   getWeekDays,
@@ -78,6 +78,17 @@ const Home: React.FC = () => {
 
   const handleAddMeal = (day: Date) => {
     navigate('/calendar', { state: { selectedDate: day.toISOString() } });
+  };
+
+  const handleDeleteMeal = async (e: React.MouseEvent, item: CombinedCalendarItem) => {
+    e.stopPropagation();
+    if (item.type !== 'meal') return;
+    try {
+      await mealsApi.delete(item.id);
+      await loadWeekData();
+    } catch (error) {
+      console.error('Error deleting meal:', error);
+    }
   };
 
   const handleEditBudget = () => {
@@ -243,12 +254,19 @@ const Home: React.FC = () => {
                       <div
                         key={`${item.type}-${item.id}`}
                         className={styles.mealItem}
-                        style={{
-                          borderLeftColor: getMealTypeColor(item.meal_type),
-                        }}
+                        style={{ borderLeftColor: getMealTypeColor(item.meal_type) }}
                       >
-                        <div className={styles.mealType}>
-                          {item.meal_type || 'Event'}
+                        <div className={styles.mealItemHeader}>
+                          <div className={styles.mealType}>{item.meal_type || 'Event'}</div>
+                          {item.type === 'meal' && (
+                            <button
+                              className={styles.deleteMealButton}
+                              onClick={(e) => handleDeleteMeal(e, item)}
+                              title="Remove meal"
+                            >
+                              ×
+                            </button>
+                          )}
                         </div>
                         <div className={styles.mealTitle}>{item.title}</div>
                         {item.servings && (
@@ -257,9 +275,7 @@ const Home: React.FC = () => {
                           </div>
                         )}
                         {item.calories && (
-                          <div className={styles.mealCalories}>
-                            {item.calories} cal
-                          </div>
+                          <div className={styles.mealCalories}>{item.calories} cal</div>
                         )}
                       </div>
                     ))}

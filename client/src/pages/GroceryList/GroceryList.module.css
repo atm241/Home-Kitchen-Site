@@ -141,6 +141,53 @@
   text-decoration: line-through;
 }
 
+.actualPriceField {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.dollarSign {
+  font-size: 14px;
+  color: #7F8C8D;
+}
+
+.actualPriceInput {
+  width: 68px;
+  padding: 5px 6px;
+  border: 2px solid #E0E0E0;
+  border-radius: 6px;
+  font-size: 13px;
+  text-align: right;
+  transition: border-color 0.2s ease;
+}
+
+.actualPriceInput:focus {
+  outline: none;
+  border-color: #8BAE66;
+}
+
+.recordSpendButton {
+  padding: 10px 20px;
+  background-color: #E67E22;
+  color: #FFFFFF;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+
+.recordSpendButton:hover:not(:disabled) {
+  background-color: #D35400;
+}
+
+.recordSpendButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .deleteButton {
   width: 28px;
   height: 28px;
@@ -154,7 +201,7 @@
   line-height: 0.8;
   padding-bottom: 2px;
   transition: all 0.2s ease;
-  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .deleteButton:hover {

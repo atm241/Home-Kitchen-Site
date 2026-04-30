@@ -13,6 +13,27 @@
   margin: 0;
 }
 
+.headerActions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.staplesButton {
+  padding: 12px 20px;
+  background-color: #8BAE66;
+  color: #2C3E50;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.staplesButton:hover {
+  background-color: #628141;
+  color: #EBD5AB;
+}
+
 .addButton {
   padding: 12px 24px;
   background-color: #E67E22;
@@ -156,6 +177,44 @@
 
 .item.lowStock:hover {
   background-color: #FFF4E6;
+}
+
+.item.expiringSoon {
+  border-left: 4px solid #E67E22;
+  background-color: #FFF9F0;
+}
+
+.item.expired {
+  border-left: 4px solid #E74C3C;
+  background-color: #FFF5F5;
+}
+
+.item.expired:hover {
+  background-color: #FFEEEE;
+}
+
+.expiredBadge {
+  font-size: 11px;
+  padding: 2px 6px;
+  background-color: #E74C3C;
+  color: #FFFFFF;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.expiringSoonBadge {
+  font-size: 11px;
+  padding: 2px 6px;
+  background-color: #E67E22;
+  color: #FFFFFF;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.expiryDate {
+  font-size: 12px;
+  color: #95A5A6;
+  margin-left: 4px;
 }
 
 .itemContent {

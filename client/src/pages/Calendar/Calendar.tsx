@@ -27,6 +27,8 @@ const Calendar: React.FC = () => {
     meal_type: 'dinner',
     servings: '2',
   });
+  const [editingMealId, setEditingMealId] = useState<number | null>(null);
+  const [editMealData, setEditMealData] = useState({ meal_type: 'dinner', servings: '2' });
 
   const monthDays = getMonthDays(currentDate);
 
@@ -90,6 +92,38 @@ const Calendar: React.FC = () => {
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 4000);
+  };
+
+  const handleDeleteMeal = async (mealId: number) => {
+    try {
+      await mealsApi.delete(mealId);
+      await loadCalendarData();
+      setEditingMealId(null);
+      showNotification('success', 'Meal removed');
+    } catch (error) {
+      console.error('Error deleting meal:', error);
+      showNotification('error', 'Failed to remove meal');
+    }
+  };
+
+  const handleStartEditMeal = (item: CombinedCalendarItem) => {
+    setEditingMealId(item.id);
+    setEditMealData({ meal_type: item.meal_type || 'dinner', servings: item.servings?.toString() || '2' });
+  };
+
+  const handleSaveEditMeal = async (mealId: number) => {
+    try {
+      await mealsApi.update(mealId, {
+        meal_type: editMealData.meal_type,
+        servings: parseInt(editMealData.servings),
+      });
+      await loadCalendarData();
+      setEditingMealId(null);
+      showNotification('success', 'Meal updated');
+    } catch (error) {
+      console.error('Error updating meal:', error);
+      showNotification('error', 'Failed to update meal');
+    }
   };
 
   const handleScheduleMeal = async (e: React.FormEvent) => {
@@ -192,17 +226,63 @@ const Calendar: React.FC = () => {
       </div>
 
       {showMealModal && selectedDate && (
-        <div className={styles.modalOverlay} onClick={() => setShowMealModal(false)}>
+        <div className={styles.modalOverlay} onClick={() => { setShowMealModal(false); setEditingMealId(null); }}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>Schedule Meal</h2>
-              <button onClick={() => setShowMealModal(false)} className={styles.closeButton}>
+              <button onClick={() => { setShowMealModal(false); setEditingMealId(null); }} className={styles.closeButton}>
                 ×
               </button>
             </div>
             <p className={styles.selectedDateText}>
               {formatDate(selectedDate, 'EEEE, MMMM d, yyyy')}
             </p>
+
+            {getItemsForDay(selectedDate).filter(i => i.type === 'meal').length > 0 && (
+              <div className={styles.existingMeals}>
+                <h3 className={styles.existingMealsTitle}>Scheduled meals</h3>
+                {getItemsForDay(selectedDate).filter(i => i.type === 'meal').map(item => (
+                  <div key={item.id} className={styles.existingMealRow}>
+                    {editingMealId === item.id ? (
+                      <div className={styles.inlineMealEdit}>
+                        <select
+                          value={editMealData.meal_type}
+                          onChange={e => setEditMealData({ ...editMealData, meal_type: e.target.value })}
+                          className={styles.inlineSelect}
+                        >
+                          <option value="breakfast">Breakfast</option>
+                          <option value="lunch">Lunch</option>
+                          <option value="dinner">Dinner</option>
+                        </select>
+                        <input
+                          type="number"
+                          min="1"
+                          value={editMealData.servings}
+                          onChange={e => setEditMealData({ ...editMealData, servings: e.target.value })}
+                          className={styles.inlineServingsInput}
+                        />
+                        <span className={styles.servingsLabel}>srv</span>
+                        <button className={styles.inlineSaveButton} onClick={() => handleSaveEditMeal(item.id)}>✓</button>
+                        <button className={styles.inlineCancelButton} onClick={() => setEditingMealId(null)}>✕</button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className={styles.existingMealInfo}>
+                          <span className={styles.existingMealType}>{item.meal_type}</span>
+                          <span className={styles.existingMealTitle}>{item.title}</span>
+                          <span className={styles.existingMealServings}>{item.servings} srv</span>
+                        </div>
+                        <div className={styles.existingMealActions}>
+                          <button className={styles.inlineEditButton} onClick={() => handleStartEditMeal(item)} title="Edit">✎</button>
+                          <button className={styles.inlineDeleteButton} onClick={() => handleDeleteMeal(item.id)} title="Delete">×</button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
             <form onSubmit={handleScheduleMeal} className={styles.form}>
               <div className={styles.formGroup}>
                 <label htmlFor="recipe">Recipe *</label>

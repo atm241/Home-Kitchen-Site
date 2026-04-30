@@ -173,7 +173,176 @@
 .selectedDateText {
   font-size: 16px;
   color: #7F8C8D;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
+}
+
+.existingMeals {
+  background-color: #F8F9FA;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.existingMealsTitle {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #7F8C8D;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.existingMealRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #E0E0E0;
+}
+
+.existingMealRow:last-child {
+  border-bottom: none;
+}
+
+.existingMealInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.existingMealType {
+  font-size: 12px;
+  font-weight: 600;
+  color: #7F8C8D;
+  text-transform: capitalize;
+  flex-shrink: 0;
+}
+
+.existingMealTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: #2C3E50;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.existingMealServings {
+  font-size: 12px;
+  color: #95A5A6;
+  flex-shrink: 0;
+}
+
+.existingMealActions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.inlineEditButton,
+.inlineDeleteButton {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.inlineEditButton {
+  background-color: #E0E0E0;
+  color: #2C3E50;
+}
+
+.inlineEditButton:hover {
+  background-color: #E67E22;
+  color: #FFFFFF;
+}
+
+.inlineDeleteButton {
+  background-color: #E0E0E0;
+  color: #2C3E50;
+  font-size: 20px;
+}
+
+.inlineDeleteButton:hover {
+  background-color: #E74C3C;
+  color: #FFFFFF;
+}
+
+.inlineMealEdit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.inlineSelect {
+  padding: 5px 8px;
+  border: 2px solid #E0E0E0;
+  border-radius: 6px;
+  font-size: 14px;
+  flex: 1;
+}
+
+.inlineSelect:focus {
+  outline: none;
+  border-color: #628141;
+}
+
+.inlineServingsInput {
+  width: 52px;
+  padding: 5px 8px;
+  border: 2px solid #E0E0E0;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.inlineServingsInput:focus {
+  outline: none;
+  border-color: #628141;
+}
+
+.servingsLabel {
+  font-size: 13px;
+  color: #7F8C8D;
+}
+
+.inlineSaveButton,
+.inlineCancelButton {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.inlineSaveButton {
+  background-color: #628141;
+  color: #FFFFFF;
+}
+
+.inlineSaveButton:hover {
+  background-color: #8BAE66;
+}
+
+.inlineCancelButton {
+  background-color: #E0E0E0;
+  color: #2C3E50;
+}
+
+.inlineCancelButton:hover {
+  background-color: #BDBDBD;
 }
 
 .form {

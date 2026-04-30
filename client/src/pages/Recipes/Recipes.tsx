@@ -11,6 +11,7 @@ const Recipes: React.FC = () => {
   const [importUrl, setImportUrl] = useState('');
   const [importing, setImporting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
@@ -67,10 +68,15 @@ const Recipes: React.FC = () => {
   // Get all categories for filter
   const categories = ['All', ...Object.keys(groupedRecipes).sort()];
 
-  // Filter recipes based on selected category
-  const filteredRecipes = selectedCategory === 'All'
-    ? recipes
-    : recipes.filter(recipe => (recipe.category || 'Uncategorized') === selectedCategory);
+  // Filter recipes based on selected category and search query
+  const filteredRecipes = recipes.filter(recipe => {
+    const matchesCategory = selectedCategory === 'All' || (recipe.category || 'Uncategorized') === selectedCategory;
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = !q ||
+      recipe.name.toLowerCase().includes(q) ||
+      (recipe.description?.toLowerCase().includes(q) ?? false);
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <div className={styles.container}>
@@ -103,23 +109,32 @@ const Recipes: React.FC = () => {
         </form>
       </div>
 
-      {recipes.length > 0 && (
-        <div className={styles.filterSection}>
-          <label htmlFor="category-filter">Filter by Category:</label>
-          <select
-            id="category-filter"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className={styles.select}
-          >
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      <div className={styles.filterSection}>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search recipes..."
+          className={styles.searchInput}
+        />
+        {recipes.length > 0 && (
+          <div className={styles.categoryFilter}>
+            <label htmlFor="category-filter">Category:</label>
+            <select
+              id="category-filter"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className={styles.select}
+            >
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
       <div className={styles.recipesGrid}>
         {recipes.length === 0 ? (

@@ -177,12 +177,39 @@
   margin-bottom: 0;
 }
 
+.mealItemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
 .mealType {
   font-size: 12px;
   font-weight: 600;
   color: #7F8C8D;
   text-transform: capitalize;
-  margin-bottom: 4px;
+}
+
+.deleteMealButton {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: transparent;
+  color: #BDC3C7;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.deleteMealButton:hover {
+  background-color: #E74C3C;
+  color: #FFFFFF;
 }
 
 .mealTitle {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { groceryApi, recommendationsApi, IngredientCombo } from '../../services/api';
+import { groceryApi, budgetApi, recommendationsApi, IngredientCombo } from '../../services/api';
 import { GroceryItem } from '../../types';
 import { getWeekStartDate, getWeekEndDate } from '../../utils/dateUtils';
 import styles from './GroceryList.module.css';
@@ -11,6 +11,8 @@ const GroceryList: React.FC = () => {
   const [ingredientCombos, setIngredientCombos] = useState<IngredientCombo[]>([]);
   const [loadingCombos, setLoadingCombos] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [actualPrices, setActualPrices] = useState<Record<number, string>>({});
+  const [savingActual, setSavingActual] = useState(false);
   const weekStartDate = getWeekStartDate();
   const [manualItem, setManualItem] = useState({ name: '', quantity: '1', unit: 'unit' });
 
@@ -148,6 +150,38 @@ const GroceryList: React.FC = () => {
     } catch (error) {
       console.error('Error clearing grocery list:', error);
       showNotification('error', 'Failed to clear grocery list');
+    }
+  };
+
+  const handleActualPriceChange = (id: number, value: string) => {
+    setActualPrices(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleRecordActualSpend = async () => {
+    try {
+      setSavingActual(true);
+      // Save each entered price to the item's store_price
+      for (const [idStr, priceStr] of Object.entries(actualPrices)) {
+        const price = parseFloat(priceStr);
+        if (!isNaN(price) && price >= 0) {
+          await groceryApi.update(parseInt(idStr), { store_price: price });
+        }
+      }
+      // Sum all actual costs (store_price * quantity for each item)
+      const updatedList = await groceryApi.getList(weekStartDate);
+      const actualTotal = updatedList.data.reduce((sum, item) => {
+        const price = item.store_price ?? item.estimated_price ?? 0;
+        return sum + price * (item.quantity || 1);
+      }, 0);
+      await budgetApi.updateActual(weekStartDate, actualTotal);
+      showNotification('success', `Actual spend recorded: $${actualTotal.toFixed(2)}`);
+      setActualPrices({});
+      await loadGroceryList();
+    } catch (error) {
+      console.error('Error recording actual spend:', error);
+      showNotification('error', 'Failed to record actual spend');
+    } finally {
+      setSavingActual(false);
     }
   };
 
@@ -306,13 +340,20 @@ const GroceryList: React.FC = () => {
           </div>
           <div className={styles.summaryItem}>
             <span className={styles.summaryLabel}>Purchased:</span>
-            <span className={styles.summaryValue}>
-              {purchasedCount} / {groceryItems.length}
-            </span>
+            <span className={styles.summaryValue}>{purchasedCount} / {groceryItems.length}</span>
           </div>
           <div className={styles.summaryItem}>
             <span className={styles.summaryLabel}>Estimated Cost:</span>
             <span className={styles.summaryValue}>${totalEstimatedCost.toFixed(2)}</span>
+          </div>
+          <div className={styles.summaryItem}>
+            <button
+              onClick={handleRecordActualSpend}
+              className={styles.recordSpendButton}
+              disabled={savingActual}
+            >
+              {savingActual ? 'Saving...' : 'Record Actual Spend'}
+            </button>
           </div>
         </div>
       )}
@@ -371,9 +412,7 @@ const GroceryList: React.FC = () => {
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    className={`${styles.item} ${
-                      item.is_purchased ? styles.purchased : ''
-                    }`}
+                    className={`${styles.item} ${item.is_purchased ? styles.purchased : ''}`}
                   >
                     <input
                       type="checkbox"
@@ -387,10 +426,23 @@ const GroceryList: React.FC = () => {
                         {item.quantity} {item.unit}
                         {item.estimated_price && (
                           <span className={styles.price}>
-                            ${(item.estimated_price * (item.quantity || 1)).toFixed(2)}
+                            est. ${(item.estimated_price * (item.quantity || 1)).toFixed(2)}
                           </span>
                         )}
                       </div>
+                    </div>
+                    <div className={styles.actualPriceField}>
+                      <span className={styles.dollarSign}>$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder={item.store_price?.toFixed(2) ?? '0.00'}
+                        value={actualPrices[item.id] ?? ''}
+                        onChange={(e) => handleActualPriceChange(item.id, e.target.value)}
+                        className={styles.actualPriceInput}
+                        title="Actual price paid"
+                      />
                     </div>
                     <button
                       onClick={() => handleDeleteItem(item.id)}

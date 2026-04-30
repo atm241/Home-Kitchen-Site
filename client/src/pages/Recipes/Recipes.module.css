@@ -88,12 +88,35 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
-.filterSection label {
+.searchInput {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 12px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #8BAE66;
+}
+
+.categoryFilter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.categoryFilter label {
   font-weight: 600;
   color: #2C3E50;
   font-size: 16px;
+  white-space: nowrap;
 }
 
 .select {
