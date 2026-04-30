@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { recipesApi, pantryApi, groceryApi } from '../../services/api';
-import { Recipe, CreateRecipeIngredient } from '../../types';
+import { Recipe } from '../../types';
 import { getWeekStartDate } from '../../utils/dateUtils';
 import styles from './RecipeDetail.module.css';
 
@@ -174,7 +174,7 @@ const RecipeDetail: React.FC = () => {
         carbs: editForm.carbs ? parseFloat(editForm.carbs) : undefined,
         fat: editForm.fat ? parseFloat(editForm.fat) : undefined,
         fiber: editForm.fiber ? parseFloat(editForm.fiber) : undefined,
-        ingredients,
+        ingredients: ingredients as any,
       });
 
       await loadRecipe(recipe.id);
