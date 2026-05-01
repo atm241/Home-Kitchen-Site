@@ -145,4 +145,97 @@ router.post('/:week_start_date/recalculate', async (req: Request, res: Response)
   }
 });
 
+// Get monthly budget + aggregated costs from all overlapping weeks
+router.get('/monthly', async (req: Request, res: Response) => {
+  try {
+    const { month } = req.query; // expects YYYY-MM
+    if (!month || !/^\d{4}-\d{2}$/.test(month as string)) {
+      return res.status(400).json({ error: 'month is required in YYYY-MM format' });
+    }
+
+    const [year, mon] = (month as string).split('-').map(Number);
+    const firstDay = `${month}-01`;
+    const lastDay = new Date(year, mon, 0); // last day of month
+    const lastDayStr = lastDay.toISOString().split('T')[0];
+
+    // Get monthly budget settings
+    const monthlyResult = await pool.query(
+      'SELECT * FROM monthly_budgets WHERE month = $1',
+      [month]
+    );
+
+    // Aggregate estimated and actual costs from weekly budgets that overlap this month.
+    // A week (7 days starting at week_start_date) overlaps if:
+    //   week_start_date <= last day of month AND week_start_date + 6 days >= first day of month
+    const weeklyResult = await pool.query(`
+      SELECT
+        COALESCE(SUM(estimated_cost), 0) AS estimated_cost,
+        COALESCE(SUM(actual_cost), 0) AS actual_cost
+      FROM budgets
+      WHERE week_start_date <= $1
+        AND week_start_date + INTERVAL '6 days' >= $2
+    `, [lastDayStr, firstDay]);
+
+    const monthly = monthlyResult.rows[0];
+    const agg = weeklyResult.rows[0];
+
+    res.json({
+      month,
+      budget_amount: monthly?.budget_amount ?? 0,
+      calorie_budget: monthly?.calorie_budget ?? null,
+      estimated_cost: parseFloat(agg.estimated_cost),
+      actual_cost: parseFloat(agg.actual_cost),
+    });
+  } catch (error) {
+    console.error('Error fetching monthly budget:', error);
+    res.status(500).json({ error: 'Failed to fetch monthly budget' });
+  }
+});
+
+// Create or update monthly budget
+router.post('/monthly', async (req: Request, res: Response) => {
+  try {
+    const { month, budget_amount, calorie_budget } = req.body;
+    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ error: 'month is required in YYYY-MM format' });
+    }
+    if (budget_amount === undefined) {
+      return res.status(400).json({ error: 'budget_amount is required' });
+    }
+
+    await pool.query(`
+      INSERT INTO monthly_budgets (month, budget_amount, calorie_budget)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (month) DO UPDATE SET
+        budget_amount = EXCLUDED.budget_amount,
+        calorie_budget = EXCLUDED.calorie_budget
+    `, [month, budget_amount, calorie_budget ?? null]);
+
+    // Re-fetch with aggregated costs
+    const [year, mon] = month.split('-').map(Number);
+    const firstDay = `${month}-01`;
+    const lastDay = new Date(year, mon, 0).toISOString().split('T')[0];
+    const weeklyResult = await pool.query(`
+      SELECT
+        COALESCE(SUM(estimated_cost), 0) AS estimated_cost,
+        COALESCE(SUM(actual_cost), 0) AS actual_cost
+      FROM budgets
+      WHERE week_start_date <= $1
+        AND week_start_date + INTERVAL '6 days' >= $2
+    `, [lastDay, firstDay]);
+
+    const agg = weeklyResult.rows[0];
+    res.status(201).json({
+      month,
+      budget_amount,
+      calorie_budget: calorie_budget ?? null,
+      estimated_cost: parseFloat(agg.estimated_cost),
+      actual_cost: parseFloat(agg.actual_cost),
+    });
+  } catch (error) {
+    console.error('Error creating/updating monthly budget:', error);
+    res.status(500).json({ error: 'Failed to create/update monthly budget' });
+  }
+});
+
 export default router;

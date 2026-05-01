@@ -8,7 +8,6 @@ import type {
   CalendarEvent,
   CombinedCalendarItem,
   GroceryItem,
-  Budget,
   GroceryPrice,
   MealPortion,
 } from '../types';
@@ -103,14 +102,21 @@ export const groceryApi = {
   addPrice: (price: Partial<GroceryPrice>) => api.post<GroceryPrice>('/grocery/prices', price),
 };
 
+export interface MonthlyBudget {
+  month: string;
+  budget_amount: number;
+  calorie_budget?: number | null;
+  estimated_cost: number;
+  actual_cost: number;
+}
+
 // Budget
 export const budgetApi = {
-  get: (weekStartDate: string) => api.get<Budget>('/budget', { params: { week_start_date: weekStartDate } }),
-  getAll: () => api.get<Budget[]>('/budget/all'),
-  createOrUpdate: (budget: Partial<Budget>) => api.post<Budget>('/budget', budget),
   updateActual: (weekStartDate: string, actualCost: number) =>
-    api.patch<Budget>(`/budget/${weekStartDate}/actual`, { actual_cost: actualCost }),
-  recalculate: (weekStartDate: string) => api.post<Budget>(`/budget/${weekStartDate}/recalculate`),
+    api.patch(`/budget/${weekStartDate}/actual`, { actual_cost: actualCost }),
+  getMonthly: (month: string) => api.get<MonthlyBudget>('/budget/monthly', { params: { month } }),
+  createOrUpdateMonthly: (data: { month: string; budget_amount: number; calorie_budget?: number }) =>
+    api.post<MonthlyBudget>('/budget/monthly', data),
 };
 
 // Recommendations

@@ -27,6 +27,162 @@
   color: #2C3E50;
 }
 
+.budgetCard {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.budgetCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.budgetCardHeader h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #2C3E50;
+}
+
+.editBudgetButton {
+  padding: 8px 16px;
+  background-color: #E67E22;
+  color: #FFFFFF;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.editBudgetButton:hover {
+  background-color: #D35400;
+}
+
+.budgetForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.budgetFormRow {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.budgetFormLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2C3E50;
+}
+
+.budgetInput {
+  padding: 8px 12px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 15px;
+  width: 160px;
+  transition: border-color 0.2s ease;
+}
+
+.budgetInput:focus {
+  outline: none;
+  border-color: #8BAE66;
+}
+
+.budgetFormActions {
+  display: flex;
+  gap: 10px;
+}
+
+.saveBudgetButton {
+  padding: 8px 20px;
+  background-color: #628141;
+  color: #EBD5AB;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.saveBudgetButton:hover {
+  background-color: #8BAE66;
+  color: #2C3E50;
+}
+
+.cancelBudgetButton {
+  padding: 8px 20px;
+  background-color: #E0E0E0;
+  color: #2C3E50;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.cancelBudgetButton:hover {
+  background-color: #BDBDBD;
+}
+
+.budgetStats {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.budgetStat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.budgetStatLabel {
+  font-size: 13px;
+  color: #7F8C8D;
+}
+
+.budgetStatValue {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2C3E50;
+}
+
+.budgetStatValue.overBudget {
+  color: #E74C3C;
+}
+
+.budgetBarWrap {
+  height: 8px;
+  background-color: #E0E0E0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.budgetBarFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.calorieGoal {
+  font-size: 13px;
+  color: #7F8C8D;
+}
+
+.noBudget {
+  color: #95A5A6;
+  font-size: 14px;
+  margin: 0;
+}
+
 .calendar {
   background-color: #FFFFFF;
   border-radius: 12px;

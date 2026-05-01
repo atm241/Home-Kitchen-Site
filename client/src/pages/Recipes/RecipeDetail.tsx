@@ -152,7 +152,7 @@ const RecipeDetail: React.FC = () => {
     }
 
     try {
-      const ingredients: CreateRecipeIngredient[] = editForm.ingredients
+      const ingredients = editForm.ingredients
         .filter(ing => ing.name.trim())
         .map(ing => ({
           name: ing.name.trim(),

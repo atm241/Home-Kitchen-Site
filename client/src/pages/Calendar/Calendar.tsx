@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { calendarApi, recipesApi, mealsApi } from '../../services/api';
+import { calendarApi, recipesApi, mealsApi, budgetApi, MonthlyBudget } from '../../services/api';
 import { CombinedCalendarItem, Recipe } from '../../types';
 import {
   getMonthDays,
@@ -29,8 +29,12 @@ const Calendar: React.FC = () => {
   });
   const [editingMealId, setEditingMealId] = useState<number | null>(null);
   const [editMealData, setEditMealData] = useState({ meal_type: 'dinner', servings: '2' });
+  const [monthlyBudget, setMonthlyBudget] = useState<MonthlyBudget | null>(null);
+  const [editingBudget, setEditingBudget] = useState(false);
+  const [budgetForm, setBudgetForm] = useState({ budget_amount: '', calorie_budget: '' });
 
   const monthDays = getMonthDays(currentDate);
+  const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
 
   // Handle incoming selected date from navigation
   useEffect(() => {
@@ -70,6 +74,14 @@ const Calendar: React.FC = () => {
     } finally {
       setLoading(false);
     }
+
+    // Load budget separately so a failure here never blocks the calendar
+    try {
+      const budgetResponse = await budgetApi.getMonthly(currentMonth);
+      setMonthlyBudget(budgetResponse.data);
+    } catch (error) {
+      console.error('Error loading monthly budget:', error);
+    }
   };
 
   const getItemsForDay = (day: Date) => {
@@ -92,6 +104,23 @@ const Calendar: React.FC = () => {
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 4000);
+  };
+
+  const handleSaveBudget = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await budgetApi.createOrUpdateMonthly({
+        month: currentMonth,
+        budget_amount: parseFloat(budgetForm.budget_amount) || 0,
+        calorie_budget: budgetForm.calorie_budget ? parseInt(budgetForm.calorie_budget) : undefined,
+      });
+      setMonthlyBudget(response.data);
+      setEditingBudget(false);
+      showNotification('success', 'Budget saved!');
+    } catch (error) {
+      console.error('Error saving monthly budget:', error);
+      showNotification('error', 'Failed to save budget');
+    }
   };
 
   const handleDeleteMeal = async (mealId: number) => {
@@ -182,6 +211,102 @@ const Calendar: React.FC = () => {
         <button onClick={handleNextMonth} className={styles.navButton}>
           Next →
         </button>
+      </div>
+
+      <div className={styles.budgetCard}>
+        <div className={styles.budgetCardHeader}>
+          <h2>Monthly Budget</h2>
+          {!editingBudget && (
+            <button
+              onClick={() => {
+                setBudgetForm({
+                  budget_amount: monthlyBudget?.budget_amount?.toString() ?? '',
+                  calorie_budget: monthlyBudget?.calorie_budget?.toString() ?? '',
+                });
+                setEditingBudget(true);
+              }}
+              className={styles.editBudgetButton}
+            >
+              {monthlyBudget && monthlyBudget.budget_amount > 0 ? 'Edit' : 'Set Budget'}
+            </button>
+          )}
+        </div>
+
+        {editingBudget ? (
+          <form onSubmit={handleSaveBudget} className={styles.budgetForm}>
+            <div className={styles.budgetFormRow}>
+              <label className={styles.budgetFormLabel}>
+                Monthly Budget ($)
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={budgetForm.budget_amount}
+                  onChange={e => setBudgetForm({ ...budgetForm, budget_amount: e.target.value })}
+                  className={styles.budgetInput}
+                  placeholder="0.00"
+                  autoFocus
+                />
+              </label>
+              <label className={styles.budgetFormLabel}>
+                Daily Calorie Goal
+                <input
+                  type="number"
+                  min="0"
+                  value={budgetForm.calorie_budget}
+                  onChange={e => setBudgetForm({ ...budgetForm, calorie_budget: e.target.value })}
+                  className={styles.budgetInput}
+                  placeholder="2000"
+                />
+              </label>
+            </div>
+            <div className={styles.budgetFormActions}>
+              <button type="submit" className={styles.saveBudgetButton}>Save</button>
+              <button type="button" onClick={() => setEditingBudget(false)} className={styles.cancelBudgetButton}>Cancel</button>
+            </div>
+          </form>
+        ) : monthlyBudget && monthlyBudget.budget_amount > 0 ? (
+          <>
+            <div className={styles.budgetStats}>
+              <div className={styles.budgetStat}>
+                <span className={styles.budgetStatLabel}>Budget</span>
+                <span className={styles.budgetStatValue}>${monthlyBudget.budget_amount.toFixed(2)}</span>
+              </div>
+              <div className={styles.budgetStat}>
+                <span className={styles.budgetStatLabel}>Estimated</span>
+                <span className={styles.budgetStatValue}>${monthlyBudget.estimated_cost.toFixed(2)}</span>
+              </div>
+              <div className={styles.budgetStat}>
+                <span className={styles.budgetStatLabel}>Actual Spent</span>
+                <span className={styles.budgetStatValue}>${monthlyBudget.actual_cost.toFixed(2)}</span>
+              </div>
+              <div className={styles.budgetStat}>
+                <span className={styles.budgetStatLabel}>Remaining</span>
+                <span className={`${styles.budgetStatValue} ${
+                  monthlyBudget.budget_amount - monthlyBudget.actual_cost < 0 ? styles.overBudget : ''
+                }`}>
+                  ${(monthlyBudget.budget_amount - monthlyBudget.actual_cost).toFixed(2)}
+                </span>
+              </div>
+            </div>
+            <div className={styles.budgetBarWrap}>
+              <div
+                className={styles.budgetBarFill}
+                style={{
+                  width: `${Math.min((monthlyBudget.actual_cost / monthlyBudget.budget_amount) * 100, 100)}%`,
+                  backgroundColor: monthlyBudget.actual_cost > monthlyBudget.budget_amount ? '#E74C3C' : '#8BAE66',
+                }}
+              />
+            </div>
+            {monthlyBudget.calorie_budget && (
+              <div className={styles.calorieGoal}>
+                Daily calorie goal: {monthlyBudget.calorie_budget} cal
+              </div>
+            )}
+          </>
+        ) : (
+          <p className={styles.noBudget}>No budget set for this month. Click "Set Budget" to get started.</p>
+        )}
       </div>
 
       <div className={styles.calendar}>
