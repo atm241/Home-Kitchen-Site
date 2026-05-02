@@ -43,11 +43,19 @@ export async function scrapeRecipe(url: string): Promise<ScrapedRecipe> {
         try {
           const jsonData = JSON.parse($(element).html() || '{}');
 
-          // Handle array of schemas
+          // Flatten: handle plain object, array, or @graph wrapper (Yoast/WordPress)
           const schemas = Array.isArray(jsonData) ? jsonData : [jsonData];
-          const recipeSchema = schemas.find(
-            (schema) => schema['@type'] === 'Recipe'
-          );
+          const allNodes: any[] = [];
+          for (const s of schemas) {
+            if (s['@graph'] && Array.isArray(s['@graph'])) {
+              allNodes.push(...s['@graph']);
+            } else {
+              allNodes.push(s);
+            }
+          }
+          const isRecipeType = (t: any) =>
+            t === 'Recipe' || (Array.isArray(t) && t.includes('Recipe'));
+          const recipeSchema = allNodes.find((s) => isRecipeType(s['@type']));
 
           if (recipeSchema) {
             console.log('Found Recipe schema in JSON-LD');

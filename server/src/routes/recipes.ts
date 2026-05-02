@@ -117,10 +117,12 @@ router.post('/', async (req: Request, res: Response) => {
           ingredientId = ingResult.rows[0].id;
         }
 
-        // Link ingredient to recipe
+        // Link ingredient to recipe (sum quantities if same ingredient appears twice)
         await client.query(`
           INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit, notes)
           VALUES ($1, $2, $3, $4, $5)
+          ON CONFLICT (recipe_id, ingredient_id) DO UPDATE
+            SET quantity = COALESCE(recipe_ingredients.quantity, 0) + COALESCE(EXCLUDED.quantity, 0)
         `, [recipe.id, ingredientId, ing.quantity, ing.unit, ing.notes]);
       }
     }
@@ -210,10 +212,12 @@ router.post('/import', async (req: Request, res: Response) => {
 
         const ingredientId = ingResult.rows[0].id;
 
-        // Link ingredient to recipe
+        // Link ingredient to recipe (sum quantities if same ingredient appears twice)
         await client.query(`
           INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit, notes)
           VALUES ($1, $2, $3, $4, $5)
+          ON CONFLICT (recipe_id, ingredient_id) DO UPDATE
+            SET quantity = COALESCE(recipe_ingredients.quantity, 0) + COALESCE(EXCLUDED.quantity, 0)
         `, [recipe.id, ingredientId, ing.quantity, ing.unit, ing.notes]);
       }
     }
@@ -318,6 +322,8 @@ router.put('/:id', async (req: Request, res: Response) => {
           await client.query(`
             INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit, notes)
             VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (recipe_id, ingredient_id) DO UPDATE
+              SET quantity = COALESCE(recipe_ingredients.quantity, 0) + COALESCE(EXCLUDED.quantity, 0)
           `, [id, ingredientId, ing.quantity, ing.unit, ing.notes]);
         }
       }
