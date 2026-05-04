@@ -646,3 +646,99 @@
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Recipe image */
+.recipeImageWrap {
+  width: calc(100% + 64px);
+  margin: -32px -32px 24px -32px;
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
+  height: 260px;
+}
+.recipeImage { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Badge row */
+.badgeRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.difficultyBadge {
+  display: inline-block;
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+/* Dietary tags */
+.dietaryTagsRow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.dietaryTag {
+  padding: 3px 10px;
+  background-color: #f0f7ea;
+  color: #628141;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Favorite + print buttons */
+.favoriteButton {
+  padding: 10px 18px;
+  border: 2px solid #E67E22;
+  border-radius: 8px;
+  background: #fff;
+  color: #E67E22;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.favoriteButton:hover { background-color: #E67E22; color: #fff; }
+.favoriteButtonActive { background-color: #E67E22; color: #fff; }
+
+.printButton {
+  padding: 10px 18px;
+  border: 2px solid #628141;
+  border-radius: 8px;
+  background: #fff;
+  color: #628141;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.printButton:hover { background-color: #628141; color: #EBD5AB; }
+
+/* Personal notes */
+.notesSection {
+  background-color: #fffbf0;
+  border-left: 4px solid #E67E22;
+  border-radius: 0 8px 8px 0;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+.notesSection h2 { margin-top: 0; margin-bottom: 8px; font-size: 18px; color: #E67E22; }
+.notesText { color: #2C3E50; line-height: 1.6; margin: 0; white-space: pre-wrap; }
+
+/* Edit dietary tags */
+.editDietaryTags { display: flex; flex-wrap: wrap; gap: 8px; }
+.editDietaryTag {
+  padding: 6px 14px;
+  border: 2px solid #E0E0E0;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #2C3E50;
+  transition: all 0.2s ease;
+}
+.editDietaryTag:hover { border-color: #628141; color: #628141; }
+.editDietaryTagActive { border-color: #628141; background-color: #628141; color: #fff; }
+
+/* Print styles */
+@media print {
+  .noPrint { display: none !important; }
+  .container { padding: 0; max-width: 100%; }
+  .content { box-shadow: none; padding: 0; border-radius: 0; }
+  .recipeImageWrap { height: 200px; }
+}

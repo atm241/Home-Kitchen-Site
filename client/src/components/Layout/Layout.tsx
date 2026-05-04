@@ -53,6 +53,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             >
               Grocery List
             </Link>
+            <Link
+              to="/history"
+              className={`${styles.navLink} ${isActive('/history') ? styles.active : ''}`}
+            >
+              Cook History
+            </Link>
           </nav>
         </div>
       </header>

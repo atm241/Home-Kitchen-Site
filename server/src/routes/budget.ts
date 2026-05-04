@@ -183,6 +183,9 @@ router.get('/monthly', async (req: Request, res: Response) => {
       month,
       budget_amount: monthly?.budget_amount ?? 0,
       calorie_budget: monthly?.calorie_budget ?? null,
+      protein_goal: monthly?.protein_goal ?? null,
+      carbs_goal: monthly?.carbs_goal ?? null,
+      fat_goal: monthly?.fat_goal ?? null,
       estimated_cost: parseFloat(agg.estimated_cost),
       actual_cost: parseFloat(agg.actual_cost),
     });
@@ -195,7 +198,7 @@ router.get('/monthly', async (req: Request, res: Response) => {
 // Create or update monthly budget
 router.post('/monthly', async (req: Request, res: Response) => {
   try {
-    const { month, budget_amount, calorie_budget } = req.body;
+    const { month, budget_amount, calorie_budget, protein_goal, carbs_goal, fat_goal } = req.body;
     if (!month || !/^\d{4}-\d{2}$/.test(month)) {
       return res.status(400).json({ error: 'month is required in YYYY-MM format' });
     }
@@ -204,12 +207,15 @@ router.post('/monthly', async (req: Request, res: Response) => {
     }
 
     await pool.query(`
-      INSERT INTO monthly_budgets (month, budget_amount, calorie_budget)
-      VALUES ($1, $2, $3)
+      INSERT INTO monthly_budgets (month, budget_amount, calorie_budget, protein_goal, carbs_goal, fat_goal)
+      VALUES ($1, $2, $3, $4, $5, $6)
       ON CONFLICT (month) DO UPDATE SET
         budget_amount = EXCLUDED.budget_amount,
-        calorie_budget = EXCLUDED.calorie_budget
-    `, [month, budget_amount, calorie_budget ?? null]);
+        calorie_budget = EXCLUDED.calorie_budget,
+        protein_goal = EXCLUDED.protein_goal,
+        carbs_goal = EXCLUDED.carbs_goal,
+        fat_goal = EXCLUDED.fat_goal
+    `, [month, budget_amount, calorie_budget ?? null, protein_goal ?? null, carbs_goal ?? null, fat_goal ?? null]);
 
     // Re-fetch with aggregated costs
     const [year, mon] = month.split('-').map(Number);
@@ -229,6 +235,9 @@ router.post('/monthly', async (req: Request, res: Response) => {
       month,
       budget_amount,
       calorie_budget: calorie_budget ?? null,
+      protein_goal: protein_goal ?? null,
+      carbs_goal: carbs_goal ?? null,
+      fat_goal: fat_goal ?? null,
       estimated_cost: parseFloat(agg.estimated_cost),
       actual_cost: parseFloat(agg.actual_cost),
     });

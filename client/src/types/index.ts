@@ -22,6 +22,11 @@ export interface CreateRecipeIngredient {
   category?: string;
 }
 
+export type DifficultyLevel = 'easy' | 'medium' | 'hard';
+
+export const DIETARY_TAGS = ['Vegetarian', 'Vegan', 'Gluten-Free', 'Dairy-Free', 'Nut-Free', 'Low-Carb', 'Paleo', 'Keto'] as const;
+export type DietaryTag = typeof DIETARY_TAGS[number];
+
 export interface Recipe {
   id: number;
   name: string;
@@ -37,6 +42,11 @@ export interface Recipe {
   carbs?: number;
   fat?: number;
   fiber?: number;
+  image_url?: string;
+  is_favorite?: boolean;
+  dietary_tags?: string[];
+  difficulty?: DifficultyLevel;
+  personal_notes?: string;
   ingredients?: RecipeIngredient[];
   created_at?: string;
   updated_at?: string;
@@ -56,6 +66,10 @@ export interface CreateRecipeInput {
   carbs?: number;
   fat?: number;
   fiber?: number;
+  image_url?: string;
+  dietary_tags?: string[];
+  difficulty?: DifficultyLevel;
+  personal_notes?: string;
   ingredients?: CreateRecipeIngredient[];
 }
 
@@ -151,4 +165,15 @@ export interface MealPortion {
   date_made: string;
   notes?: string;
   created_at?: string;
+}
+
+export interface CookHistoryEntry {
+  id: number;
+  recipe_id?: number;
+  recipe_name: string;
+  servings_cooked?: number;
+  cooked_at: string;
+  image_url?: string;
+  category?: string;
+  calories?: number;
 }

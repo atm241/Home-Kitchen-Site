@@ -7,26 +7,28 @@ import { cleanText } from '../utils/cleanText';
 
 const router = express.Router();
 
+const RECIPE_SELECT = `
+  SELECT r.*,
+    json_agg(
+      json_build_object(
+        'ingredient_id', ri.ingredient_id,
+        'name', i.name,
+        'quantity', ri.quantity,
+        'unit', ri.unit,
+        'notes', ri.notes
+      )
+    ) FILTER (WHERE i.id IS NOT NULL) as ingredients
+  FROM recipes r
+  LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
+  LEFT JOIN ingredients i ON ri.ingredient_id = i.id
+`;
+
 // Get all recipes
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const result = await pool.query(`
-      SELECT r.*,
-        json_agg(
-          json_build_object(
-            'ingredient_id', ri.ingredient_id,
-            'name', i.name,
-            'quantity', ri.quantity,
-            'unit', ri.unit,
-            'notes', ri.notes
-          )
-        ) as ingredients
-      FROM recipes r
-      LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
-      LEFT JOIN ingredients i ON ri.ingredient_id = i.id
-      GROUP BY r.id
-      ORDER BY r.created_at DESC
-    `);
+    const result = await pool.query(
+      RECIPE_SELECT + ' GROUP BY r.id ORDER BY r.created_at DESC'
+    );
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching recipes:', error);
@@ -39,28 +41,11 @@ router.get('/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
-    const result = await pool.query(`
-      SELECT r.*,
-        json_agg(
-          json_build_object(
-            'ingredient_id', ri.ingredient_id,
-            'name', i.name,
-            'quantity', ri.quantity,
-            'unit', ri.unit,
-            'notes', ri.notes
-          )
-        ) FILTER (WHERE i.id IS NOT NULL) as ingredients
-      FROM recipes r
-      LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
-      LEFT JOIN ingredients i ON ri.ingredient_id = i.id
-      WHERE r.id = $1
-      GROUP BY r.id
-    `, [id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Recipe not found' });
-    }
-
+    const result = await pool.query(
+      RECIPE_SELECT + ' WHERE r.id = $1 GROUP BY r.id',
+      [id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Recipe not found' });
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error fetching recipe:', error);
@@ -75,80 +60,48 @@ router.post('/', async (req: Request, res: Response) => {
     await client.query('BEGIN');
 
     const {
-      name,
-      description,
-      source_url,
-      category,
-      servings,
-      prep_time,
-      cook_time,
-      instructions,
-      calories,
-      protein,
-      carbs,
-      fat,
-      fiber,
-      ingredients
+      name, description, source_url, category, servings, prep_time, cook_time,
+      instructions, calories, protein, carbs, fat, fiber,
+      image_url, dietary_tags, difficulty, personal_notes, ingredients,
     } = req.body;
 
-    // Insert recipe
     const recipeResult = await client.query(`
-      INSERT INTO recipes (name, description, source_url, category, servings, prep_time, cook_time, instructions, calories, protein, carbs, fat, fiber)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      INSERT INTO recipes (name, description, source_url, category, servings, prep_time, cook_time,
+        instructions, calories, protein, carbs, fat, fiber, image_url, dietary_tags, difficulty, personal_notes)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
       RETURNING *
-    `, [name, description, source_url, category, servings, prep_time, cook_time, instructions, calories, protein, carbs, fat, fiber]);
+    `, [name, description, source_url, category, servings, prep_time, cook_time,
+        instructions, calories, protein, carbs, fat, fiber,
+        image_url ?? null, dietary_tags ?? [], difficulty ?? 'medium', personal_notes ?? null]);
 
     const recipe = recipeResult.rows[0];
 
-    // Insert ingredients
     if (ingredients && ingredients.length > 0) {
       for (const ing of ingredients) {
-        // Check if ingredient exists, if not create it
         let ingredientId = ing.ingredient_id;
         if (!ingredientId && ing.name) {
-          // Use AI categorization if category not provided
-          const category = ing.category || await categorizeIngredient(ing.name);
+          const cat = ing.category || await categorizeIngredient(ing.name);
           const ingResult = await client.query(`
-            INSERT INTO ingredients (name, category)
-            VALUES ($1, $2)
-            ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-            RETURNING id
-          `, [ing.name, category]);
+            INSERT INTO ingredients (name, category) VALUES ($1, $2)
+            ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id
+          `, [ing.name, cat]);
           ingredientId = ingResult.rows[0].id;
         }
-
-        // Link ingredient to recipe (sum quantities if same ingredient appears twice)
         await client.query(`
           INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit, notes)
-          VALUES ($1, $2, $3, $4, $5)
+          VALUES ($1,$2,$3,$4,$5)
           ON CONFLICT (recipe_id, ingredient_id) DO UPDATE
-            SET quantity = COALESCE(recipe_ingredients.quantity, 0) + COALESCE(EXCLUDED.quantity, 0)
+            SET quantity = COALESCE(recipe_ingredients.quantity,0) + COALESCE(EXCLUDED.quantity,0)
         `, [recipe.id, ingredientId, ing.quantity, ing.unit, ing.notes]);
       }
     }
 
     await client.query('COMMIT');
 
-    // Fetch the complete recipe with ingredients
-    const completeRecipe = await pool.query(`
-      SELECT r.*,
-        json_agg(
-          json_build_object(
-            'ingredient_id', ri.ingredient_id,
-            'name', i.name,
-            'quantity', ri.quantity,
-            'unit', ri.unit,
-            'notes', ri.notes
-          )
-        ) FILTER (WHERE i.id IS NOT NULL) as ingredients
-      FROM recipes r
-      LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
-      LEFT JOIN ingredients i ON ri.ingredient_id = i.id
-      WHERE r.id = $1
-      GROUP BY r.id
-    `, [recipe.id]);
-
-    res.status(201).json(completeRecipe.rows[0]);
+    const complete = await pool.query(
+      RECIPE_SELECT + ' WHERE r.id = $1 GROUP BY r.id', [recipe.id]
+    );
+    res.status(201).json(complete.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error creating recipe:', error);
@@ -163,87 +116,51 @@ router.post('/import', async (req: Request, res: Response) => {
   const client = await pool.connect();
   try {
     const { url } = req.body;
+    if (!url) return res.status(400).json({ error: 'URL is required' });
 
-    if (!url) {
-      return res.status(400).json({ error: 'URL is required' });
-    }
-
-    // Scrape the recipe data
     const scrapedData = await scrapeRecipe(url);
-
     console.log('Scraped recipe data:', JSON.stringify(scrapedData, null, 2));
 
     await client.query('BEGIN');
 
-    // Insert recipe into database
     const recipeResult = await client.query(`
-      INSERT INTO recipes (name, description, source_url, category, servings, prep_time, cook_time, instructions, calories, protein, carbs, fat, fiber)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      INSERT INTO recipes (name, description, source_url, category, servings, prep_time, cook_time,
+        instructions, calories, protein, carbs, fat, fiber, image_url)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
       RETURNING *
     `, [
-      scrapedData.name,
-      scrapedData.description,
-      url,
-      scrapedData.category || null,
-      scrapedData.servings || 4, // Default to 4 servings if not provided
-      scrapedData.prep_time,
-      scrapedData.cook_time,
-      scrapedData.instructions,
-      scrapedData.calories,
-      scrapedData.protein,
-      scrapedData.carbs,
-      scrapedData.fat,
-      scrapedData.fiber
+      scrapedData.name, scrapedData.description, url, scrapedData.category ?? null,
+      scrapedData.servings || 4, scrapedData.prep_time, scrapedData.cook_time,
+      scrapedData.instructions, scrapedData.calories, scrapedData.protein,
+      scrapedData.carbs, scrapedData.fat, scrapedData.fiber,
+      scrapedData.image_url ?? null,
     ]);
 
     const recipe = recipeResult.rows[0];
 
-    // Insert ingredients
     if (scrapedData.ingredients && scrapedData.ingredients.length > 0) {
       for (const ing of scrapedData.ingredients) {
-        // Check if ingredient exists, if not create it with AI categorization
-        const category = await categorizeIngredient(ing.name);
+        const cat = await categorizeIngredient(ing.name);
         const ingResult = await client.query(`
-          INSERT INTO ingredients (name, category)
-          VALUES ($1, $2)
-          ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-          RETURNING id
-        `, [ing.name, category]);
-
+          INSERT INTO ingredients (name, category) VALUES ($1,$2)
+          ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id
+        `, [ing.name, cat]);
         const ingredientId = ingResult.rows[0].id;
-
-        // Link ingredient to recipe (sum quantities if same ingredient appears twice)
         await client.query(`
           INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit, notes)
-          VALUES ($1, $2, $3, $4, $5)
+          VALUES ($1,$2,$3,$4,$5)
           ON CONFLICT (recipe_id, ingredient_id) DO UPDATE
-            SET quantity = COALESCE(recipe_ingredients.quantity, 0) + COALESCE(EXCLUDED.quantity, 0)
+            SET quantity = COALESCE(recipe_ingredients.quantity,0) + COALESCE(EXCLUDED.quantity,0)
         `, [recipe.id, ingredientId, ing.quantity, ing.unit, ing.notes]);
       }
     }
 
     await client.query('COMMIT');
 
-    // Fetch the complete recipe with ingredients
-    const completeRecipe = await pool.query(`
-      SELECT r.*,
-        json_agg(
-          json_build_object(
-            'ingredient_id', ri.ingredient_id,
-            'name', i.name,
-            'quantity', ri.quantity,
-            'unit', ri.unit,
-            'notes', ri.notes
-          )
-        ) FILTER (WHERE i.id IS NOT NULL) as ingredients
-      FROM recipes r
-      LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
-      LEFT JOIN ingredients i ON ri.ingredient_id = i.id
-      WHERE r.id = $1
-      GROUP BY r.id
-    `, [recipe.id]);
-
-    res.status(201).json(completeRecipe.rows[0]);
+    const complete = await pool.query(
+      RECIPE_SELECT + ' WHERE r.id = $1 GROUP BY r.id', [recipe.id]
+    );
+    res.status(201).json(complete.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error importing recipe:', error);
@@ -262,68 +179,48 @@ router.put('/:id', async (req: Request, res: Response) => {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
 
-    // Get existing recipe first for partial updates
-    const existingRecipe = await client.query('SELECT * FROM recipes WHERE id = $1', [id]);
+    const existingResult = await client.query('SELECT * FROM recipes WHERE id = $1', [id]);
+    if (existingResult.rows.length === 0) return res.status(404).json({ error: 'Recipe not found' });
 
-    if (existingRecipe.rows.length === 0) {
-      return res.status(404).json({ error: 'Recipe not found' });
-    }
-
-    const existing = existingRecipe.rows[0];
-
-    // Merge existing data with updates
+    const e = existingResult.rows[0];
     const {
-      name = existing.name,
-      description = existing.description,
-      source_url = existing.source_url,
-      category = existing.category,
-      servings = existing.servings,
-      prep_time = existing.prep_time,
-      cook_time = existing.cook_time,
-      instructions = existing.instructions,
-      calories = existing.calories,
-      protein = existing.protein,
-      carbs = existing.carbs,
-      fat = existing.fat,
-      fiber = existing.fiber,
-      ingredients
+      name = e.name, description = e.description, source_url = e.source_url,
+      category = e.category, servings = e.servings, prep_time = e.prep_time,
+      cook_time = e.cook_time, instructions = e.instructions, calories = e.calories,
+      protein = e.protein, carbs = e.carbs, fat = e.fat, fiber = e.fiber,
+      image_url = e.image_url, dietary_tags = e.dietary_tags, difficulty = e.difficulty,
+      personal_notes = e.personal_notes, ingredients,
     } = req.body;
 
-    // Update recipe
     await client.query(`
       UPDATE recipes
-      SET name = $1, description = $2, source_url = $3, category = $4, servings = $5,
-          prep_time = $6, cook_time = $7, instructions = $8, calories = $9,
-          protein = $10, carbs = $11, fat = $12, fiber = $13, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $14
-    `, [name, description, source_url, category, servings, prep_time, cook_time, instructions, calories, protein, carbs, fat, fiber, id]);
+      SET name=$1, description=$2, source_url=$3, category=$4, servings=$5,
+          prep_time=$6, cook_time=$7, instructions=$8, calories=$9,
+          protein=$10, carbs=$11, fat=$12, fiber=$13, image_url=$14,
+          dietary_tags=$15, difficulty=$16, personal_notes=$17, updated_at=CURRENT_TIMESTAMP
+      WHERE id=$18
+    `, [name, description, source_url, category, servings, prep_time, cook_time,
+        instructions, calories, protein, carbs, fat, fiber, image_url,
+        dietary_tags, difficulty, personal_notes, id]);
 
-    // Only update ingredients if provided in the request
     if (ingredients !== undefined) {
-      // Delete existing recipe ingredients
       await client.query('DELETE FROM recipe_ingredients WHERE recipe_id = $1', [id]);
-
-      // Insert new ingredients
       if (ingredients.length > 0) {
         for (const ing of ingredients) {
           let ingredientId = ing.ingredient_id;
           if (!ingredientId && ing.name) {
-            // Use AI categorization if category not provided
-            const category = ing.category || await categorizeIngredient(ing.name);
+            const cat = ing.category || await categorizeIngredient(ing.name);
             const ingResult = await client.query(`
-              INSERT INTO ingredients (name, category)
-              VALUES ($1, $2)
-              ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-              RETURNING id
-            `, [ing.name, category]);
+              INSERT INTO ingredients (name, category) VALUES ($1,$2)
+              ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id
+            `, [ing.name, cat]);
             ingredientId = ingResult.rows[0].id;
           }
-
           await client.query(`
             INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit, notes)
-            VALUES ($1, $2, $3, $4, $5)
+            VALUES ($1,$2,$3,$4,$5)
             ON CONFLICT (recipe_id, ingredient_id) DO UPDATE
-              SET quantity = COALESCE(recipe_ingredients.quantity, 0) + COALESCE(EXCLUDED.quantity, 0)
+              SET quantity = COALESCE(recipe_ingredients.quantity,0) + COALESCE(EXCLUDED.quantity,0)
           `, [id, ingredientId, ing.quantity, ing.unit, ing.notes]);
         }
       }
@@ -331,25 +228,9 @@ router.put('/:id', async (req: Request, res: Response) => {
 
     await client.query('COMMIT');
 
-    // Fetch updated recipe
-    const result = await pool.query(`
-      SELECT r.*,
-        json_agg(
-          json_build_object(
-            'ingredient_id', ri.ingredient_id,
-            'name', i.name,
-            'quantity', ri.quantity,
-            'unit', ri.unit,
-            'notes', ri.notes
-          )
-        ) FILTER (WHERE i.id IS NOT NULL) as ingredients
-      FROM recipes r
-      LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
-      LEFT JOIN ingredients i ON ri.ingredient_id = i.id
-      WHERE r.id = $1
-      GROUP BY r.id
-    `, [id]);
-
+    const result = await pool.query(
+      RECIPE_SELECT + ' WHERE r.id = $1 GROUP BY r.id', [id]
+    );
     res.json(result.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
@@ -357,6 +238,23 @@ router.put('/:id', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to update recipe' });
   } finally {
     client.release();
+  }
+});
+
+// Toggle favorite
+router.patch('/:id/favorite', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
+    const result = await pool.query(
+      'UPDATE recipes SET is_favorite = NOT is_favorite WHERE id = $1 RETURNING is_favorite',
+      [id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Recipe not found' });
+    res.json({ is_favorite: result.rows[0].is_favorite });
+  } catch (error) {
+    console.error('Error toggling favorite:', error);
+    res.status(500).json({ error: 'Failed to toggle favorite' });
   }
 });
 
@@ -376,43 +274,26 @@ router.delete('/:id', async (req: Request, res: Response) => {
 // Filter recipes by nutritional goals
 router.get('/filter/nutritional', async (req: Request, res: Response) => {
   try {
-    const { maxCarbs, minProtein, minVegetables } = req.query;
+    const { maxCarbs, minProtein, dietaryTag } = req.query;
 
-    let query = `
-      SELECT DISTINCT r.*,
-        json_agg(
-          json_build_object(
-            'ingredient_id', ri.ingredient_id,
-            'name', i.name,
-            'quantity', ri.quantity,
-            'unit', ri.unit,
-            'notes', ri.notes
-          )
-        ) as ingredients
-      FROM recipes r
-      LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
-      LEFT JOIN ingredients i ON ri.ingredient_id = i.id
-      WHERE 1=1
-    `;
-
+    let query = RECIPE_SELECT + ' WHERE 1=1';
     const params: any[] = [];
-    let paramCount = 1;
+    let p = 1;
 
     if (maxCarbs) {
-      query += ` AND r.carbs <= $${paramCount}`;
+      query += ` AND r.carbs <= $${p++}`;
       params.push(parseFloat(maxCarbs as string));
-      paramCount++;
     }
-
     if (minProtein) {
-      query += ` AND r.protein >= $${paramCount}`;
+      query += ` AND r.protein >= $${p++}`;
       params.push(parseFloat(minProtein as string));
-      paramCount++;
+    }
+    if (dietaryTag) {
+      query += ` AND $${p++} = ANY(r.dietary_tags)`;
+      params.push(dietaryTag as string);
     }
 
-    // TODO: Add vegetable count logic if needed
-
-    query += ` GROUP BY r.id ORDER BY r.created_at DESC`;
+    query += ' GROUP BY r.id ORDER BY r.created_at DESC';
 
     const result = await pool.query(query, params);
     res.json(result.rows);
@@ -429,18 +310,14 @@ router.post('/import-spoonacular/:id', async (req: Request, res: Response) => {
     const spoonacularId = parseInt(req.params.id);
     console.log(`📥 Importing recipe from Spoonacular ID: ${spoonacularId}`);
 
-    // Get recipe details from Spoonacular
     const spoonacularRecipe = await getRecipeDetails(spoonacularId);
 
     await client.query('BEGIN');
 
-    // Insert recipe into database
     const recipeResult = await client.query(`
-      INSERT INTO recipes (
-        name, description, source_url, servings, prep_time, cook_time,
-        instructions, calories, protein, carbs, fat, fiber
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      INSERT INTO recipes (name, description, source_url, servings, prep_time, cook_time,
+        instructions, calories, protein, carbs, fat, fiber, image_url)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
       RETURNING *
     `, [
       spoonacularRecipe.title,
@@ -448,56 +325,42 @@ router.post('/import-spoonacular/:id', async (req: Request, res: Response) => {
       spoonacularRecipe.sourceUrl,
       spoonacularRecipe.servings,
       spoonacularRecipe.readyInMinutes,
-      spoonacularRecipe.readyInMinutes, // Using readyInMinutes for both prep and cook
+      spoonacularRecipe.readyInMinutes,
       spoonacularRecipe.instructions || '',
       spoonacularRecipe.nutrition?.nutrients.find((n: any) => n.name === 'Calories')?.amount || null,
       spoonacularRecipe.nutrition?.nutrients.find((n: any) => n.name === 'Protein')?.amount || null,
       spoonacularRecipe.nutrition?.nutrients.find((n: any) => n.name === 'Carbohydrates')?.amount || null,
       spoonacularRecipe.nutrition?.nutrients.find((n: any) => n.name === 'Fat')?.amount || null,
       spoonacularRecipe.nutrition?.nutrients.find((n: any) => n.name === 'Fiber')?.amount || null,
+      spoonacularRecipe.image || null,
     ]);
 
     const recipe = recipeResult.rows[0];
     console.log(`✅ Recipe created with ID: ${recipe.id}`);
 
-    // Insert ingredients
     for (const ingredient of spoonacularRecipe.extendedIngredients) {
-      // Find or create ingredient
       let ingredientResult = await client.query(
-        'SELECT id FROM ingredients WHERE LOWER(name) = LOWER($1)',
-        [ingredient.name]
+        'SELECT id FROM ingredients WHERE LOWER(name) = LOWER($1)', [ingredient.name]
       );
-
       let ingredientId: number;
       if (ingredientResult.rows.length > 0) {
         ingredientId = ingredientResult.rows[0].id;
       } else {
-        // Create new ingredient with AI categorization
-        const category = await categorizeIngredient(ingredient.name);
+        const cat = await categorizeIngredient(ingredient.name);
         const newIngredient = await client.query(
-          'INSERT INTO ingredients (name, category) VALUES ($1, $2) RETURNING id',
-          [ingredient.name, category]
+          'INSERT INTO ingredients (name, category) VALUES ($1,$2) RETURNING id',
+          [ingredient.name, cat]
         );
         ingredientId = newIngredient.rows[0].id;
-        console.log(`✅ Created ingredient: ${ingredient.name} (${category})`);
       }
-
-      // Insert recipe ingredient
       await client.query(`
         INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit, notes)
-        VALUES ($1, $2, $3, $4, $5)
-      `, [
-        recipe.id,
-        ingredientId,
-        ingredient.amount || null,
-        ingredient.unit || null,
-        null
-      ]);
+        VALUES ($1,$2,$3,$4,$5)
+      `, [recipe.id, ingredientId, ingredient.amount || null, ingredient.unit || null, null]);
     }
 
     await client.query('COMMIT');
     console.log(`✅ Successfully imported recipe: ${recipe.name}`);
-
     res.status(201).json(recipe);
   } catch (error) {
     await client.query('ROLLBACK');

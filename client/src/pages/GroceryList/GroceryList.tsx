@@ -225,6 +225,41 @@ const GroceryList: React.FC = () => {
 
   const purchasedCount = groceryItems.filter((item) => item.is_purchased).length;
 
+  const handleShareList = async () => {
+    const lines: string[] = [`🛒 Grocery List\n`];
+    const grouped = groceryItems.reduce((acc, item) => {
+      const cat = item.category || 'Other';
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(item);
+      return acc;
+    }, {} as Record<string, GroceryItem[]>);
+
+    for (const [category, items] of Object.entries(grouped)) {
+      lines.push(`\n${category}:`);
+      for (const item of items) {
+        const check = item.is_purchased ? '✓' : '○';
+        const price = item.estimated_price ? ` (~$${(item.estimated_price * (item.quantity || 1)).toFixed(2)})` : '';
+        lines.push(`  ${check} ${item.quantity ?? ''} ${item.unit ?? ''} ${item.ingredient_name}${price}`.trim());
+      }
+    }
+
+    const text = lines.join('\n');
+
+    try {
+      await navigator.clipboard.writeText(text);
+      showNotification('success', 'Grocery list copied to clipboard!');
+    } catch {
+      // Fallback: open in new tab
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'grocery-list.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  };
+
   if (loading) {
     return <div className={styles.loading}>Loading grocery list...</div>;
   }
@@ -248,6 +283,12 @@ const GroceryList: React.FC = () => {
           </button>
           {groceryItems.length > 0 && (
             <>
+              <button
+                onClick={handleShareList}
+                className={styles.shareButton}
+              >
+                Copy List
+              </button>
               <button
                 onClick={handleAddToPantry}
                 className={styles.addToPantryButton}

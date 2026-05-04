@@ -2,8 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { recipesApi } from '../../services/api';
 import { Recipe } from '../../types';
-import sanitizeHtml from 'sanitize-html';
+import { DIETARY_TAGS } from '../../types';
 import styles from './Recipes.module.css';
+
+const DIFFICULTY_COLORS: Record<string, string> = {
+  easy: '#2ecc71',
+  medium: '#E67E22',
+  hard: '#e74c3c',
+};
 
 const Recipes: React.FC = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -12,6 +18,8 @@ const Recipes: React.FC = () => {
   const [importing, setImporting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [selectedDietaryTags, setSelectedDietaryTags] = useState<string[]>([]);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
@@ -37,45 +45,54 @@ const Recipes: React.FC = () => {
   const handleImport = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!importUrl) return;
-
     try {
       setImporting(true);
       await recipesApi.importFromUrl(importUrl);
       setImportUrl('');
       loadRecipes();
     } catch (error) {
-      console.error('Error importing recipe:', error);
       showNotification('error', 'Failed to import recipe. Please try again.');
     } finally {
       setImporting(false);
     }
   };
 
-  if (loading) {
-    return <div className={styles.loading}>Loading recipes...</div>;
-  }
+  const handleToggleFavorite = async (e: React.MouseEvent, recipe: Recipe) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const res = await recipesApi.toggleFavorite(recipe.id);
+      setRecipes(prev => prev.map(r => r.id === recipe.id ? { ...r, is_favorite: res.data.is_favorite } : r));
+    } catch (error) {
+      showNotification('error', 'Failed to update favorite');
+    }
+  };
 
-  // Group recipes by category
+  const toggleDietaryTag = (tag: string) => {
+    setSelectedDietaryTags(prev =>
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  };
+
+  if (loading) return <div className={styles.loading}>Loading recipes...</div>;
+
   const groupedRecipes = recipes.reduce((acc, recipe) => {
     const category = recipe.category || 'Uncategorized';
-    if (!acc[category]) {
-      acc[category] = [];
-    }
+    if (!acc[category]) acc[category] = [];
     acc[category].push(recipe);
     return acc;
   }, {} as Record<string, Recipe[]>);
 
-  // Get all categories for filter
   const categories = ['All', ...Object.keys(groupedRecipes).sort()];
 
-  // Filter recipes based on selected category and search query
   const filteredRecipes = recipes.filter(recipe => {
     const matchesCategory = selectedCategory === 'All' || (recipe.category || 'Uncategorized') === selectedCategory;
     const q = searchQuery.toLowerCase();
-    const matchesSearch = !q ||
-      recipe.name.toLowerCase().includes(q) ||
-      (recipe.description?.toLowerCase().includes(q) ?? false);
-    return matchesCategory && matchesSearch;
+    const matchesSearch = !q || recipe.name.toLowerCase().includes(q) || (recipe.description?.toLowerCase().includes(q) ?? false);
+    const matchesFavorites = !showFavoritesOnly || recipe.is_favorite;
+    const matchesDietary = selectedDietaryTags.length === 0 ||
+      selectedDietaryTags.every(tag => recipe.dietary_tags?.includes(tag));
+    return matchesCategory && matchesSearch && matchesFavorites && matchesDietary;
   });
 
   return (
@@ -127,14 +144,36 @@ const Recipes: React.FC = () => {
               className={styles.select}
             >
               {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
+                <option key={category} value={category}>{category}</option>
               ))}
             </select>
           </div>
         )}
+        <button
+          className={`${styles.favoritesBtn} ${showFavoritesOnly ? styles.favoritesBtnActive : ''}`}
+          onClick={() => setShowFavoritesOnly(prev => !prev)}
+          title="Show favorites only"
+        >
+          {showFavoritesOnly ? '★ Favorites' : '☆ Favorites'}
+        </button>
       </div>
+
+      {DIETARY_TAGS.length > 0 && (
+        <div className={styles.dietaryFilterSection}>
+          <span className={styles.dietaryFilterLabel}>Dietary:</span>
+          <div className={styles.dietaryChips}>
+            {DIETARY_TAGS.map(tag => (
+              <button
+                key={tag}
+                className={`${styles.dietaryChip} ${selectedDietaryTags.includes(tag) ? styles.dietaryChipActive : ''}`}
+                onClick={() => toggleDietaryTag(tag)}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className={styles.recipesGrid}>
         {recipes.length === 0 ? (
@@ -143,21 +182,53 @@ const Recipes: React.FC = () => {
           </div>
         ) : filteredRecipes.length === 0 ? (
           <div className={styles.noRecipes}>
-            <p>No recipes in this category.</p>
+            <p>No recipes match your filters.</p>
           </div>
         ) : (
           filteredRecipes.map((recipe) => (
             <Link key={recipe.id} to={`/recipes/${recipe.id}`} className={styles.recipeCard}>
-              {recipe.category && (
-                <div className={styles.categoryBadge}>{recipe.category}</div>
+              {recipe.image_url && (
+                <div className={styles.cardImageWrap}>
+                  <img src={recipe.image_url} alt={recipe.name} className={styles.cardImage} />
+                </div>
               )}
-              <h3>{recipe.name}</h3>
-              {recipe.description && (
-                <p className={styles.description}>{recipe.description}</p>
-              )}
-              <div className={styles.recipeInfo}>
-                <span>{recipe.servings} servings</span>
-                {recipe.calories && <span>{recipe.calories} cal</span>}
+              <div className={styles.cardBody}>
+                <div className={styles.cardBadgeRow}>
+                  {recipe.category && (
+                    <span className={styles.categoryBadge}>{recipe.category}</span>
+                  )}
+                  {recipe.difficulty && (
+                    <span
+                      className={styles.difficultyBadge}
+                      style={{ backgroundColor: DIFFICULTY_COLORS[recipe.difficulty] ?? '#999' }}
+                    >
+                      {recipe.difficulty}
+                    </span>
+                  )}
+                  <button
+                    className={`${styles.favoriteBtn} ${recipe.is_favorite ? styles.favoriteBtnActive : ''}`}
+                    onClick={(e) => handleToggleFavorite(e, recipe)}
+                    title={recipe.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
+                  >
+                    {recipe.is_favorite ? '★' : '☆'}
+                  </button>
+                </div>
+                <h3>{recipe.name}</h3>
+                {recipe.description && (
+                  <p className={styles.description}>{recipe.description}</p>
+                )}
+                {recipe.dietary_tags && recipe.dietary_tags.length > 0 && (
+                  <div className={styles.cardDietaryTags}>
+                    {recipe.dietary_tags.map(tag => (
+                      <span key={tag} className={styles.cardDietaryTag}>{tag}</span>
+                    ))}
+                  </div>
+                )}
+                <div className={styles.recipeInfo}>
+                  <span>{recipe.servings} servings</span>
+                  {recipe.calories && <span>{recipe.calories} cal</span>}
+                  {recipe.prep_time && <span>{recipe.prep_time + (recipe.cook_time || 0)} min</span>}
+                </div>
               </div>
             </Link>
           ))

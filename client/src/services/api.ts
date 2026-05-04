@@ -10,15 +10,14 @@ import type {
   GroceryItem,
   GroceryPrice,
   MealPortion,
+  CookHistoryEntry,
 } from '../types';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
 // Recipes
@@ -28,9 +27,10 @@ export const recipesApi = {
   create: (recipe: CreateRecipeInput) => api.post<Recipe>('/recipes', recipe),
   update: (id: number, recipe: Partial<Recipe>) => api.put<Recipe>(`/recipes/${id}`, recipe),
   delete: (id: number) => api.delete(`/recipes/${id}`),
+  toggleFavorite: (id: number) => api.patch<{ is_favorite: boolean }>(`/recipes/${id}/favorite`),
   importFromUrl: (url: string) => api.post<Recipe>('/recipes/import', { url }),
   importFromSpoonacular: (id: number) => api.post<Recipe>(`/recipes/import-spoonacular/${id}`),
-  filterByNutrition: (params: { maxCarbs?: number; minProtein?: number; minVegetables?: number }) =>
+  filterByNutrition: (params: { maxCarbs?: number; minProtein?: number; dietaryTag?: string }) =>
     api.get<Recipe[]>('/recipes/filter/nutritional', { params }),
 };
 
@@ -84,7 +84,8 @@ export const calendarApi = {
 
 // Grocery List
 export const groceryApi = {
-  getList: (weekStartDate: string) => api.get<GroceryItem[]>('/grocery', { params: { week_start_date: weekStartDate } }),
+  getList: (weekStartDate: string) =>
+    api.get<GroceryItem[]>('/grocery', { params: { week_start_date: weekStartDate } }),
   generate: (data: { week_start_date: string; week_end_date: string }) =>
     api.post<GroceryItem[]>('/grocery/generate', data),
   addManual: (data: { ingredient_name: string; quantity?: number; unit?: string; week_start_date: string }) =>
@@ -95,8 +96,10 @@ export const groceryApi = {
     api.patch<GroceryItem>(`/grocery/${id}/purchase`, { is_purchased: isPurchased }),
   update: (id: number, item: Partial<GroceryItem>) => api.put<GroceryItem>(`/grocery/${id}`, item),
   delete: (id: number) => api.delete(`/grocery/${id}`),
-  clearList: (weekStartDate: string) => api.delete('/grocery/clear', { params: { week_start_date: weekStartDate } }),
-  addPurchasedToPantry: (weekStartDate: string) => api.post('/grocery/add-to-pantry', { week_start_date: weekStartDate }),
+  clearList: (weekStartDate: string) =>
+    api.delete('/grocery/clear', { params: { week_start_date: weekStartDate } }),
+  addPurchasedToPantry: (weekStartDate: string) =>
+    api.post('/grocery/add-to-pantry', { week_start_date: weekStartDate }),
   getPrices: (storeName?: string) =>
     api.get<GroceryPrice[]>('/grocery/prices', { params: storeName ? { store_name: storeName } : {} }),
   addPrice: (price: Partial<GroceryPrice>) => api.post<GroceryPrice>('/grocery/prices', price),
@@ -106,6 +109,9 @@ export interface MonthlyBudget {
   month: string;
   budget_amount: number;
   calorie_budget?: number | null;
+  protein_goal?: number | null;
+  carbs_goal?: number | null;
+  fat_goal?: number | null;
   estimated_cost: number;
   actual_cost: number;
 }
@@ -115,8 +121,14 @@ export const budgetApi = {
   updateActual: (weekStartDate: string, actualCost: number) =>
     api.patch(`/budget/${weekStartDate}/actual`, { actual_cost: actualCost }),
   getMonthly: (month: string) => api.get<MonthlyBudget>('/budget/monthly', { params: { month } }),
-  createOrUpdateMonthly: (data: { month: string; budget_amount: number; calorie_budget?: number }) =>
-    api.post<MonthlyBudget>('/budget/monthly', data),
+  createOrUpdateMonthly: (data: {
+    month: string;
+    budget_amount: number;
+    calorie_budget?: number;
+    protein_goal?: number;
+    carbs_goal?: number;
+    fat_goal?: number;
+  }) => api.post<MonthlyBudget>('/budget/monthly', data),
 };
 
 // Recommendations
@@ -137,10 +149,7 @@ export interface RecipeRecommendation {
 
 export interface IngredientCombo {
   id: string;
-  ingredients: Array<{
-    name: string;
-    image?: string;
-  }>;
+  ingredients: Array<{ name: string; image?: string }>;
   unlockedRecipes: Array<{
     id: number;
     title: string;
@@ -157,6 +166,15 @@ export const recommendationsApi = {
     api.get<RecipeRecommendation[]>('/recommendations', forceRefresh ? { params: { refresh: true } } : undefined),
   getIngredientCombos: (forceRefresh = false) =>
     api.get<IngredientCombo[]>('/recommendations/ingredient-combos', forceRefresh ? { params: { refresh: true } } : undefined),
+};
+
+// Cook History
+export const cookHistoryApi = {
+  getAll: (limit?: number) =>
+    api.get<CookHistoryEntry[]>('/cook-history', limit ? { params: { limit } } : undefined),
+  log: (entry: { recipe_id?: number; recipe_name: string; servings_cooked?: number }) =>
+    api.post<CookHistoryEntry>('/cook-history', entry),
+  delete: (id: number) => api.delete(`/cook-history/${id}`),
 };
 
 export default api;

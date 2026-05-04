@@ -12,6 +12,7 @@ import groceryRoutes from './routes/grocery';
 import calendarRoutes from './routes/calendar';
 import budgetRoutes from './routes/budget';
 import recommendationRoutes from './routes/recommendations';
+import cookHistoryRoutes from './routes/cookHistory';
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ app.use('/api/grocery', groceryRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/budget', budgetRoutes);
 app.use('/api/recommendations', recommendationRoutes);
+app.use('/api/cook-history', cookHistoryRoutes);
 
 // Health check
 app.get('/api/health', async (req: Request, res: Response) => {

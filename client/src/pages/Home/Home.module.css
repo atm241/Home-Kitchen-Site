@@ -301,3 +301,39 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Nutrition card */
+.nutritionCard {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.nutritionCardTitle {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  color: #2C3E50;
+}
+.nutritionStats {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.nutritionStat { display: flex; flex-direction: column; }
+.nutritionStatValue { font-size: 22px; font-weight: 700; color: #E67E22; }
+.nutritionStatLabel { font-size: 12px; color: #7F8C8D; margin-top: 2px; }
+.nutritionBarWrap {
+  height: 8px;
+  background-color: #E0E0E0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.nutritionBarFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+.nutritionHint { margin: 10px 0 0; font-size: 13px; color: #7F8C8D; }
+.nutritionLink { color: #628141; font-weight: 500; }

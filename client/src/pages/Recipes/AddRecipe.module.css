@@ -286,3 +286,23 @@
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+.dietaryTagsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.dietaryTagBtn {
+  padding: 6px 14px;
+  border: 2px solid #E0E0E0;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #2C3E50;
+  transition: all 0.2s ease;
+}
+.dietaryTagBtn:hover { border-color: #628141; color: #628141; }
+.dietaryTagBtnActive { border-color: #628141; background-color: #628141; color: #fff; }

@@ -22,6 +22,7 @@ export interface ScrapedRecipe {
   carbs?: number;
   fat?: number;
   fiber?: number;
+  image_url?: string;
 }
 
 export async function scrapeRecipe(url: string): Promise<ScrapedRecipe> {
@@ -123,6 +124,18 @@ export async function scrapeRecipe(url: string): Promise<ScrapedRecipe> {
               recipe.protein = parseFloat(nutrition.proteinContent) || undefined;
               recipe.carbs = parseFloat(nutrition.carbohydrateContent) || undefined;
               recipe.fat = parseFloat(nutrition.fatContent) || undefined;
+            }
+
+            // Parse image
+            if (recipeSchema.image) {
+              const img = recipeSchema.image;
+              if (typeof img === 'string') {
+                recipe.image_url = img;
+              } else if (Array.isArray(img) && img.length > 0) {
+                recipe.image_url = typeof img[0] === 'string' ? img[0] : img[0]?.url;
+              } else if (img.url) {
+                recipe.image_url = img.url;
+              }
             }
           }
         } catch (e) {

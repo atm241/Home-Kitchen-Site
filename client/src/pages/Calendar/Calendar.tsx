@@ -26,6 +26,9 @@ const Calendar: React.FC = () => {
     recipe_id: '',
     meal_type: 'dinner',
     servings: '2',
+    is_recurring: false,
+    recurrence_pattern: 'weekly',
+    recurrence_end_date: '',
   });
   const [editingMealId, setEditingMealId] = useState<number | null>(null);
   const [editMealData, setEditMealData] = useState({ meal_type: 'dinner', servings: '2' });
@@ -169,7 +172,9 @@ const Calendar: React.FC = () => {
         meal_date: formatDate(selectedDate),
         meal_type: formData.meal_type,
         servings: parseInt(formData.servings),
-        is_recurring: false,
+        is_recurring: formData.is_recurring,
+        recurrence_pattern: formData.is_recurring ? formData.recurrence_pattern : undefined,
+        recurrence_end_date: formData.is_recurring && formData.recurrence_end_date ? formData.recurrence_end_date : undefined,
       });
 
       // Reload calendar data
@@ -177,7 +182,7 @@ const Calendar: React.FC = () => {
 
       // Close modal and reset
       setShowMealModal(false);
-      setFormData({ recipe_id: '', meal_type: 'dinner', servings: '2' });
+      setFormData({ recipe_id: '', meal_type: 'dinner', servings: '2', is_recurring: false, recurrence_pattern: 'weekly', recurrence_end_date: '' });
       showNotification('success', 'Meal scheduled successfully!');
     } catch (error) {
       console.error('Error scheduling meal:', error);
@@ -454,6 +459,47 @@ const Calendar: React.FC = () => {
                   required
                 />
               </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.recurringLabel}>
+                  <input
+                    type="checkbox"
+                    checked={formData.is_recurring}
+                    onChange={(e) => setFormData({ ...formData, is_recurring: e.target.checked })}
+                    className={styles.recurringCheckbox}
+                  />
+                  Repeat this meal
+                </label>
+              </div>
+
+              {formData.is_recurring && (
+                <>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="recurrencePattern">Repeat</label>
+                    <select
+                      id="recurrencePattern"
+                      value={formData.recurrence_pattern}
+                      onChange={(e) => setFormData({ ...formData, recurrence_pattern: e.target.value })}
+                      className={styles.select}
+                    >
+                      <option value="daily">Every day</option>
+                      <option value="weekly">Every week</option>
+                      <option value="biweekly">Every 2 weeks</option>
+                      <option value="monthly">Every month</option>
+                    </select>
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="recurrenceEnd">End Date (optional)</label>
+                    <input
+                      id="recurrenceEnd"
+                      type="date"
+                      value={formData.recurrence_end_date}
+                      onChange={(e) => setFormData({ ...formData, recurrence_end_date: e.target.value })}
+                      className={styles.input}
+                    />
+                  </div>
+                </>
+              )}
 
               <div className={styles.modalActions}>
                 <button type="button" onClick={() => setShowMealModal(false)} className={styles.cancelButton}>
