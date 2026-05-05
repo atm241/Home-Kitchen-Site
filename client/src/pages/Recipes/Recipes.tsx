@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { recipesApi } from '../../services/api';
-import { Recipe } from '../../types';
-import { DIETARY_TAGS } from '../../types';
+import { Recipe, DIETARY_TAGS } from '../../types';
 import styles from './Recipes.module.css';
 
 const DIFFICULTY_COLORS: Record<string, string> = {

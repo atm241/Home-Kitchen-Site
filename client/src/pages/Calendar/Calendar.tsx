@@ -34,7 +34,7 @@ const Calendar: React.FC = () => {
   const [editMealData, setEditMealData] = useState({ meal_type: 'dinner', servings: '2' });
   const [monthlyBudget, setMonthlyBudget] = useState<MonthlyBudget | null>(null);
   const [editingBudget, setEditingBudget] = useState(false);
-  const [budgetForm, setBudgetForm] = useState({ budget_amount: '', calorie_budget: '' });
+  const [budgetForm, setBudgetForm] = useState({ budget_amount: '', calorie_budget: '', protein_goal: '', carbs_goal: '', fat_goal: '' });
 
   const monthDays = getMonthDays(currentDate);
   const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
@@ -116,6 +116,9 @@ const Calendar: React.FC = () => {
         month: currentMonth,
         budget_amount: parseFloat(budgetForm.budget_amount) || 0,
         calorie_budget: budgetForm.calorie_budget ? parseInt(budgetForm.calorie_budget) : undefined,
+        protein_goal: budgetForm.protein_goal ? parseInt(budgetForm.protein_goal) : undefined,
+        carbs_goal: budgetForm.carbs_goal ? parseInt(budgetForm.carbs_goal) : undefined,
+        fat_goal: budgetForm.fat_goal ? parseInt(budgetForm.fat_goal) : undefined,
       });
       setMonthlyBudget(response.data);
       setEditingBudget(false);
@@ -227,6 +230,9 @@ const Calendar: React.FC = () => {
                 setBudgetForm({
                   budget_amount: monthlyBudget?.budget_amount?.toString() ?? '',
                   calorie_budget: monthlyBudget?.calorie_budget?.toString() ?? '',
+                  protein_goal: monthlyBudget?.protein_goal?.toString() ?? '',
+                  carbs_goal: monthlyBudget?.carbs_goal?.toString() ?? '',
+                  fat_goal: monthlyBudget?.fat_goal?.toString() ?? '',
                 });
                 setEditingBudget(true);
               }}
@@ -262,6 +268,39 @@ const Calendar: React.FC = () => {
                   onChange={e => setBudgetForm({ ...budgetForm, calorie_budget: e.target.value })}
                   className={styles.budgetInput}
                   placeholder="2000"
+                />
+              </label>
+              <label className={styles.budgetFormLabel}>
+                Daily Protein Goal (g)
+                <input
+                  type="number"
+                  min="0"
+                  value={budgetForm.protein_goal}
+                  onChange={e => setBudgetForm({ ...budgetForm, protein_goal: e.target.value })}
+                  className={styles.budgetInput}
+                  placeholder="150"
+                />
+              </label>
+              <label className={styles.budgetFormLabel}>
+                Daily Carbs Goal (g)
+                <input
+                  type="number"
+                  min="0"
+                  value={budgetForm.carbs_goal}
+                  onChange={e => setBudgetForm({ ...budgetForm, carbs_goal: e.target.value })}
+                  className={styles.budgetInput}
+                  placeholder="250"
+                />
+              </label>
+              <label className={styles.budgetFormLabel}>
+                Daily Fat Goal (g)
+                <input
+                  type="number"
+                  min="0"
+                  value={budgetForm.fat_goal}
+                  onChange={e => setBudgetForm({ ...budgetForm, fat_goal: e.target.value })}
+                  className={styles.budgetInput}
+                  placeholder="65"
                 />
               </label>
             </div>
@@ -303,9 +342,13 @@ const Calendar: React.FC = () => {
                 }}
               />
             </div>
-            {monthlyBudget.calorie_budget && (
+            {(monthlyBudget.calorie_budget || monthlyBudget.protein_goal || monthlyBudget.carbs_goal || monthlyBudget.fat_goal) && (
               <div className={styles.calorieGoal}>
-                Daily calorie goal: {monthlyBudget.calorie_budget} cal
+                Daily goals:{' '}
+                {monthlyBudget.calorie_budget && <span>{monthlyBudget.calorie_budget} cal</span>}
+                {monthlyBudget.protein_goal && <span> · {monthlyBudget.protein_goal}g protein</span>}
+                {monthlyBudget.carbs_goal && <span> · {monthlyBudget.carbs_goal}g carbs</span>}
+                {monthlyBudget.fat_goal && <span> · {monthlyBudget.fat_goal}g fat</span>}
               </div>
             )}
           </>
