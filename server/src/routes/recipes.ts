@@ -36,6 +36,38 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+// Filter recipes by nutritional goals (must be before /:id)
+router.get('/filter/nutritional', async (req: Request, res: Response) => {
+  try {
+    const { maxCarbs, minProtein, dietaryTag } = req.query;
+
+    let query = RECIPE_SELECT + ' WHERE 1=1';
+    const params: any[] = [];
+    let p = 1;
+
+    if (maxCarbs) {
+      query += ` AND r.carbs <= $${p++}`;
+      params.push(parseFloat(maxCarbs as string));
+    }
+    if (minProtein) {
+      query += ` AND r.protein >= $${p++}`;
+      params.push(parseFloat(minProtein as string));
+    }
+    if (dietaryTag) {
+      query += ` AND $${p++} = ANY(r.dietary_tags)`;
+      params.push(dietaryTag as string);
+    }
+
+    query += ' GROUP BY r.id ORDER BY r.created_at DESC';
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error filtering recipes:', error);
+    res.status(500).json({ error: 'Failed to filter recipes' });
+  }
+});
+
 // Get single recipe
 router.get('/:id', async (req: Request, res: Response) => {
   try {
@@ -268,38 +300,6 @@ router.delete('/:id', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error deleting recipe:', error);
     res.status(500).json({ error: 'Failed to delete recipe' });
-  }
-});
-
-// Filter recipes by nutritional goals
-router.get('/filter/nutritional', async (req: Request, res: Response) => {
-  try {
-    const { maxCarbs, minProtein, dietaryTag } = req.query;
-
-    let query = RECIPE_SELECT + ' WHERE 1=1';
-    const params: any[] = [];
-    let p = 1;
-
-    if (maxCarbs) {
-      query += ` AND r.carbs <= $${p++}`;
-      params.push(parseFloat(maxCarbs as string));
-    }
-    if (minProtein) {
-      query += ` AND r.protein >= $${p++}`;
-      params.push(parseFloat(minProtein as string));
-    }
-    if (dietaryTag) {
-      query += ` AND $${p++} = ANY(r.dietary_tags)`;
-      params.push(dietaryTag as string);
-    }
-
-    query += ' GROUP BY r.id ORDER BY r.created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error filtering recipes:', error);
-    res.status(500).json({ error: 'Failed to filter recipes' });
   }
 });
 

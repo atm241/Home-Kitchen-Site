@@ -344,14 +344,14 @@ router.put('/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
-    const { quantity, unit, estimated_price } = req.body;
+    const { quantity, unit, estimated_price, store_price } = req.body;
 
     const result = await pool.query(`
       UPDATE grocery_list
-      SET quantity = $1, unit = $2, estimated_price = $3
-      WHERE id = $4
+      SET quantity = $1, unit = $2, estimated_price = $3, store_price = COALESCE($4, store_price)
+      WHERE id = $5
       RETURNING *
-    `, [quantity, unit, estimated_price, id]);
+    `, [quantity, unit, estimated_price, store_price ?? null, id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Grocery item not found' });
