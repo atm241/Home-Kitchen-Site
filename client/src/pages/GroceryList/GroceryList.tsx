@@ -13,6 +13,7 @@ const GroceryList: React.FC = () => {
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [actualPrices, setActualPrices] = useState<Record<number, string>>({});
   const [savingActual, setSavingActual] = useState(false);
+  const [shoppingMode, setShoppingMode] = useState(false);
   const weekStartDate = getWeekStartDate();
   const [manualItem, setManualItem] = useState({ name: '', quantity: '1', unit: 'unit' });
 
@@ -264,6 +265,73 @@ const GroceryList: React.FC = () => {
     return <div className={styles.loading}>Loading grocery list...</div>;
   }
 
+  if (shoppingMode) {
+    const remaining = groceryItems.filter(i => !i.is_purchased).length;
+    const shoppingGrouped = groceryItems.reduce((acc, item) => {
+      const cat = item.category || 'Other';
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(item);
+      return acc;
+    }, {} as Record<string, GroceryItem[]>);
+
+    return (
+      <div className={styles.shoppingOverlay}>
+        <div className={styles.shoppingTopBar}>
+          <div className={styles.shoppingProgress}>
+            <span className={styles.shoppingProgressCount}>
+              {purchasedCount} / {groceryItems.length}
+            </span>
+            <span className={styles.shoppingProgressLabel}>items checked</span>
+          </div>
+          <div className={styles.shoppingProgressBarWrap}>
+            <div
+              className={styles.shoppingProgressBarFill}
+              style={{ width: `${groceryItems.length > 0 ? (purchasedCount / groceryItems.length) * 100 : 0}%` }}
+            />
+          </div>
+          <button
+            className={styles.shoppingExitBtn}
+            onClick={() => setShoppingMode(false)}
+          >
+            {remaining === 0 ? '✓ Done' : 'Exit'}
+          </button>
+        </div>
+
+        <div className={styles.shoppingList}>
+          {Object.entries(shoppingGrouped).map(([category, items]) => {
+            const unchecked = items.filter(i => !i.is_purchased);
+            const checked = items.filter(i => i.is_purchased);
+            const sorted = [...unchecked, ...checked];
+            return (
+              <div key={category} className={styles.shoppingCategory}>
+                <div className={styles.shoppingCategoryTitle}>{category}</div>
+                {sorted.map(item => (
+                  <button
+                    key={item.id}
+                    className={`${styles.shoppingItem} ${item.is_purchased ? styles.shoppingItemChecked : ''}`}
+                    onClick={() => handleTogglePurchased(item.id, !item.is_purchased)}
+                  >
+                    <span className={styles.shoppingCheckbox}>
+                      {item.is_purchased ? '✓' : ''}
+                    </span>
+                    <span className={styles.shoppingItemText}>
+                      <span className={styles.shoppingItemName}>{item.ingredient_name}</span>
+                      {(item.quantity || item.unit) && (
+                        <span className={styles.shoppingItemQty}>
+                          {item.quantity} {item.unit}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.container}>
       {notification && (
@@ -283,6 +351,12 @@ const GroceryList: React.FC = () => {
           </button>
           {groceryItems.length > 0 && (
             <>
+              <button
+                onClick={() => setShoppingMode(true)}
+                className={styles.shopButton}
+              >
+                Shop
+              </button>
               <button
                 onClick={handleShareList}
                 className={styles.shareButton}
