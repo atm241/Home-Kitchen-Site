@@ -684,3 +684,288 @@
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Scan Receipt button */
+.scanReceiptButton {
+  padding: 10px 20px;
+  background-color: #3498DB;
+  color: #FFFFFF;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  transition: background-color 0.2s ease;
+}
+
+.scanReceiptButton:hover {
+  background-color: #2980B9;
+}
+
+/* Receipt Modal */
+.receiptModalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.receiptModal {
+  background-color: #FFFFFF;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+}
+
+.receiptModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #E0E0E0;
+}
+
+.receiptModalHeader h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #2C3E50;
+}
+
+.receiptModalClose {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #F0F0F0;
+  color: #555;
+  font-size: 20px;
+  line-height: 0.9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  border: none;
+}
+
+.receiptModalClose:hover {
+  background-color: #E74C3C;
+  color: #FFFFFF;
+}
+
+/* Image picker */
+.receiptPickerSection {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.receiptImageLabel {
+  display: block;
+  cursor: pointer;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px dashed #C0C0C0;
+  transition: border-color 0.2s ease;
+}
+
+.receiptImageLabel:hover {
+  border-color: #628141;
+}
+
+.receiptPickerPlaceholder {
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  color: #7F8C8D;
+}
+
+.receiptPickerIcon {
+  font-size: 48px;
+}
+
+.receiptPickerPlaceholder p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: #2C3E50;
+}
+
+.receiptPickerHint {
+  font-size: 13px;
+  color: #95A5A6;
+}
+
+.receiptPreview {
+  width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  display: block;
+  background-color: #F8F9FA;
+}
+
+.receiptFileInput {
+  display: none;
+}
+
+.parseReceiptButton {
+  padding: 14px 24px;
+  background-color: #628141;
+  color: #FFFFFF;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 16px;
+  transition: background-color 0.2s ease;
+  text-align: center;
+}
+
+.parseReceiptButton:hover:not(:disabled) {
+  background-color: #4A6330;
+}
+
+.parseReceiptButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.parsingHint {
+  text-align: center;
+  font-size: 14px;
+  color: #7F8C8D;
+  margin: 0;
+}
+
+/* No items found state */
+.noParsedItems {
+  padding: 40px 24px;
+  text-align: center;
+  color: #7F8C8D;
+}
+
+.noParsedItems p {
+  margin: 0 0 8px;
+}
+
+/* Parsed items review */
+.parsedItemsSection {
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.parsedCount {
+  margin: 0;
+  font-size: 15px;
+  color: #555;
+}
+
+.parsedList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.parsedItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background-color: #F8F9FA;
+  border-radius: 8px;
+}
+
+.parsedItemInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.parsedItemName {
+  font-weight: 600;
+  font-size: 15px;
+  color: #2C3E50;
+  text-transform: capitalize;
+}
+
+.parsedItemDetails {
+  font-size: 13px;
+  color: #7F8C8D;
+}
+
+.parsedItemRemove {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #E74C3C;
+  color: #FFFFFF;
+  font-size: 20px;
+  line-height: 0.85;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.parsedItemRemove:hover {
+  background-color: #C0392B;
+}
+
+.receiptModalActions {
+  display: flex;
+  gap: 12px;
+}
+
+.tryAgainButton {
+  padding: 12px 20px;
+  background-color: #F0F0F0;
+  color: #555;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  transition: background-color 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.tryAgainButton:hover {
+  background-color: #E0E0E0;
+}
+
+.addParsedButton {
+  flex: 1;
+  padding: 12px 20px;
+  background-color: #628141;
+  color: #FFFFFF;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 15px;
+  transition: background-color 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.addParsedButton:hover:not(:disabled) {
+  background-color: #4A6330;
+}
+
+.addParsedButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

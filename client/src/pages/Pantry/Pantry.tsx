@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { pantryApi, ingredientsApi, groceryApi, recipesApi, recommendationsApi, RecipeRecommendation } from '../../services/api';
+import { pantryApi, ingredientsApi, groceryApi, recipesApi, recommendationsApi, RecipeRecommendation, ParsedReceiptItem } from '../../services/api';
 import { PantryItem, Ingredient } from '../../types';
 import { getWeekStartDate } from '../../utils/dateUtils';
 import styles from './Pantry.module.css';
@@ -31,6 +31,13 @@ const Pantry: React.FC = () => {
     is_staple: false,
     expiration_date: '',
   });
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [receiptBase64, setReceiptBase64] = useState<string | null>(null);
+  const [receiptMediaType, setReceiptMediaType] = useState('image/jpeg');
+  const [parsingReceipt, setParsingReceipt] = useState(false);
+  const [parsedItems, setParsedItems] = useState<ParsedReceiptItem[] | null>(null);
+  const [addingReceiptItems, setAddingReceiptItems] = useState(false);
 
   useEffect(() => {
     loadPantry();
@@ -233,6 +240,69 @@ const Pantry: React.FC = () => {
     }
   };
 
+  const handleReceiptImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setReceiptMediaType(file.type || 'image/jpeg');
+    setParsedItems(null);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setReceiptPreview(dataUrl);
+      setReceiptBase64(dataUrl.split(',')[1]);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleParseReceipt = async () => {
+    if (!receiptBase64) return;
+    setParsingReceipt(true);
+    try {
+      const response = await pantryApi.parseReceipt({ image: receiptBase64, mediaType: receiptMediaType });
+      setParsedItems(response.data);
+    } catch {
+      showNotification('error', 'Failed to parse receipt. Please try a clearer photo.');
+    } finally {
+      setParsingReceipt(false);
+    }
+  };
+
+  const handleRemoveParsedItem = (idx: number) => {
+    setParsedItems(prev => prev ? prev.filter((_, i) => i !== idx) : null);
+  };
+
+  const handleAddParsedItems = async () => {
+    if (!parsedItems || parsedItems.length === 0) return;
+    setAddingReceiptItems(true);
+    try {
+      for (const item of parsedItems) {
+        await pantryApi.add({
+          ingredient_id: item.ingredient_id,
+          quantity: item.quantity,
+          unit: item.unit,
+          is_staple: false,
+        });
+      }
+      showNotification('success', `Added ${parsedItems.length} items to your pantry!`);
+      setShowReceiptModal(false);
+      setReceiptPreview(null);
+      setReceiptBase64(null);
+      setParsedItems(null);
+      loadPantry();
+    } catch {
+      showNotification('error', 'Failed to add some items to pantry');
+    } finally {
+      setAddingReceiptItems(false);
+    }
+  };
+
+  const closeReceiptModal = () => {
+    setShowReceiptModal(false);
+    setReceiptPreview(null);
+    setReceiptBase64(null);
+    setParsedItems(null);
+  };
+
   const groupedItems = pantryItems.reduce((acc, item) => {
     const category = item.category || 'Other';
     if (!acc[category]) {
@@ -261,6 +331,9 @@ const Pantry: React.FC = () => {
               + Restock Staples
             </button>
           )}
+          <button onClick={() => setShowReceiptModal(true)} className={styles.scanReceiptButton}>
+            Scan Receipt
+          </button>
           <button onClick={() => setShowAddForm(!showAddForm)} className={styles.addButton}>
             {showAddForm ? 'Cancel' : 'Add Item'}
           </button>
@@ -643,6 +716,98 @@ const Pantry: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {showReceiptModal && (
+        <div className={styles.receiptModalOverlay} onClick={closeReceiptModal}>
+          <div className={styles.receiptModal} onClick={e => e.stopPropagation()}>
+            <div className={styles.receiptModalHeader}>
+              <h2>Scan Receipt</h2>
+              <button className={styles.receiptModalClose} onClick={closeReceiptModal}>×</button>
+            </div>
+
+            {!parsedItems ? (
+              <div className={styles.receiptPickerSection}>
+                <label className={styles.receiptImageLabel}>
+                  {receiptPreview ? (
+                    <img src={receiptPreview} alt="Receipt preview" className={styles.receiptPreview} />
+                  ) : (
+                    <div className={styles.receiptPickerPlaceholder}>
+                      <span className={styles.receiptPickerIcon}>📷</span>
+                      <p>Tap to take a photo or upload an image of your receipt</p>
+                      <span className={styles.receiptPickerHint}>Supports JPEG, PNG, WebP</span>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleReceiptImageChange}
+                    className={styles.receiptFileInput}
+                  />
+                </label>
+                {receiptPreview && (
+                  <>
+                    <button
+                      className={styles.parseReceiptButton}
+                      onClick={handleParseReceipt}
+                      disabled={parsingReceipt}
+                    >
+                      {parsingReceipt ? 'Scanning...' : 'Extract Items from Receipt'}
+                    </button>
+                    {parsingReceipt && (
+                      <p className={styles.parsingHint}>Analyzing with AI — this takes a few seconds...</p>
+                    )}
+                  </>
+                )}
+              </div>
+            ) : parsedItems.length === 0 ? (
+              <div className={styles.noParsedItems}>
+                <p>No grocery items could be detected.</p>
+                <p>Try a clearer photo with better lighting.</p>
+                <button className={styles.tryAgainButton} onClick={() => setParsedItems(null)}>
+                  Try Again
+                </button>
+              </div>
+            ) : (
+              <div className={styles.parsedItemsSection}>
+                <p className={styles.parsedCount}>
+                  Found <strong>{parsedItems.length}</strong> items. Remove any you don't want.
+                </p>
+                <div className={styles.parsedList}>
+                  {parsedItems.map((item, idx) => (
+                    <div key={idx} className={styles.parsedItem}>
+                      <div className={styles.parsedItemInfo}>
+                        <span className={styles.parsedItemName}>{item.name}</span>
+                        <span className={styles.parsedItemDetails}>
+                          {item.quantity} {item.unit} · {item.category}
+                        </span>
+                      </div>
+                      <button
+                        className={styles.parsedItemRemove}
+                        onClick={() => handleRemoveParsedItem(idx)}
+                        title="Remove this item"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className={styles.receiptModalActions}>
+                  <button className={styles.tryAgainButton} onClick={() => setParsedItems(null)}>
+                    Try Again
+                  </button>
+                  <button
+                    className={styles.addParsedButton}
+                    onClick={handleAddParsedItems}
+                    disabled={addingReceiptItems || parsedItems.length === 0}
+                  >
+                    {addingReceiptItems ? 'Adding...' : `Add ${parsedItems.length} Items to Pantry`}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

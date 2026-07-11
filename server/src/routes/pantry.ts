@@ -1,5 +1,9 @@
 import express, { Request, Response } from 'express';
+import Anthropic from '@anthropic-ai/sdk';
 import pool from '../config/database';
+import { categorizeIngredient } from '../services/ingredientCategorizer';
+
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const router = express.Router();
 
@@ -58,6 +62,94 @@ router.post('/', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error adding pantry item:', error);
     res.status(500).json({ error: 'Failed to add pantry item' });
+  }
+});
+
+// Parse a receipt image and extract grocery items using AI vision
+router.post('/parse-receipt', async (req: Request, res: Response) => {
+  try {
+    const { image, mediaType } = req.body;
+    if (!image) return res.status(400).json({ error: 'Image data is required' });
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const safeMediaType = (allowedTypes.includes(mediaType) ? mediaType : 'image/jpeg') as
+      'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+
+    const message = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: safeMediaType, data: image },
+            },
+            {
+              type: 'text',
+              text: `Analyze this grocery receipt and extract all purchased grocery items.
+Return ONLY a JSON array with no other text:
+[{"name": "milk", "quantity": 1, "unit": "gallon"}, {"name": "eggs", "quantity": 12, "unit": "count"}]
+
+Rules:
+- name: lowercase, human-readable (e.g. "chicken breast" not "BNLS SKNLS CHKN")
+- quantity: a number, default 1 if unclear
+- unit: best guess (lb, oz, count, bag, box, gallon, unit, etc.)
+- Skip non-food items, tax lines, totals, and subtotals
+- If this is not a receipt, return []`,
+            },
+          ],
+        },
+      ],
+    });
+
+    const content = message.content[0];
+    if (content.type !== 'text') {
+      return res.status(500).json({ error: 'Unexpected AI response' });
+    }
+
+    let rawItems: { name: string; quantity: number; unit: string }[] = [];
+    try {
+      const jsonMatch = content.text.match(/\[[\s\S]*\]/);
+      rawItems = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+    } catch {
+      return res.status(500).json({ error: 'Failed to parse AI response' });
+    }
+
+    const results = [];
+    for (const item of rawItems) {
+      if (!item.name) continue;
+      const category = await categorizeIngredient(item.name);
+
+      let ingResult = await pool.query(
+        'SELECT id FROM ingredients WHERE LOWER(name) = LOWER($1)',
+        [item.name]
+      );
+      let ingredientId: number;
+      if (ingResult.rows.length > 0) {
+        ingredientId = ingResult.rows[0].id;
+      } else {
+        const newIng = await pool.query(
+          'INSERT INTO ingredients (name, category) VALUES ($1, $2) RETURNING id',
+          [item.name, category]
+        );
+        ingredientId = newIng.rows[0].id;
+      }
+
+      results.push({
+        ingredient_id: ingredientId,
+        name: item.name,
+        quantity: item.quantity || 1,
+        unit: item.unit || 'unit',
+        category,
+      });
+    }
+
+    res.json(results);
+  } catch (error) {
+    console.error('Error parsing receipt:', error);
+    res.status(500).json({ error: 'Failed to parse receipt' });
   }
 });
 

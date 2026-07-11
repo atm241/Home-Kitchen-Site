@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dashboard",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "/Users/piercegruidl/Documents/Coding/Projects/Job Dashboard/client",
+        "run",
+        "dev"
+      ],
+      "autoPort": true,
+      "port": 5173
+    }
+  ]
+}

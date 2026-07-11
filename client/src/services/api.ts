@@ -44,6 +44,14 @@ export const ingredientsApi = {
   delete: (id: number) => api.delete(`/ingredients/${id}`),
 };
 
+export interface ParsedReceiptItem {
+  ingredient_id: number;
+  name: string;
+  quantity: number;
+  unit: string;
+  category: string;
+}
+
 // Pantry
 export const pantryApi = {
   getAll: () => api.get<PantryItem[]>('/pantry'),
@@ -55,6 +63,8 @@ export const pantryApi = {
     api.post('/pantry/add-servings', data),
   consumeServings: (data: { meal_portion_id: number; servings_consumed: number }) =>
     api.post('/pantry/consume-servings', data),
+  parseReceipt: (data: { image: string; mediaType: string }) =>
+    api.post<ParsedReceiptItem[]>('/pantry/parse-receipt', data),
 };
 
 // Scheduled Meals
