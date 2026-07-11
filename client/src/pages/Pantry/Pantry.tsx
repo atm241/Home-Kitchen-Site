@@ -4,13 +4,36 @@ import { PantryItem, Ingredient } from '../../types';
 import { getWeekStartDate } from '../../utils/dateUtils';
 import styles from './Pantry.module.css';
 
+const SHELF_LIFE_DAYS: Record<string, number> = {
+  'Produce': 5,
+  'Proteins': 3,
+  'Dairy': 7,
+  'Beverages': 7,
+  'Snacks': 30,
+  'Condiments & Sauces': 90,
+  'Grains & Pasta': 180,
+  'Oils & Vinegars': 365,
+  'Baking': 365,
+  'Canned Goods': 730,
+  'Spices & Seasonings': 730,
+};
+
+const PERISHABLE_CATEGORIES = new Set(['Produce', 'Proteins', 'Dairy', 'Beverages']);
+
+const getSuggestedExpiryDate = (category: string): string => {
+  const days = SHELF_LIFE_DAYS[category] ?? 7;
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+};
+
 const getExpiryStatus = (expiration_date?: string): 'expired' | 'soon' | null => {
   if (!expiration_date) return null;
   const now = new Date();
   const exp = new Date(expiration_date);
   const diffDays = Math.floor((exp.getTime() - now.getTime()) / 86400000);
   if (diffDays < 0) return 'expired';
-  if (diffDays <= 3) return 'soon';
+  if (diffDays <= 5) return 'soon';
   return null;
 };
 
@@ -31,6 +54,8 @@ const Pantry: React.FC = () => {
     is_staple: false,
     expiration_date: '',
   });
+  const [editingExpiryId, setEditingExpiryId] = useState<number | null>(null);
+  const [editingExpiryValue, setEditingExpiryValue] = useState('');
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [receiptBase64, setReceiptBase64] = useState<string | null>(null);
@@ -240,6 +265,21 @@ const Pantry: React.FC = () => {
     }
   };
 
+  const handleSaveInlineExpiry = async (item: PantryItem) => {
+    try {
+      await pantryApi.update(item.id, {
+        quantity: item.quantity,
+        unit: item.unit,
+        is_staple: item.is_staple,
+        expiration_date: editingExpiryValue || undefined,
+      });
+      setEditingExpiryId(null);
+      loadPantry();
+    } catch {
+      showNotification('error', 'Failed to update expiration date');
+    }
+  };
+
   const handleReceiptImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -281,6 +321,7 @@ const Pantry: React.FC = () => {
           quantity: item.quantity,
           unit: item.unit,
           is_staple: false,
+          expiration_date: item.expiration_date || undefined,
         });
       }
       showNotification('success', `Added ${parsedItems.length} items to your pantry!`);
@@ -339,6 +380,31 @@ const Pantry: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Expiry Alert Banner */}
+      {(() => {
+        const expired = pantryItems.filter(i => getExpiryStatus(i.expiration_date) === 'expired');
+        const soon = pantryItems.filter(i => getExpiryStatus(i.expiration_date) === 'soon');
+        if (expired.length === 0 && soon.length === 0) return null;
+        return (
+          <div className={styles.expiryBanner}>
+            <span className={styles.expiryBannerIcon}>⚠️</span>
+            <span className={styles.expiryBannerText}>
+              {expired.length > 0 && (
+                <strong className={styles.expiredText}>
+                  {expired.length} item{expired.length > 1 ? 's' : ''} expired
+                </strong>
+              )}
+              {expired.length > 0 && soon.length > 0 && <span> · </span>}
+              {soon.length > 0 && (
+                <span>
+                  {soon.length} item{soon.length > 1 ? 's' : ''} expire within 5 days
+                </span>
+              )}
+            </span>
+          </div>
+        );
+      })()}
 
       {/* Recommended Recipes Section */}
       {pantryItems.length > 0 && (
@@ -445,7 +511,12 @@ const Pantry: React.FC = () => {
                 <select
                   id="category"
                   value={newItem.category}
-                  onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                  onChange={(e) => {
+                    const cat = e.target.value;
+                    const autoExpiry = !newItem.expiration_date && PERISHABLE_CATEGORIES.has(cat)
+                      ? getSuggestedExpiryDate(cat) : newItem.expiration_date;
+                    setNewItem({ ...newItem, category: cat, expiration_date: autoExpiry });
+                  }}
                   className={styles.select}
                 >
                   <option value="Produce">Produce</option>
@@ -676,11 +747,42 @@ const Pantry: React.FC = () => {
                           </div>
                           <div className={styles.itemQuantity}>
                             {item.quantity} {item.unit}
-                            {item.expiration_date && (
-                              <span className={styles.expiryDate}>
-                                exp. {new Date(item.expiration_date).toLocaleDateString()}
+                            {editingExpiryId === item.id ? (
+                              <span className={styles.expiryInlineEdit}>
+                                <input
+                                  type="date"
+                                  value={editingExpiryValue}
+                                  onChange={e => setEditingExpiryValue(e.target.value)}
+                                  className={styles.expiryDateInput}
+                                  autoFocus
+                                />
+                                <button
+                                  className={styles.expiryConfirmBtn}
+                                  onClick={() => handleSaveInlineExpiry(item)}
+                                  title="Save"
+                                >✓</button>
+                                <button
+                                  className={styles.expiryCancelBtn}
+                                  onClick={() => setEditingExpiryId(null)}
+                                  title="Cancel"
+                                >✗</button>
                               </span>
-                            )}
+                            ) : item.expiration_date ? (
+                              <button
+                                className={styles.expiryDateBtn}
+                                onClick={() => { setEditingExpiryId(item.id); setEditingExpiryValue(item.expiration_date!); }}
+                                title="Click to edit expiry date"
+                              >
+                                exp. {new Date(item.expiration_date).toLocaleDateString()}
+                              </button>
+                            ) : PERISHABLE_CATEGORIES.has(item.category || '') ? (
+                              <button
+                                className={styles.setExpiryBtn}
+                                onClick={() => { setEditingExpiryId(item.id); setEditingExpiryValue(getSuggestedExpiryDate(item.category || 'Other')); }}
+                              >
+                                + Set expiry
+                              </button>
+                            ) : null}
                             {isLowStock && <span className={styles.lowStockIndicator}>!</span>}
                           </div>
                         </div>
@@ -782,6 +884,21 @@ const Pantry: React.FC = () => {
                         <span className={styles.parsedItemDetails}>
                           {item.quantity} {item.unit} · {item.category}
                         </span>
+                        {item.expiration_date !== null && (
+                          <span className={styles.parsedItemExpiryRow}>
+                            <label className={styles.parsedItemExpiryLabel}>Exp:</label>
+                            <input
+                              type="date"
+                              value={item.expiration_date || ''}
+                              onChange={e => {
+                                const updated = [...parsedItems];
+                                updated[idx] = { ...item, expiration_date: e.target.value };
+                                setParsedItems(updated);
+                              }}
+                              className={styles.parsedItemDateInput}
+                            />
+                          </span>
+                        )}
                       </div>
                       <button
                         className={styles.parsedItemRemove}

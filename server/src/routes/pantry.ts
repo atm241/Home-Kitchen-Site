@@ -117,6 +117,12 @@ Rules:
       return res.status(500).json({ error: 'Failed to parse AI response' });
     }
 
+    const SHELF_LIFE_DAYS: Record<string, number> = {
+      'Produce': 5, 'Proteins': 3, 'Dairy': 7, 'Beverages': 7,
+      'Snacks': 30, 'Condiments & Sauces': 90, 'Grains & Pasta': 180,
+      'Oils & Vinegars': 365, 'Baking': 365, 'Canned Goods': 730, 'Spices & Seasonings': 730,
+    };
+
     const results = [];
     for (const item of rawItems) {
       if (!item.name) continue;
@@ -137,12 +143,21 @@ Rules:
         ingredientId = newIng.rows[0].id;
       }
 
+      const days = SHELF_LIFE_DAYS[category];
+      let expiration_date: string | null = null;
+      if (days) {
+        const d = new Date();
+        d.setDate(d.getDate() + days);
+        expiration_date = d.toISOString().split('T')[0];
+      }
+
       results.push({
         ingredient_id: ingredientId,
         name: item.name,
         quantity: item.quantity || 1,
         unit: item.unit || 'unit',
         category,
+        expiration_date,
       });
     }
 

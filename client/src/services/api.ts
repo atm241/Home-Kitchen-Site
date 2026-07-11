@@ -50,6 +50,7 @@ export interface ParsedReceiptItem {
   quantity: number;
   unit: string;
   category: string;
+  expiration_date: string | null;
 }
 
 // Pantry
