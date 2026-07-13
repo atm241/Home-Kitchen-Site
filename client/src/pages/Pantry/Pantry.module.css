@@ -1117,3 +1117,162 @@
 .parsedItemDateInput:focus {
   border-color: #628141;
 }
+
+/* ── Use It Up section ─────────────────────────────── */
+.useItUpSection {
+  background-color: #FFFBF2;
+  border: 2px solid #F0C050;
+  border-radius: 12px;
+  padding: 20px 24px 24px;
+  margin-bottom: 24px;
+}
+
+.useItUpHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.useItUpTitle {
+  margin: 0 0 4px;
+  font-size: 20px;
+  color: #7D5A00;
+}
+
+.useItUpSubtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #A07800;
+}
+
+.expiringChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.expiringChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.expiringChipExpired {
+  background-color: #FDECEA;
+  color: #C0392B;
+  border: 1px solid #E8A09A;
+}
+
+.expiringChipUrgent {
+  background-color: #FFF0DC;
+  color: #C0600A;
+  border: 1px solid #F0C080;
+}
+
+.expiringChipSoon {
+  background-color: #FFF8E1;
+  color: #7D5A00;
+  border: 1px solid #F0D070;
+}
+
+.expiringChipDays {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.75;
+  background-color: rgba(0,0,0,0.08);
+  padding: 1px 5px;
+  border-radius: 10px;
+}
+
+.useItUpRecipes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.useItUpCard {
+  display: flex;
+  background-color: #FFFFFF;
+  border: 1.5px solid #E8D898;
+  border-radius: 10px;
+  overflow: hidden;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.useItUpCard:hover {
+  border-color: #628141;
+  box-shadow: 0 3px 10px rgba(98,129,65,0.15);
+  transform: translateY(-1px);
+}
+
+.useItUpCardImg {
+  width: 80px;
+  min-height: 80px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background-color: #F8F9FA;
+}
+
+.useItUpCardBody {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.useItUpCardName {
+  font-weight: 700;
+  font-size: 14px;
+  color: #2C3E50;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.useItUpCardMeta {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: #95A5A6;
+  text-transform: capitalize;
+}
+
+.useItUpUsing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #7F8C8D;
+}
+
+.useItUpIngredient {
+  background-color: #FFF0DC;
+  color: #C0600A;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.useItUpIngredientUrgent {
+  background-color: #FDECEA;
+  color: #C0392B;
+}
+
+.useItUpNoRecipes {
+  font-size: 14px;
+  color: #95A5A6;
+  margin: 0;
+  font-style: italic;
+}

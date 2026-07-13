@@ -65,6 +65,54 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
+// Get expiring pantry items and recipes that can use them
+router.get('/use-it-up', async (req: Request, res: Response) => {
+  try {
+    const days = parseInt(req.query.days as string) || 5;
+
+    const expiringResult = await pool.query(`
+      SELECT
+        p.id, p.quantity, p.unit, p.expiration_date,
+        i.name as ingredient_name, i.category,
+        (p.expiration_date::date - CURRENT_DATE)::int as days_until_expiry
+      FROM pantry p
+      JOIN ingredients i ON p.ingredient_id = i.id
+      WHERE p.expiration_date IS NOT NULL
+        AND p.expiration_date::date <= CURRENT_DATE + ($1 * INTERVAL '1 day')
+      ORDER BY p.expiration_date ASC
+    `, [days]);
+
+    const recipesResult = await pool.query(`
+      SELECT
+        r.id, r.name, r.image_url, r.category, r.servings, r.calories,
+        r.prep_time, r.cook_time, r.difficulty, r.dietary_tags, r.is_favorite,
+        COUNT(DISTINCT p.ingredient_id)::int as expiring_ingredient_count,
+        json_agg(DISTINCT jsonb_build_object(
+          'name', i.name,
+          'expiration_date', p.expiration_date,
+          'days_until_expiry', (p.expiration_date::date - CURRENT_DATE)::int
+        )) as expiring_ingredients
+      FROM recipes r
+      JOIN recipe_ingredients ri ON r.id = ri.recipe_id
+      JOIN ingredients i ON ri.ingredient_id = i.id
+      JOIN pantry p ON p.ingredient_id = ri.ingredient_id
+      WHERE p.expiration_date IS NOT NULL
+        AND p.expiration_date::date <= CURRENT_DATE + ($1 * INTERVAL '1 day')
+      GROUP BY r.id
+      ORDER BY expiring_ingredient_count DESC, r.name ASC
+      LIMIT 10
+    `, [days]);
+
+    res.json({
+      expiringItems: expiringResult.rows,
+      recipes: recipesResult.rows,
+    });
+  } catch (error) {
+    console.error('Error fetching use-it-up data:', error);
+    res.status(500).json({ error: 'Failed to fetch expiring item suggestions' });
+  }
+});
+
 // Parse a receipt image and extract grocery items using AI vision
 router.post('/parse-receipt', async (req: Request, res: Response) => {
   try {

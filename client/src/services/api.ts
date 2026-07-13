@@ -44,6 +44,37 @@ export const ingredientsApi = {
   delete: (id: number) => api.delete(`/ingredients/${id}`),
 };
 
+export interface UseItUpExpiringItem {
+  id: number;
+  quantity: number;
+  unit: string;
+  expiration_date: string;
+  ingredient_name: string;
+  category: string;
+  days_until_expiry: number;
+}
+
+export interface UseItUpRecipe {
+  id: number;
+  name: string;
+  image_url?: string;
+  category?: string;
+  servings?: number;
+  calories?: number;
+  prep_time?: number;
+  cook_time?: number;
+  difficulty?: string;
+  dietary_tags?: string[];
+  is_favorite?: boolean;
+  expiring_ingredient_count: number;
+  expiring_ingredients: { name: string; expiration_date: string; days_until_expiry: number }[];
+}
+
+export interface UseItUpResult {
+  expiringItems: UseItUpExpiringItem[];
+  recipes: UseItUpRecipe[];
+}
+
 export interface ParsedReceiptItem {
   ingredient_id: number;
   name: string;
@@ -66,6 +97,8 @@ export const pantryApi = {
     api.post('/pantry/consume-servings', data),
   parseReceipt: (data: { image: string; mediaType: string }) =>
     api.post<ParsedReceiptItem[]>('/pantry/parse-receipt', data),
+  useItUp: (days = 5) =>
+    api.get<UseItUpResult>('/pantry/use-it-up', { params: { days } }),
 };
 
 // Scheduled Meals

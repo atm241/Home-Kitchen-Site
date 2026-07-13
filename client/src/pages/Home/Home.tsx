@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { calendarApi, mealsApi, budgetApi, MonthlyBudget } from '../../services/api';
+import { calendarApi, mealsApi, budgetApi, pantryApi, MonthlyBudget, UseItUpResult } from '../../services/api';
 import { CombinedCalendarItem } from '../../types';
 import {
   getWeekDays,
@@ -18,6 +18,7 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [monthlyBudget, setMonthlyBudget] = useState<MonthlyBudget | null>(null);
+  const [useItUp, setUseItUp] = useState<UseItUpResult | null>(null);
 
   const weekDays = getWeekDays(currentDate);
   const weekStartDate = getWeekStartDate(currentDate);
@@ -49,6 +50,13 @@ const Home: React.FC = () => {
       setMonthlyBudget(budgetResponse.data);
     } catch (error) {
       console.error('Error loading monthly budget:', error);
+    }
+
+    try {
+      const useItUpResponse = await pantryApi.useItUp(5);
+      setUseItUp(useItUpResponse.data);
+    } catch (error) {
+      console.error('Error loading use-it-up data:', error);
     }
   };
 
@@ -159,6 +167,46 @@ const Home: React.FC = () => {
             <p className={styles.nutritionHint}>
               Set a daily calorie goal in <Link to="/calendar" className={styles.nutritionLink}>Calendar → Monthly Budget</Link> to track progress.
             </p>
+          )}
+        </div>
+      )}
+
+      {/* Use It Up card */}
+      {useItUp && useItUp.expiringItems.length > 0 && (
+        <div className={styles.useItUpCard}>
+          <div className={styles.useItUpCardHeader}>
+            <span className={styles.useItUpIcon}>🕐</span>
+            <div>
+              <h2 className={styles.useItUpTitle}>Use It Up</h2>
+              <p className={styles.useItUpSubtitle}>
+                {useItUp.expiringItems.length} ingredient{useItUp.expiringItems.length > 1 ? 's' : ''} expiring within 5 days
+              </p>
+            </div>
+            <Link to="/pantry" className={styles.useItUpViewAll}>View all →</Link>
+          </div>
+          <div className={styles.useItUpIngredients}>
+            {useItUp.expiringItems.slice(0, 6).map(item => (
+              <span
+                key={item.id}
+                className={`${styles.useItUpChip} ${item.days_until_expiry < 0 ? styles.useItUpChipExpired : item.days_until_expiry <= 2 ? styles.useItUpChipUrgent : styles.useItUpChipSoon}`}
+              >
+                {item.ingredient_name}
+                <span className={styles.useItUpChipDays}>
+                  {item.days_until_expiry < 0 ? 'expired' : item.days_until_expiry === 0 ? 'today' : `${item.days_until_expiry}d`}
+                </span>
+              </span>
+            ))}
+          </div>
+          {useItUp.recipes.length > 0 && (
+            <div className={styles.useItUpRecipeRow}>
+              <span className={styles.useItUpRecipeLabel}>Recipes that can help:</span>
+              {useItUp.recipes.slice(0, 3).map(recipe => (
+                <Link key={recipe.id} to={`/recipes/${recipe.id}`} className={styles.useItUpRecipeLink}>
+                  {recipe.name}
+                  <span className={styles.useItUpRecipeCount}>({recipe.expiring_ingredient_count} expiring)</span>
+                </Link>
+              ))}
+            </div>
           )}
         </div>
       )}

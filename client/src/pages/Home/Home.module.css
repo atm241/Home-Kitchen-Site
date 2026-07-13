@@ -337,3 +337,132 @@
 }
 .nutritionHint { margin: 10px 0 0; font-size: 13px; color: #7F8C8D; }
 .nutritionLink { color: #628141; font-weight: 500; }
+
+/* ── Use It Up card on Home page ─────────────────── */
+.useItUpCard {
+  background-color: #FFFBF2;
+  border: 2px solid #F0C050;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.useItUpCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.useItUpIcon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.useItUpTitle {
+  margin: 0 0 2px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #7D5A00;
+}
+
+.useItUpSubtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #A07800;
+}
+
+.useItUpViewAll {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: #628141;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.useItUpViewAll:hover {
+  text-decoration: underline;
+}
+
+.useItUpIngredients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.useItUpChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.useItUpChipExpired {
+  background-color: #FDECEA;
+  color: #C0392B;
+  border: 1px solid #E8A09A;
+}
+
+.useItUpChipUrgent {
+  background-color: #FFF0DC;
+  color: #C0600A;
+  border: 1px solid #F0C080;
+}
+
+.useItUpChipSoon {
+  background-color: #FFF8E1;
+  color: #7D5A00;
+  border: 1px solid #F0D070;
+}
+
+.useItUpChipDays {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.7;
+  background-color: rgba(0,0,0,0.07);
+  padding: 1px 4px;
+  border-radius: 8px;
+}
+
+.useItUpRecipeRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #F0D070;
+  font-size: 13px;
+}
+
+.useItUpRecipeLabel {
+  color: #A07800;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.useItUpRecipeLink {
+  color: #628141;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.useItUpRecipeLink:hover {
+  text-decoration: underline;
+}
+
+.useItUpRecipeCount {
+  font-size: 11px;
+  color: #C0600A;
+  font-weight: 400;
+}

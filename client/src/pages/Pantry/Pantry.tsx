@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { pantryApi, ingredientsApi, groceryApi, recipesApi, recommendationsApi, RecipeRecommendation, ParsedReceiptItem } from '../../services/api';
+import { pantryApi, ingredientsApi, groceryApi, recipesApi, recommendationsApi, RecipeRecommendation, ParsedReceiptItem, UseItUpResult } from '../../services/api';
 import { PantryItem, Ingredient } from '../../types';
 import { getWeekStartDate } from '../../utils/dateUtils';
 import styles from './Pantry.module.css';
@@ -54,6 +54,7 @@ const Pantry: React.FC = () => {
     is_staple: false,
     expiration_date: '',
   });
+  const [useItUp, setUseItUp] = useState<UseItUpResult | null>(null);
   const [editingExpiryId, setEditingExpiryId] = useState<number | null>(null);
   const [editingExpiryValue, setEditingExpiryValue] = useState('');
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -67,8 +68,18 @@ const Pantry: React.FC = () => {
   useEffect(() => {
     loadPantry();
     loadIngredients();
-    loadRecommendations(false); // Only load cached recommendations
+    loadRecommendations(false);
+    loadUseItUp();
   }, []);
+
+  const loadUseItUp = async () => {
+    try {
+      const response = await pantryApi.useItUp(5);
+      setUseItUp(response.data);
+    } catch (error) {
+      console.error('Error loading use-it-up data:', error);
+    }
+  };
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
@@ -275,6 +286,7 @@ const Pantry: React.FC = () => {
       });
       setEditingExpiryId(null);
       loadPantry();
+      loadUseItUp();
     } catch {
       showNotification('error', 'Failed to update expiration date');
     }
@@ -405,6 +417,77 @@ const Pantry: React.FC = () => {
           </div>
         );
       })()}
+
+      {/* Use It Up Section */}
+      {useItUp && useItUp.expiringItems.length > 0 && (
+        <div className={styles.useItUpSection}>
+          <div className={styles.useItUpHeader}>
+            <div>
+              <h2 className={styles.useItUpTitle}>Use It Up</h2>
+              <p className={styles.useItUpSubtitle}>
+                {useItUp.expiringItems.length} ingredient{useItUp.expiringItems.length > 1 ? 's' : ''} expiring soon
+              </p>
+            </div>
+          </div>
+
+          <div className={styles.expiringChips}>
+            {useItUp.expiringItems.map(item => (
+              <span
+                key={item.id}
+                className={`${styles.expiringChip} ${item.days_until_expiry < 0 ? styles.expiringChipExpired : item.days_until_expiry <= 2 ? styles.expiringChipUrgent : styles.expiringChipSoon}`}
+              >
+                {item.ingredient_name}
+                <span className={styles.expiringChipDays}>
+                  {item.days_until_expiry < 0
+                    ? 'expired'
+                    : item.days_until_expiry === 0
+                    ? 'today'
+                    : `${item.days_until_expiry}d`}
+                </span>
+              </span>
+            ))}
+          </div>
+
+          {useItUp.recipes.length > 0 ? (
+            <div className={styles.useItUpRecipes}>
+              {useItUp.recipes.map(recipe => (
+                <a key={recipe.id} href={`/recipes/${recipe.id}`} className={styles.useItUpCard}>
+                  {recipe.image_url && (
+                    <img src={recipe.image_url} alt={recipe.name} className={styles.useItUpCardImg} />
+                  )}
+                  <div className={styles.useItUpCardBody}>
+                    <div className={styles.useItUpCardName}>{recipe.name}</div>
+                    <div className={styles.useItUpCardMeta}>
+                      {recipe.prep_time && recipe.cook_time && (
+                        <span>{recipe.prep_time + recipe.cook_time} min</span>
+                      )}
+                      {recipe.difficulty && <span>{recipe.difficulty}</span>}
+                      {recipe.calories && <span>{recipe.calories} cal</span>}
+                    </div>
+                    <div className={styles.useItUpUsing}>
+                      Uses:{' '}
+                      {recipe.expiring_ingredients
+                        .sort((a, b) => a.days_until_expiry - b.days_until_expiry)
+                        .map((ing, i) => (
+                          <span
+                            key={i}
+                            className={`${styles.useItUpIngredient} ${ing.days_until_expiry <= 2 ? styles.useItUpIngredientUrgent : ''}`}
+                          >
+                            {ing.name}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <p className={styles.useItUpNoRecipes}>
+              No saved recipes use these ingredients yet. Try importing a recipe that calls for them!
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Recommended Recipes Section */}
       {pantryItems.length > 0 && (
