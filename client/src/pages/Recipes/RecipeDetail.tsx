@@ -12,11 +12,6 @@ const CATEGORIES = [
   'Beverages', 'Baking & Breads',
 ];
 
-const DIFFICULTY_COLORS: Record<string, string> = {
-  easy: '#2ecc71',
-  medium: '#E67E22',
-  hard: '#e74c3c',
-};
 
 const RecipeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -47,7 +42,7 @@ const RecipeDetail: React.FC = () => {
   }>({
     name: '', description: '', category: '', servings: '', prep_time: '',
     cook_time: '', instructions: '', calories: '', protein: '', carbs: '',
-    fat: '', fiber: '', image_url: '', difficulty: 'medium', dietary_tags: [],
+    fat: '', fiber: '', image_url: '', difficulty: '', dietary_tags: [],
     personal_notes: '', ingredients: [],
   });
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -442,11 +437,7 @@ const RecipeDetail: React.FC = () => {
             {recipe.category && (
               <span className={styles.categoryBadge}>{recipe.category}</span>
             )}
-            {recipe.difficulty && (
-              <span className={styles.difficultyBadge} style={{ backgroundColor: DIFFICULTY_COLORS[recipe.difficulty] ?? '#999' }}>
-                {recipe.difficulty}
-              </span>
-            )}
+
           </div>
           {recipe.dietary_tags && recipe.dietary_tags.length > 0 && (
             <div className={styles.dietaryTagsRow}>

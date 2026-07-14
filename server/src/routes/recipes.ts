@@ -104,7 +104,7 @@ router.post('/', async (req: Request, res: Response) => {
       RETURNING *
     `, [name, description, source_url, category, servings, prep_time, cook_time,
         instructions, calories, protein, carbs, fat, fiber,
-        image_url ?? null, dietary_tags ?? [], difficulty ?? 'medium', personal_notes ?? null]);
+        image_url ?? null, dietary_tags ?? [], difficulty ?? null, personal_notes ?? null]);
 
     const recipe = recipeResult.rows[0];
 

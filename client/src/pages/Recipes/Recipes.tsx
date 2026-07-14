@@ -4,11 +4,6 @@ import { recipesApi } from '../../services/api';
 import { Recipe, DIETARY_TAGS } from '../../types';
 import styles from './Recipes.module.css';
 
-const DIFFICULTY_COLORS: Record<string, string> = {
-  easy: '#2ecc71',
-  medium: '#E67E22',
-  hard: '#e74c3c',
-};
 
 const Recipes: React.FC = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -196,14 +191,7 @@ const Recipes: React.FC = () => {
                   {recipe.category && (
                     <span className={styles.categoryBadge}>{recipe.category}</span>
                   )}
-                  {recipe.difficulty && (
-                    <span
-                      className={styles.difficultyBadge}
-                      style={{ backgroundColor: DIFFICULTY_COLORS[recipe.difficulty] ?? '#999' }}
-                    >
-                      {recipe.difficulty}
-                    </span>
-                  )}
+
                   <button
                     className={`${styles.favoriteBtn} ${recipe.is_favorite ? styles.favoriteBtnActive : ''}`}
                     onClick={(e) => handleToggleFavorite(e, recipe)}
