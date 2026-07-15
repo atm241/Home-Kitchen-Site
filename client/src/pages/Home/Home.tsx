@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { calendarApi, mealsApi, budgetApi, pantryApi, MonthlyBudget, UseItUpResult } from '../../services/api';
 import { CombinedCalendarItem } from '../../types';
@@ -20,6 +20,8 @@ const Home: React.FC = () => {
   const [monthlyBudget, setMonthlyBudget] = useState<MonthlyBudget | null>(null);
   const [useItUp, setUseItUp] = useState<UseItUpResult | null>(null);
 
+  const weekGridRef = useRef<HTMLDivElement>(null);
+
   const weekDays = getWeekDays(currentDate);
   const weekStartDate = getWeekStartDate(currentDate);
   const weekEndDate = getWeekEndDate(currentDate);
@@ -29,6 +31,16 @@ const Home: React.FC = () => {
     loadWeekData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Scroll week grid to today's card on mobile after data loads
+  useEffect(() => {
+    if (!loading && weekGridRef.current) {
+      const todayEl = weekGridRef.current.querySelector(`.${styles.today}`) as HTMLElement | null;
+      if (todayEl) {
+        weekGridRef.current.scrollLeft = todayEl.offsetLeft - weekGridRef.current.offsetLeft;
+      }
+    }
+  }, [loading]);
 
   const loadWeekData = async () => {
     try {
@@ -211,7 +223,7 @@ const Home: React.FC = () => {
         </div>
       )}
 
-      <div className={styles.weekGrid}>
+      <div ref={weekGridRef} className={styles.weekGrid}>
         {weekDays.map((day) => {
           const items = getItemsForDay(day);
           const isToday = isSameDayUtil(day, new Date());
