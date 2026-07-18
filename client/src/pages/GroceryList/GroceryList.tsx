@@ -20,6 +20,7 @@ const GroceryList: React.FC = () => {
   useEffect(() => {
     loadGroceryList();
     loadIngredientCombos(false); // Only load cached combos
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const showNotification = (type: 'success' | 'error', message: string) => {

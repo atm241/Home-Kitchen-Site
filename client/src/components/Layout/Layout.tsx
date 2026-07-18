@@ -1,7 +1,9 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styles from './Layout.module.css';
 import logoImg from '../../HomeKitchen.png';
+import { useAuth } from '../../context/AuthContext';
+import { authApi } from '../../services/api';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,6 +11,28 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { household, logout, refreshHousehold } = useAuth();
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const handleRegenerateInviteCode = async () => {
+    if (!window.confirm('Generate a new invite code? The old code will stop working.')) return;
+    await authApi.regenerateInviteCode();
+    await refreshHousehold();
+  };
+
+  const handleCopyInviteCode = () => {
+    if (!household) return;
+    navigator.clipboard.writeText(household.inviteCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -60,6 +84,31 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               Cook History
             </Link>
           </nav>
+          <div className={styles.account}>
+            <button
+              className={styles.accountButton}
+              onClick={() => setShowAccountMenu(!showAccountMenu)}
+            >
+              {household?.name || 'Account'} ▾
+            </button>
+            {showAccountMenu && (
+              <div className={styles.accountMenu}>
+                <div className={styles.accountMenuLabel}>Invite code</div>
+                <div className={styles.inviteCodeRow}>
+                  <code className={styles.inviteCode}>{household?.inviteCode}</code>
+                  <button className={styles.smallButton} onClick={handleCopyInviteCode}>
+                    {copied ? 'Copied!' : 'Copy'}
+                  </button>
+                </div>
+                <button className={styles.linkButton} onClick={handleRegenerateInviteCode}>
+                  Generate new code
+                </button>
+                <button className={styles.logoutButton} onClick={handleLogout}>
+                  Log Out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
       <main className={styles.main}>{children}</main>

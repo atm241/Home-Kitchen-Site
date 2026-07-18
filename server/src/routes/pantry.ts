@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import pool from '../config/database';
 import { categorizeIngredient } from '../services/ingredientCategorizer';
+import { lookupBarcode } from '../services/barcodeService';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -14,8 +15,9 @@ router.get('/', async (req: Request, res: Response) => {
       SELECT p.*, i.name as ingredient_name, i.category
       FROM pantry p
       JOIN ingredients i ON p.ingredient_id = i.id
+      WHERE p.household_id = $1
       ORDER BY i.name ASC
-    `);
+    `, [req.householdId]);
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching pantry items:', error);
@@ -30,13 +32,26 @@ router.get('/staples', async (req: Request, res: Response) => {
       SELECT p.*, i.name as ingredient_name, i.category
       FROM pantry p
       JOIN ingredients i ON p.ingredient_id = i.id
-      WHERE p.is_staple = true
+      WHERE p.is_staple = true AND p.household_id = $1
       ORDER BY i.name ASC
-    `);
+    `, [req.householdId]);
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching pantry staples:', error);
     res.status(500).json({ error: 'Failed to fetch pantry staples' });
+  }
+});
+
+// Look up a scanned barcode via Open Food Facts (must be before /:id-style routes)
+router.get('/barcode/:code', async (req: Request, res: Response) => {
+  try {
+    const { code } = req.params;
+    const product = await lookupBarcode(code);
+    if (!product) return res.status(404).json({ error: 'Product not found for this barcode' });
+    res.json(product);
+  } catch (error) {
+    console.error('Error looking up barcode:', error);
+    res.status(500).json({ error: 'Failed to look up barcode' });
   }
 });
 
@@ -46,9 +61,9 @@ router.post('/', async (req: Request, res: Response) => {
     const { ingredient_id, quantity, unit, expiration_date, is_staple } = req.body;
 
     const result = await pool.query(`
-      INSERT INTO pantry (ingredient_id, quantity, unit, expiration_date, is_staple, last_updated)
-      VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
-      ON CONFLICT (ingredient_id)
+      INSERT INTO pantry (household_id, ingredient_id, quantity, unit, expiration_date, is_staple, last_updated)
+      VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+      ON CONFLICT (household_id, ingredient_id)
       DO UPDATE SET
         quantity = EXCLUDED.quantity,
         unit = EXCLUDED.unit,
@@ -56,7 +71,7 @@ router.post('/', async (req: Request, res: Response) => {
         is_staple = EXCLUDED.is_staple,
         last_updated = CURRENT_TIMESTAMP
       RETURNING *
-    `, [ingredient_id, quantity, unit, expiration_date, is_staple || false]);
+    `, [req.householdId, ingredient_id, quantity, unit, expiration_date, is_staple || false]);
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -77,10 +92,11 @@ router.get('/use-it-up', async (req: Request, res: Response) => {
         (p.expiration_date::date - CURRENT_DATE)::int as days_until_expiry
       FROM pantry p
       JOIN ingredients i ON p.ingredient_id = i.id
-      WHERE p.expiration_date IS NOT NULL
+      WHERE p.household_id = $2
+        AND p.expiration_date IS NOT NULL
         AND p.expiration_date::date <= CURRENT_DATE + ($1 * INTERVAL '1 day')
       ORDER BY p.expiration_date ASC
-    `, [days]);
+    `, [days, req.householdId]);
 
     const recipesResult = await pool.query(`
       SELECT
@@ -95,13 +111,14 @@ router.get('/use-it-up', async (req: Request, res: Response) => {
       FROM recipes r
       JOIN recipe_ingredients ri ON r.id = ri.recipe_id
       JOIN ingredients i ON ri.ingredient_id = i.id
-      JOIN pantry p ON p.ingredient_id = ri.ingredient_id
-      WHERE p.expiration_date IS NOT NULL
+      JOIN pantry p ON p.ingredient_id = ri.ingredient_id AND p.household_id = r.household_id
+      WHERE r.household_id = $2
+        AND p.expiration_date IS NOT NULL
         AND p.expiration_date::date <= CURRENT_DATE + ($1 * INTERVAL '1 day')
       GROUP BY r.id
       ORDER BY expiring_ingredient_count DESC, r.name ASC
       LIMIT 10
-    `, [days]);
+    `, [days, req.householdId]);
 
     res.json({
       expiringItems: expiringResult.rows,
@@ -177,16 +194,16 @@ Rules:
       const category = await categorizeIngredient(item.name);
 
       let ingResult = await pool.query(
-        'SELECT id FROM ingredients WHERE LOWER(name) = LOWER($1)',
-        [item.name]
+        'SELECT id FROM ingredients WHERE LOWER(name) = LOWER($1) AND household_id = $2',
+        [item.name, req.householdId]
       );
       let ingredientId: number;
       if (ingResult.rows.length > 0) {
         ingredientId = ingResult.rows[0].id;
       } else {
         const newIng = await pool.query(
-          'INSERT INTO ingredients (name, category) VALUES ($1, $2) RETURNING id',
-          [item.name, category]
+          'INSERT INTO ingredients (household_id, name, category) VALUES ($1, $2, $3) RETURNING id',
+          [req.householdId, item.name, category]
         );
         ingredientId = newIng.rows[0].id;
       }
@@ -226,9 +243,9 @@ router.put('/:id', async (req: Request, res: Response) => {
     const result = await pool.query(`
       UPDATE pantry
       SET quantity = $1, unit = $2, expiration_date = $3, is_staple = $4, last_updated = CURRENT_TIMESTAMP
-      WHERE id = $5
+      WHERE id = $5 AND household_id = $6
       RETURNING *
-    `, [quantity, unit, expiration_date, is_staple, id]);
+    `, [quantity, unit, expiration_date, is_staple, id, req.householdId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Pantry item not found' });
@@ -246,7 +263,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
-    await pool.query('DELETE FROM pantry WHERE id = $1', [id]);
+    await pool.query('DELETE FROM pantry WHERE id = $1 AND household_id = $2', [id, req.householdId]);
     res.json({ message: 'Pantry item removed successfully' });
   } catch (error) {
     console.error('Error removing pantry item:', error);
@@ -261,6 +278,16 @@ router.post('/add-servings', async (req: Request, res: Response) => {
     await client.query('BEGIN');
 
     const { scheduled_meal_id, servings_made, date_made } = req.body;
+
+    // Verify the scheduled meal belongs to this household before recording against it
+    const mealCheck = await client.query(
+      'SELECT id FROM scheduled_meals WHERE id = $1 AND household_id = $2',
+      [scheduled_meal_id, req.householdId]
+    );
+    if (mealCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Scheduled meal not found' });
+    }
 
     // Create meal portion record
     await client.query(`
@@ -288,11 +315,13 @@ router.post('/consume-servings', async (req: Request, res: Response) => {
     const { meal_portion_id, servings_consumed } = req.body;
 
     const result = await pool.query(`
-      UPDATE meal_portions
+      UPDATE meal_portions mp
       SET servings_consumed = servings_consumed + $1
-      WHERE id = $2
-      RETURNING *
-    `, [servings_consumed, meal_portion_id]);
+      FROM scheduled_meals sm
+      WHERE mp.scheduled_meal_id = sm.id
+        AND mp.id = $2 AND sm.household_id = $3
+      RETURNING mp.*
+    `, [servings_consumed, meal_portion_id, req.householdId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Meal portion not found' });

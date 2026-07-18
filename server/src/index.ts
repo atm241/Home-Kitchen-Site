@@ -2,8 +2,10 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
 import pool from './config/database';
+import { requireAuth } from './middleware/auth';
 
 // Import routes
+import authRoutes from './routes/auth';
 import recipeRoutes from './routes/recipes';
 import ingredientRoutes from './routes/ingredients';
 import pantryRoutes from './routes/pantry';
@@ -37,15 +39,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-app.use('/api/recipes', recipeRoutes);
-app.use('/api/ingredients', ingredientRoutes);
-app.use('/api/pantry', pantryRoutes);
-app.use('/api/meals', mealRoutes);
-app.use('/api/grocery', groceryRoutes);
-app.use('/api/calendar', calendarRoutes);
-app.use('/api/budget', budgetRoutes);
-app.use('/api/recommendations', recommendationRoutes);
-app.use('/api/cook-history', cookHistoryRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/recipes', requireAuth, recipeRoutes);
+app.use('/api/ingredients', requireAuth, ingredientRoutes);
+app.use('/api/pantry', requireAuth, pantryRoutes);
+app.use('/api/meals', requireAuth, mealRoutes);
+app.use('/api/grocery', requireAuth, groceryRoutes);
+app.use('/api/calendar', requireAuth, calendarRoutes);
+app.use('/api/budget', requireAuth, budgetRoutes);
+app.use('/api/recommendations', requireAuth, recommendationRoutes);
+app.use('/api/cook-history', requireAuth, cookHistoryRoutes);
 
 // Health check
 app.get('/api/health', async (req: Request, res: Response) => {

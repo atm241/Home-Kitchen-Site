@@ -19,7 +19,6 @@ const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showMealModal, setShowMealModal] = useState(false);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [formData, setFormData] = useState({
@@ -52,11 +51,11 @@ const Calendar: React.FC = () => {
 
   useEffect(() => {
     loadCalendarData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDate]);
 
   const loadCalendarData = async () => {
     try {
-      setLoading(true);
       setLoadError(null);
       const firstDay = monthDays[0];
       const lastDay = monthDays[monthDays.length - 1];
@@ -74,8 +73,6 @@ const Calendar: React.FC = () => {
     } catch (error) {
       console.error('Error loading calendar:', error);
       setLoadError('Failed to load calendar. Please check your connection and try again.');
-    } finally {
-      setLoading(false);
     }
 
     // Load budget separately so a failure here never blocks the calendar

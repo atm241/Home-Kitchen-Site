@@ -14,11 +14,57 @@ import type {
 } from '../types';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
+const TOKEN_STORAGE_KEY = 'home_kitchen_token';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
+
+export const getToken = () => localStorage.getItem(TOKEN_STORAGE_KEY);
+export const setToken = (token: string) => localStorage.setItem(TOKEN_STORAGE_KEY, token);
+export const clearToken = () => localStorage.removeItem(TOKEN_STORAGE_KEY);
+
+api.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && getToken()) {
+      clearToken();
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Auth
+export interface AuthUser {
+  id: number;
+  email: string;
+  name: string;
+}
+
+export interface Household {
+  id: number;
+  name: string;
+  inviteCode: string;
+}
+
+export const authApi = {
+  signup: (data: { email: string; password: string; name: string; householdName?: string; inviteCode?: string }) =>
+    api.post<{ token: string; user: AuthUser }>('/auth/signup', data),
+  login: (data: { email: string; password: string }) =>
+    api.post<{ token: string; user: AuthUser }>('/auth/login', data),
+  me: () => api.get<{ user: AuthUser; household: Household }>('/auth/me'),
+  regenerateInviteCode: () => api.post<{ inviteCode: string }>('/auth/household/invite-code'),
+};
 
 // Recipes
 export const recipesApi = {
@@ -84,6 +130,13 @@ export interface ParsedReceiptItem {
   expiration_date: string | null;
 }
 
+export interface BarcodeProduct {
+  barcode: string;
+  name: string;
+  category: string;
+  imageUrl: string | null;
+}
+
 // Pantry
 export const pantryApi = {
   getAll: () => api.get<PantryItem[]>('/pantry'),
@@ -99,6 +152,7 @@ export const pantryApi = {
     api.post<ParsedReceiptItem[]>('/pantry/parse-receipt', data),
   useItUp: (days = 5) =>
     api.get<UseItUpResult>('/pantry/use-it-up', { params: { days } }),
+  lookupBarcode: (code: string) => api.get<BarcodeProduct>(`/pantry/barcode/${code}`),
 };
 
 // Scheduled Meals

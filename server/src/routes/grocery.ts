@@ -20,10 +20,10 @@ router.get('/', async (req: Request, res: Response) => {
       SELECT gl.*, i.name as ingredient_name, i.category, gp.price as store_price
       FROM grocery_list gl
       JOIN ingredients i ON gl.ingredient_id = i.id
-      LEFT JOIN grocery_prices gp ON i.id = gp.ingredient_id AND gp.store_name = 'Smiths'
-      WHERE gl.week_start_date = $1
+      LEFT JOIN grocery_prices gp ON i.id = gp.ingredient_id AND gp.store_name = 'Smiths' AND gp.household_id = gl.household_id
+      WHERE gl.week_start_date = $1 AND gl.household_id = $2
       ORDER BY i.category, i.name
-    `, [week_start_date]);
+    `, [week_start_date, req.householdId]);
 
     res.json(result.rows);
   } catch (error) {
@@ -37,6 +37,7 @@ router.post('/generate', async (req: Request, res: Response) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    const householdId = req.householdId;
 
     const { week_start_date, week_end_date } = req.body;
 
@@ -45,15 +46,15 @@ router.post('/generate', async (req: Request, res: Response) => {
     }
 
     // Clear existing grocery list for this week
-    await client.query('DELETE FROM grocery_list WHERE week_start_date = $1', [week_start_date]);
+    await client.query('DELETE FROM grocery_list WHERE week_start_date = $1 AND household_id = $2', [week_start_date, householdId]);
 
     // Get all scheduled meals for the week
     const mealsResult = await client.query(`
       SELECT sm.*, r.servings as recipe_servings
       FROM scheduled_meals sm
       JOIN recipes r ON sm.recipe_id = r.id
-      WHERE sm.meal_date >= $1 AND sm.meal_date <= $2
-    `, [week_start_date, week_end_date]);
+      WHERE sm.meal_date >= $1 AND sm.meal_date <= $2 AND sm.household_id = $3
+    `, [week_start_date, week_end_date, householdId]);
 
     const meals = mealsResult.rows;
 
@@ -88,7 +89,7 @@ router.post('/generate', async (req: Request, res: Response) => {
     }
 
     // Check pantry for existing ingredients
-    const pantryResult = await client.query('SELECT * FROM pantry');
+    const pantryResult = await client.query('SELECT * FROM pantry WHERE household_id = $1', [householdId]);
     const pantryMap = new Map(
       pantryResult.rows.map(item => [item.ingredient_id, item])
     );
@@ -110,17 +111,17 @@ router.post('/generate', async (req: Request, res: Response) => {
         // Get price from grocery_prices
         const priceResult = await client.query(`
           SELECT price FROM grocery_prices
-          WHERE ingredient_id = $1 AND store_name = 'Smiths'
+          WHERE ingredient_id = $1 AND store_name = 'Smiths' AND household_id = $2
           ORDER BY last_updated DESC
           LIMIT 1
-        `, [data.ingredientId]);
+        `, [data.ingredientId, householdId]);
 
         const estimatedPrice = priceResult.rows[0]?.price || 0;
 
         await client.query(`
-          INSERT INTO grocery_list (ingredient_id, quantity, unit, estimated_price, week_start_date)
-          VALUES ($1, $2, $3, $4, $5)
-        `, [data.ingredientId, neededQuantity, data.unit, estimatedPrice, week_start_date]);
+          INSERT INTO grocery_list (household_id, ingredient_id, quantity, unit, estimated_price, week_start_date)
+          VALUES ($1, $2, $3, $4, $5, $6)
+        `, [householdId, data.ingredientId, neededQuantity, data.unit, estimatedPrice, week_start_date]);
       }
     }
 
@@ -131,10 +132,10 @@ router.post('/generate', async (req: Request, res: Response) => {
       SELECT gl.*, i.name as ingredient_name, i.category, gp.price as store_price
       FROM grocery_list gl
       JOIN ingredients i ON gl.ingredient_id = i.id
-      LEFT JOIN grocery_prices gp ON i.id = gp.ingredient_id AND gp.store_name = 'Smiths'
-      WHERE gl.week_start_date = $1
+      LEFT JOIN grocery_prices gp ON i.id = gp.ingredient_id AND gp.store_name = 'Smiths' AND gp.household_id = gl.household_id
+      WHERE gl.week_start_date = $1 AND gl.household_id = $2
       ORDER BY i.category, i.name
-    `, [week_start_date]);
+    `, [week_start_date, householdId]);
 
     res.json(generatedList.rows);
   } catch (error) {
@@ -151,6 +152,7 @@ router.post('/', async (req: Request, res: Response) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    const householdId = req.householdId;
 
     const { ingredient_name, quantity, unit, week_start_date } = req.body;
 
@@ -160,8 +162,8 @@ router.post('/', async (req: Request, res: Response) => {
 
     // Find or create ingredient
     let ingredientResult = await client.query(
-      'SELECT id FROM ingredients WHERE LOWER(name) = LOWER($1)',
-      [ingredient_name]
+      'SELECT id FROM ingredients WHERE LOWER(name) = LOWER($1) AND household_id = $2',
+      [ingredient_name, householdId]
     );
 
     let ingredientId;
@@ -169,8 +171,8 @@ router.post('/', async (req: Request, res: Response) => {
       // Create new ingredient with AI-powered categorization
       const category = await categorizeIngredient(ingredient_name);
       const newIngredient = await client.query(
-        'INSERT INTO ingredients (name, category) VALUES ($1, $2) RETURNING id',
-        [ingredient_name, category]
+        'INSERT INTO ingredients (household_id, name, category) VALUES ($1, $2, $3) RETURNING id',
+        [householdId, ingredient_name, category]
       );
       ingredientId = newIngredient.rows[0].id;
     } else {
@@ -180,19 +182,19 @@ router.post('/', async (req: Request, res: Response) => {
     // Get price from grocery_prices
     const priceResult = await client.query(`
       SELECT price FROM grocery_prices
-      WHERE ingredient_id = $1 AND store_name = 'Smiths'
+      WHERE ingredient_id = $1 AND store_name = 'Smiths' AND household_id = $2
       ORDER BY last_updated DESC
       LIMIT 1
-    `, [ingredientId]);
+    `, [ingredientId, householdId]);
 
     const estimatedPrice = priceResult.rows[0]?.price || 0;
 
     // Insert into grocery list
     const groceryItemResult = await client.query(`
-      INSERT INTO grocery_list (ingredient_id, quantity, unit, estimated_price, week_start_date, is_purchased)
-      VALUES ($1, $2, $3, $4, $5, false)
+      INSERT INTO grocery_list (household_id, ingredient_id, quantity, unit, estimated_price, week_start_date, is_purchased)
+      VALUES ($1, $2, $3, $4, $5, $6, false)
       RETURNING *
-    `, [ingredientId, quantity || 1, unit || 'unit', estimatedPrice, week_start_date]);
+    `, [householdId, ingredientId, quantity || 1, unit || 'unit', estimatedPrice, week_start_date]);
 
     await client.query('COMMIT');
 
@@ -201,7 +203,7 @@ router.post('/', async (req: Request, res: Response) => {
       SELECT gl.*, i.name as ingredient_name, i.category, gp.price as store_price
       FROM grocery_list gl
       JOIN ingredients i ON gl.ingredient_id = i.id
-      LEFT JOIN grocery_prices gp ON i.id = gp.ingredient_id AND gp.store_name = 'Smiths'
+      LEFT JOIN grocery_prices gp ON i.id = gp.ingredient_id AND gp.store_name = 'Smiths' AND gp.household_id = gl.household_id
       WHERE gl.id = $1
     `, [groceryItemResult.rows[0].id]);
 
@@ -220,6 +222,7 @@ router.post('/from-recipe', async (req: Request, res: Response) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    const householdId = req.householdId;
 
     const { recipe_id, week_start_date, servings } = req.body;
 
@@ -228,7 +231,10 @@ router.post('/from-recipe', async (req: Request, res: Response) => {
     }
 
     // Get recipe details
-    const recipeResult = await client.query('SELECT servings FROM recipes WHERE id = $1', [recipe_id]);
+    const recipeResult = await client.query(
+      'SELECT servings FROM recipes WHERE id = $1 AND household_id = $2',
+      [recipe_id, householdId]
+    );
 
     if (recipeResult.rows.length === 0) {
       return res.status(404).json({ error: 'Recipe not found' });
@@ -253,18 +259,18 @@ router.post('/from-recipe', async (req: Request, res: Response) => {
       // Get price from grocery_prices
       const priceResult = await client.query(`
         SELECT price FROM grocery_prices
-        WHERE ingredient_id = $1 AND store_name = 'Smiths'
+        WHERE ingredient_id = $1 AND store_name = 'Smiths' AND household_id = $2
         ORDER BY last_updated DESC
         LIMIT 1
-      `, [ing.ingredient_id]);
+      `, [ing.ingredient_id, householdId]);
 
       const estimatedPrice = priceResult.rows[0]?.price || 0;
 
       // Check if item already exists in grocery list for this week
       const existingItem = await client.query(`
         SELECT id, quantity FROM grocery_list
-        WHERE ingredient_id = $1 AND week_start_date = $2
-      `, [ing.ingredient_id, week_start_date]);
+        WHERE ingredient_id = $1 AND week_start_date = $2 AND household_id = $3
+      `, [ing.ingredient_id, week_start_date, householdId]);
 
       if (existingItem.rows.length > 0) {
         // Update existing item quantity
@@ -279,10 +285,10 @@ router.post('/from-recipe', async (req: Request, res: Response) => {
       } else {
         // Insert new item
         const groceryItemResult = await client.query(`
-          INSERT INTO grocery_list (ingredient_id, quantity, unit, estimated_price, week_start_date, is_purchased)
-          VALUES ($1, $2, $3, $4, $5, false)
+          INSERT INTO grocery_list (household_id, ingredient_id, quantity, unit, estimated_price, week_start_date, is_purchased)
+          VALUES ($1, $2, $3, $4, $5, $6, false)
           RETURNING id
-        `, [ing.ingredient_id, scaledQuantity, ing.unit, estimatedPrice, week_start_date]);
+        `, [householdId, ing.ingredient_id, scaledQuantity, ing.unit, estimatedPrice, week_start_date]);
 
         addedItems.push(groceryItemResult.rows[0].id);
       }
@@ -296,7 +302,7 @@ router.post('/from-recipe', async (req: Request, res: Response) => {
         SELECT gl.*, i.name as ingredient_name, i.category, gp.price as store_price
         FROM grocery_list gl
         JOIN ingredients i ON gl.ingredient_id = i.id
-        LEFT JOIN grocery_prices gp ON i.id = gp.ingredient_id AND gp.store_name = 'Smiths'
+        LEFT JOIN grocery_prices gp ON i.id = gp.ingredient_id AND gp.store_name = 'Smiths' AND gp.household_id = gl.household_id
         WHERE gl.id = ANY($1)
         ORDER BY i.category, i.name
       `, [addedItems]);
@@ -324,9 +330,9 @@ router.patch('/:id/purchase', async (req: Request, res: Response) => {
     const result = await pool.query(`
       UPDATE grocery_list
       SET is_purchased = $1
-      WHERE id = $2
+      WHERE id = $2 AND household_id = $3
       RETURNING *
-    `, [is_purchased, id]);
+    `, [is_purchased, id, req.householdId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Grocery item not found' });
@@ -349,9 +355,9 @@ router.put('/:id', async (req: Request, res: Response) => {
     const result = await pool.query(`
       UPDATE grocery_list
       SET quantity = $1, unit = $2, estimated_price = $3, store_price = COALESCE($4, store_price)
-      WHERE id = $5
+      WHERE id = $5 AND household_id = $6
       RETURNING *
-    `, [quantity, unit, estimated_price, store_price ?? null, id]);
+    `, [quantity, unit, estimated_price, store_price ?? null, id, req.householdId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Grocery item not found' });
@@ -373,7 +379,7 @@ router.delete('/clear', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'week_start_date is required' });
     }
 
-    await pool.query('DELETE FROM grocery_list WHERE week_start_date = $1', [week_start_date]);
+    await pool.query('DELETE FROM grocery_list WHERE week_start_date = $1 AND household_id = $2', [week_start_date, req.householdId]);
     res.json({ message: 'Grocery list cleared successfully' });
   } catch (error) {
     console.error('Error clearing grocery list:', error);
@@ -386,7 +392,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
-    await pool.query('DELETE FROM grocery_list WHERE id = $1', [id]);
+    await pool.query('DELETE FROM grocery_list WHERE id = $1 AND household_id = $2', [id, req.householdId]);
     res.json({ message: 'Grocery item deleted successfully' });
   } catch (error) {
     console.error('Error deleting grocery item:', error);
@@ -399,6 +405,7 @@ router.post('/add-to-pantry', async (req: Request, res: Response) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    const householdId = req.householdId;
 
     const { week_start_date } = req.body;
 
@@ -411,16 +418,16 @@ router.post('/add-to-pantry', async (req: Request, res: Response) => {
       SELECT gl.*, i.name as ingredient_name
       FROM grocery_list gl
       JOIN ingredients i ON gl.ingredient_id = i.id
-      WHERE gl.week_start_date = $1 AND gl.is_purchased = true
-    `, [week_start_date]);
+      WHERE gl.week_start_date = $1 AND gl.is_purchased = true AND gl.household_id = $2
+    `, [week_start_date, householdId]);
 
     let addedCount = 0;
 
     for (const item of purchasedItems.rows) {
       // Check if item already exists in pantry
       const existingPantry = await client.query(
-        'SELECT id, quantity FROM pantry WHERE ingredient_id = $1',
-        [item.ingredient_id]
+        'SELECT id, quantity FROM pantry WHERE ingredient_id = $1 AND household_id = $2',
+        [item.ingredient_id, householdId]
       );
 
       if (existingPantry.rows.length > 0) {
@@ -433,8 +440,8 @@ router.post('/add-to-pantry', async (req: Request, res: Response) => {
       } else {
         // Add new item to pantry
         await client.query(
-          'INSERT INTO pantry (ingredient_id, quantity, unit, is_staple) VALUES ($1, $2, $3, false)',
-          [item.ingredient_id, item.quantity, item.unit]
+          'INSERT INTO pantry (household_id, ingredient_id, quantity, unit, is_staple) VALUES ($1, $2, $3, $4, false)',
+          [householdId, item.ingredient_id, item.quantity, item.unit]
         );
       }
 
@@ -453,9 +460,9 @@ router.post('/add-to-pantry', async (req: Request, res: Response) => {
           SELECT i.name
           FROM pantry p
           JOIN ingredients i ON p.ingredient_id = i.id
-          WHERE p.quantity > 0 OR p.is_staple = true
+          WHERE p.household_id = $1 AND (p.quantity > 0 OR p.is_staple = true)
           ORDER BY i.name ASC
-        `);
+        `, [householdId]);
 
         const ingredientNames = pantryResult.rows.map(row => row.name);
         const pantrySignature = createPantrySignature(ingredientNames);
@@ -466,9 +473,9 @@ router.post('/add-to-pantry', async (req: Request, res: Response) => {
         recipeExpiresAt.setFullYear(recipeExpiresAt.getFullYear() + 10);
 
         await pool.query(`
-          INSERT INTO cached_recipe_recommendations (pantry_signature, recommendations, expires_at)
-          VALUES ($1, $2, $3)
-        `, [pantrySignature, JSON.stringify(recommendations), recipeExpiresAt]);
+          INSERT INTO cached_recipe_recommendations (household_id, pantry_signature, recommendations, expires_at)
+          VALUES ($1, $2, $3, $4)
+        `, [householdId, pantrySignature, JSON.stringify(recommendations), recipeExpiresAt]);
 
         console.log(`✅ Cached ${recommendations.length} new recipe recommendations`);
 
@@ -478,9 +485,9 @@ router.post('/add-to-pantry', async (req: Request, res: Response) => {
         combosExpiresAt.setFullYear(combosExpiresAt.getFullYear() + 10);
 
         await pool.query(`
-          INSERT INTO cached_ingredient_combos (pantry_signature, combos, expires_at)
-          VALUES ($1, $2, $3)
-        `, [pantrySignature, JSON.stringify(combos), combosExpiresAt]);
+          INSERT INTO cached_ingredient_combos (household_id, pantry_signature, combos, expires_at)
+          VALUES ($1, $2, $3, $4)
+        `, [householdId, pantrySignature, JSON.stringify(combos), combosExpiresAt]);
 
         console.log(`✅ Cached ${combos.length} new ingredient combos`);
       } catch (cacheError) {
@@ -507,15 +514,15 @@ router.get('/prices', async (req: Request, res: Response) => {
   try {
     const { store_name } = req.query;
 
-    let query = 'SELECT gp.*, i.name as ingredient_name FROM grocery_prices gp JOIN ingredients i ON gp.ingredient_id = i.id';
+    let query = 'SELECT gp.*, i.name as ingredient_name FROM grocery_prices gp JOIN ingredients i ON gp.ingredient_id = i.id WHERE gp.household_id = $1';
+    const params: any[] = [req.householdId];
 
     if (store_name) {
-      query += ` WHERE gp.store_name = $1`;
-      const result = await pool.query(query, [store_name]);
-      return res.json(result.rows);
+      params.push(store_name);
+      query += ` AND gp.store_name = $${params.length}`;
     }
 
-    const result = await pool.query(query);
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching grocery prices:', error);
@@ -528,16 +535,16 @@ router.post('/prices', async (req: Request, res: Response) => {
     const { ingredient_id, store_name, price, quantity, unit } = req.body;
 
     const result = await pool.query(`
-      INSERT INTO grocery_prices (ingredient_id, store_name, price, quantity, unit, last_updated)
-      VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
-      ON CONFLICT (ingredient_id, store_name)
+      INSERT INTO grocery_prices (household_id, ingredient_id, store_name, price, quantity, unit, last_updated)
+      VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+      ON CONFLICT (household_id, ingredient_id, store_name)
       DO UPDATE SET
         price = EXCLUDED.price,
         quantity = EXCLUDED.quantity,
         unit = EXCLUDED.unit,
         last_updated = CURRENT_TIMESTAMP
       RETURNING *
-    `, [ingredient_id, store_name, price, quantity, unit]);
+    `, [req.householdId, ingredient_id, store_name, price, quantity, unit]);
 
     res.status(201).json(result.rows[0]);
   } catch (error) {

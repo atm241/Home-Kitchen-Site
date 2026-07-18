@@ -23,6 +23,7 @@ services:
       PORT: 5001
       DATABASE_URL: postgres://${POSTGRES_USER:-kitchen}:${POSTGRES_PASSWORD}@db:5432/home_kitchen
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set in .env}
+      JWT_SECRET: ${JWT_SECRET:?set in .env, e.g. via: openssl rand -base64 48}
     depends_on:
       db:
         condition: service_healthy

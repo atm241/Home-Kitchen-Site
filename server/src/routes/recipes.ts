@@ -27,7 +27,8 @@ const RECIPE_SELECT = `
 router.get('/', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
-      RECIPE_SELECT + ' GROUP BY r.id ORDER BY r.created_at DESC'
+      RECIPE_SELECT + ' WHERE r.household_id = $1 GROUP BY r.id ORDER BY r.created_at DESC',
+      [req.householdId]
     );
     res.json(result.rows);
   } catch (error) {
@@ -41,9 +42,9 @@ router.get('/filter/nutritional', async (req: Request, res: Response) => {
   try {
     const { maxCarbs, minProtein, dietaryTag } = req.query;
 
-    let query = RECIPE_SELECT + ' WHERE 1=1';
-    const params: any[] = [];
-    let p = 1;
+    let query = RECIPE_SELECT + ' WHERE r.household_id = $1';
+    const params: any[] = [req.householdId];
+    let p = 2;
 
     if (maxCarbs) {
       query += ` AND r.carbs <= $${p++}`;
@@ -74,8 +75,8 @@ router.get('/:id', async (req: Request, res: Response) => {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     const result = await pool.query(
-      RECIPE_SELECT + ' WHERE r.id = $1 GROUP BY r.id',
-      [id]
+      RECIPE_SELECT + ' WHERE r.id = $1 AND r.household_id = $2 GROUP BY r.id',
+      [id, req.householdId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Recipe not found' });
     res.json(result.rows[0]);
@@ -90,6 +91,7 @@ router.post('/', async (req: Request, res: Response) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    const householdId = req.householdId;
 
     const {
       name, description, source_url, category, servings, prep_time, cook_time,
@@ -98,11 +100,11 @@ router.post('/', async (req: Request, res: Response) => {
     } = req.body;
 
     const recipeResult = await client.query(`
-      INSERT INTO recipes (name, description, source_url, category, servings, prep_time, cook_time,
+      INSERT INTO recipes (household_id, name, description, source_url, category, servings, prep_time, cook_time,
         instructions, calories, protein, carbs, fat, fiber, image_url, dietary_tags, difficulty, personal_notes)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
       RETURNING *
-    `, [name, description, source_url, category, servings, prep_time, cook_time,
+    `, [householdId, name, description, source_url, category, servings, prep_time, cook_time,
         instructions, calories, protein, carbs, fat, fiber,
         image_url ?? null, dietary_tags ?? [], difficulty ?? null, personal_notes ?? null]);
 
@@ -114,9 +116,9 @@ router.post('/', async (req: Request, res: Response) => {
         if (!ingredientId && ing.name) {
           const cat = ing.category || await categorizeIngredient(ing.name);
           const ingResult = await client.query(`
-            INSERT INTO ingredients (name, category) VALUES ($1, $2)
-            ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id
-          `, [ing.name, cat]);
+            INSERT INTO ingredients (household_id, name, category) VALUES ($1, $2, $3)
+            ON CONFLICT (household_id, name) DO UPDATE SET name = EXCLUDED.name RETURNING id
+          `, [householdId, ing.name, cat]);
           ingredientId = ingResult.rows[0].id;
         }
         await client.query(`
@@ -149,6 +151,7 @@ router.post('/import', async (req: Request, res: Response) => {
   try {
     const { url } = req.body;
     if (!url) return res.status(400).json({ error: 'URL is required' });
+    const householdId = req.householdId;
 
     const scrapedData = await scrapeRecipe(url);
     console.log('Scraped recipe data:', JSON.stringify(scrapedData, null, 2));
@@ -156,12 +159,12 @@ router.post('/import', async (req: Request, res: Response) => {
     await client.query('BEGIN');
 
     const recipeResult = await client.query(`
-      INSERT INTO recipes (name, description, source_url, category, servings, prep_time, cook_time,
+      INSERT INTO recipes (household_id, name, description, source_url, category, servings, prep_time, cook_time,
         instructions, calories, protein, carbs, fat, fiber, image_url)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
       RETURNING *
     `, [
-      scrapedData.name, scrapedData.description, url, scrapedData.category ?? null,
+      householdId, scrapedData.name, scrapedData.description, url, scrapedData.category ?? null,
       scrapedData.servings || 4, scrapedData.prep_time, scrapedData.cook_time,
       scrapedData.instructions, scrapedData.calories, scrapedData.protein,
       scrapedData.carbs, scrapedData.fat, scrapedData.fiber,
@@ -174,9 +177,9 @@ router.post('/import', async (req: Request, res: Response) => {
       for (const ing of scrapedData.ingredients) {
         const cat = await categorizeIngredient(ing.name);
         const ingResult = await client.query(`
-          INSERT INTO ingredients (name, category) VALUES ($1,$2)
-          ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id
-        `, [ing.name, cat]);
+          INSERT INTO ingredients (household_id, name, category) VALUES ($1,$2,$3)
+          ON CONFLICT (household_id, name) DO UPDATE SET name = EXCLUDED.name RETURNING id
+        `, [householdId, ing.name, cat]);
         const ingredientId = ingResult.rows[0].id;
         await client.query(`
           INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit, notes)
@@ -211,7 +214,9 @@ router.put('/:id', async (req: Request, res: Response) => {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
 
-    const existingResult = await client.query('SELECT * FROM recipes WHERE id = $1', [id]);
+    const existingResult = await client.query(
+      'SELECT * FROM recipes WHERE id = $1 AND household_id = $2', [id, req.householdId]
+    );
     if (existingResult.rows.length === 0) return res.status(404).json({ error: 'Recipe not found' });
 
     const e = existingResult.rows[0];
@@ -230,10 +235,10 @@ router.put('/:id', async (req: Request, res: Response) => {
           prep_time=$6, cook_time=$7, instructions=$8, calories=$9,
           protein=$10, carbs=$11, fat=$12, fiber=$13, image_url=$14,
           dietary_tags=$15, difficulty=$16, personal_notes=$17, updated_at=CURRENT_TIMESTAMP
-      WHERE id=$18
+      WHERE id=$18 AND household_id=$19
     `, [name, description, source_url, category, servings, prep_time, cook_time,
         instructions, calories, protein, carbs, fat, fiber, image_url,
-        dietary_tags, difficulty, personal_notes, id]);
+        dietary_tags, difficulty, personal_notes, id, req.householdId]);
 
     if (ingredients !== undefined) {
       await client.query('DELETE FROM recipe_ingredients WHERE recipe_id = $1', [id]);
@@ -243,9 +248,9 @@ router.put('/:id', async (req: Request, res: Response) => {
           if (!ingredientId && ing.name) {
             const cat = ing.category || await categorizeIngredient(ing.name);
             const ingResult = await client.query(`
-              INSERT INTO ingredients (name, category) VALUES ($1,$2)
-              ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id
-            `, [ing.name, cat]);
+              INSERT INTO ingredients (household_id, name, category) VALUES ($1,$2,$3)
+              ON CONFLICT (household_id, name) DO UPDATE SET name = EXCLUDED.name RETURNING id
+            `, [req.householdId, ing.name, cat]);
             ingredientId = ingResult.rows[0].id;
           }
           await client.query(`
@@ -279,8 +284,8 @@ router.patch('/:id/favorite', async (req: Request, res: Response) => {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
     const result = await pool.query(
-      'UPDATE recipes SET is_favorite = NOT is_favorite WHERE id = $1 RETURNING is_favorite',
-      [id]
+      'UPDATE recipes SET is_favorite = NOT is_favorite WHERE id = $1 AND household_id = $2 RETURNING is_favorite',
+      [id, req.householdId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Recipe not found' });
     res.json({ is_favorite: result.rows[0].is_favorite });
@@ -295,7 +300,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
-    await pool.query('DELETE FROM recipes WHERE id = $1', [id]);
+    await pool.query('DELETE FROM recipes WHERE id = $1 AND household_id = $2', [id, req.householdId]);
     res.json({ message: 'Recipe deleted successfully' });
   } catch (error) {
     console.error('Error deleting recipe:', error);
@@ -308,6 +313,7 @@ router.post('/import-spoonacular/:id', async (req: Request, res: Response) => {
   const client = await pool.connect();
   try {
     const spoonacularId = parseInt(req.params.id);
+    const householdId = req.householdId;
     console.log(`📥 Importing recipe from Spoonacular ID: ${spoonacularId}`);
 
     const spoonacularRecipe = await getRecipeDetails(spoonacularId);
@@ -315,11 +321,12 @@ router.post('/import-spoonacular/:id', async (req: Request, res: Response) => {
     await client.query('BEGIN');
 
     const recipeResult = await client.query(`
-      INSERT INTO recipes (name, description, source_url, servings, prep_time, cook_time,
+      INSERT INTO recipes (household_id, name, description, source_url, servings, prep_time, cook_time,
         instructions, calories, protein, carbs, fat, fiber, image_url)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
       RETURNING *
     `, [
+      householdId,
       spoonacularRecipe.title,
       cleanText(spoonacularRecipe.summary).substring(0, 500),
       spoonacularRecipe.sourceUrl,
@@ -340,7 +347,8 @@ router.post('/import-spoonacular/:id', async (req: Request, res: Response) => {
 
     for (const ingredient of spoonacularRecipe.extendedIngredients) {
       let ingredientResult = await client.query(
-        'SELECT id FROM ingredients WHERE LOWER(name) = LOWER($1)', [ingredient.name]
+        'SELECT id FROM ingredients WHERE LOWER(name) = LOWER($1) AND household_id = $2',
+        [ingredient.name, householdId]
       );
       let ingredientId: number;
       if (ingredientResult.rows.length > 0) {
@@ -348,8 +356,8 @@ router.post('/import-spoonacular/:id', async (req: Request, res: Response) => {
       } else {
         const cat = await categorizeIngredient(ingredient.name);
         const newIngredient = await client.query(
-          'INSERT INTO ingredients (name, category) VALUES ($1,$2) RETURNING id',
-          [ingredient.name, cat]
+          'INSERT INTO ingredients (household_id, name, category) VALUES ($1,$2,$3) RETURNING id',
+          [householdId, ingredient.name, cat]
         );
         ingredientId = newIngredient.rows[0].id;
       }

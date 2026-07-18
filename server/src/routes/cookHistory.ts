@@ -11,9 +11,10 @@ router.get('/', async (req: Request, res: Response) => {
       `SELECT ch.*, r.image_url, r.category, r.calories
        FROM cook_history ch
        LEFT JOIN recipes r ON ch.recipe_id = r.id
+       WHERE ch.household_id = $1
        ORDER BY ch.cooked_at DESC
-       LIMIT $1`,
-      [limit]
+       LIMIT $2`,
+      [req.householdId, limit]
     );
     res.json(result.rows);
   } catch (error) {
@@ -29,9 +30,9 @@ router.post('/', async (req: Request, res: Response) => {
     if (!recipe_name) return res.status(400).json({ error: 'recipe_name is required' });
 
     const result = await pool.query(
-      `INSERT INTO cook_history (recipe_id, recipe_name, servings_cooked)
-       VALUES ($1, $2, $3) RETURNING *`,
-      [recipe_id ?? null, recipe_name, servings_cooked ?? null]
+      `INSERT INTO cook_history (household_id, recipe_id, recipe_name, servings_cooked)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [req.householdId, recipe_id ?? null, recipe_name, servings_cooked ?? null]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -45,7 +46,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
-    await pool.query('DELETE FROM cook_history WHERE id = $1', [id]);
+    await pool.query('DELETE FROM cook_history WHERE id = $1 AND household_id = $2', [id, req.householdId]);
     res.json({ message: 'Deleted' });
   } catch (error) {
     console.error('Error deleting cook history entry:', error);

@@ -1,0 +1,164 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.card {
+  width: 100%;
+  max-width: 400px;
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.logoImg {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 8px;
+}
+
+.title {
+  margin: 0 0 4px;
+  color: #2C3E50;
+  text-align: center;
+}
+
+.subtitle {
+  margin: 0 0 24px;
+  color: #7F8C8D;
+  text-align: center;
+  font-size: 14px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.formGroup label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2C3E50;
+}
+
+.input {
+  padding: 10px 12px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: inherit;
+  transition: border-color 0.2s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #8BAE66;
+}
+
+.hint {
+  font-size: 12px;
+  color: #7F8C8D;
+  margin-top: 4px;
+}
+
+.error {
+  background-color: #FDEDEC;
+  color: #E74C3C;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.submitButton {
+  width: 100%;
+  padding: 12px 24px;
+  background-color: #628141;
+  color: #EBD5AB;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+}
+
+.submitButton:hover:not(:disabled) {
+  background-color: #8BAE66;
+  color: #2C3E50;
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.switchMode {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+  color: #2C3E50;
+}
+
+.switchMode button {
+  color: #E67E22;
+  font-weight: 600;
+}
+
+.switchMode button:hover {
+  text-decoration: underline;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: #BDC3C7;
+  font-size: 13px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: #E0E0E0;
+}
+
+.toggleRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  background-color: #EBD5AB;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.toggleButton {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #2C3E50;
+  transition: all 0.2s ease;
+}
+
+.toggleButtonActive {
+  background-color: #FFFFFF;
+  color: #628141;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}

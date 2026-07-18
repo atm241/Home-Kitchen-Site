@@ -7,13 +7,26 @@ A React-based meal planning application that helps you manage recipes, schedule 
 
 ## Features
 
+- **Accounts & Households**: Email/password accounts; each household's data (pantry, recipes, budgets, etc.) is fully isolated. Invite others to your household with a shareable code (see Layout's "Account" menu).
 - **Recipe Management**: Import recipes from URLs, view nutritional information, and manage your recipe collection
 - **Weekly Calendar**: View your meals for the week on the home screen
 - **Full Month Calendar**: Plan meals and events for the entire month
-- **Pantry Tracking**: Keep track of ingredients you have, including staples and quantities
+- **Pantry Tracking**: Keep track of ingredients you have, including staples, quantities, and expiration dates
+- **Barcode Scanning**: Scan a product barcode with your phone/laptop camera to prefill a pantry item (via the free Open Food Facts database)
+- **Receipt Scanning**: Photograph a grocery receipt and have AI extract line items straight into your pantry
 - **Grocery List**: Auto-generate shopping lists from scheduled meals with estimated costs
-- **Budget Tracking**: Set weekly budgets and track estimated vs actual costs
+- **Budget Tracking**: Set weekly/monthly budgets and track estimated vs actual costs
 - **Nutritional Filtering**: Find recipes based on nutritional goals (low-carb, high-protein, etc.)
+
+## Hosting
+
+This app is designed to run three ways from the same codebase:
+
+1. **Self-hosted (e.g. a Raspberry Pi)**: `docker-compose up` on your own hardware. Your household's data never leaves your network. See [docker-compose.yml](docker-compose.yml) and [SELF-HOSTING.md](SELF-HOSTING.md) (includes how to reach it from your phone away from home, and installing it as a home-screen app).
+2. **Cloud-hosted by you**: deploy the same Docker images to any VPS/cloud provider. The app is already multi-tenant (households + accounts), so multiple people can sign up on one instance without seeing each other's data.
+3. **Hosted for a fee**: since the app is multi-tenant, the same deployment can serve paying customers as separate households — no per-customer infrastructure needed.
+
+New installs get the full schema (including accounts/households) from [server/schema.sql](server/schema.sql). Existing installs upgrading from an older version should run the files in [server/migrations/](server/migrations/) in order — in particular `003_add_auth_and_households.sql`, which adds accounts and folds all pre-existing data into a "My Household" account (check the server logs or query the `households` table for its invite code after migrating).
 
 ## Tech Stack
 
@@ -79,6 +92,7 @@ Edit `.env` and update with your database credentials:
 PORT=5000
 DATABASE_URL=postgresql://username:password@localhost:5432/home_kitchen
 SPOONACULAR_API_KEY=your_api_key_here
+JWT_SECRET=generate_with_openssl_rand_base64_48
 ```
 
 ### 4. Install dependencies
@@ -172,6 +186,14 @@ Home Kitchen Site/
 ```
 
 ## API Endpoints
+
+### Auth
+- `POST /api/auth/signup` - Create an account (optionally join a household via `inviteCode`)
+- `POST /api/auth/login` - Log in, returns a JWT
+- `GET /api/auth/me` - Get the current user + household (requires `Authorization: Bearer <token>`)
+- `POST /api/auth/household/invite-code` - Regenerate the household's invite code
+
+All other endpoints below require the `Authorization: Bearer <token>` header and are scoped to the caller's household.
 
 ### Recipes
 - `GET /api/recipes` - Get all recipes

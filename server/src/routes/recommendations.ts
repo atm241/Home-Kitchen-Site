@@ -10,6 +10,7 @@ const router = express.Router();
 router.get('/', async (req: Request, res: Response) => {
   try {
     const forceRefresh = req.query.refresh === 'true';
+    const householdId = req.householdId;
     console.log(`📋 Fetching pantry items for recipe recommendations${forceRefresh ? ' (force refresh)' : ''}`);
 
     // Get all pantry items
@@ -17,9 +18,9 @@ router.get('/', async (req: Request, res: Response) => {
       SELECT i.name, i.category, p.quantity, p.unit
       FROM pantry p
       JOIN ingredients i ON p.ingredient_id = i.id
-      WHERE p.quantity > 0 OR p.is_staple = true
+      WHERE p.household_id = $1 AND (p.quantity > 0 OR p.is_staple = true)
       ORDER BY i.name ASC
-    `);
+    `, [householdId]);
 
     if (pantryResult.rows.length === 0) {
       return res.json([]);
@@ -33,10 +34,10 @@ router.get('/', async (req: Request, res: Response) => {
     const cachedResult = await pool.query(`
       SELECT recommendations
       FROM cached_recipe_recommendations
-      WHERE pantry_signature = $1
+      WHERE pantry_signature = $1 AND household_id = $2
       ORDER BY created_at DESC
       LIMIT 1
-    `, [pantrySignature]);
+    `, [pantrySignature, householdId]);
 
     // If we have cached data and not forcing refresh, return it
     if (cachedResult.rows.length > 0 && !forceRefresh) {
@@ -60,9 +61,9 @@ router.get('/', async (req: Request, res: Response) => {
     expiresAt.setFullYear(expiresAt.getFullYear() + 10); // Set far future expiration
 
     await pool.query(`
-      INSERT INTO cached_recipe_recommendations (pantry_signature, recommendations, expires_at)
-      VALUES ($1, $2, $3)
-    `, [pantrySignature, JSON.stringify(recommendations), expiresAt]);
+      INSERT INTO cached_recipe_recommendations (household_id, pantry_signature, recommendations, expires_at)
+      VALUES ($1, $2, $3, $4)
+    `, [householdId, pantrySignature, JSON.stringify(recommendations), expiresAt]);
 
     console.log(`✅ Cached and returning ${recommendations.length} recipe recommendations`);
 
@@ -77,6 +78,7 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/ingredient-combos', async (req: Request, res: Response) => {
   try {
     const forceRefresh = req.query.refresh === 'true';
+    const householdId = req.householdId;
     console.log(`📋 Fetching pantry items for ingredient combo recommendations${forceRefresh ? ' (force refresh)' : ''}`);
 
     // Get all pantry items
@@ -84,9 +86,9 @@ router.get('/ingredient-combos', async (req: Request, res: Response) => {
       SELECT i.name, i.category, p.quantity, p.unit
       FROM pantry p
       JOIN ingredients i ON p.ingredient_id = i.id
-      WHERE p.quantity > 0 OR p.is_staple = true
+      WHERE p.household_id = $1 AND (p.quantity > 0 OR p.is_staple = true)
       ORDER BY i.name ASC
-    `);
+    `, [householdId]);
 
     if (pantryResult.rows.length === 0) {
       return res.json([]);
@@ -100,10 +102,10 @@ router.get('/ingredient-combos', async (req: Request, res: Response) => {
     const cachedResult = await pool.query(`
       SELECT combos
       FROM cached_ingredient_combos
-      WHERE pantry_signature = $1
+      WHERE pantry_signature = $1 AND household_id = $2
       ORDER BY created_at DESC
       LIMIT 1
-    `, [pantrySignature]);
+    `, [pantrySignature, householdId]);
 
     // If we have cached data and not forcing refresh, return it
     if (cachedResult.rows.length > 0 && !forceRefresh) {
@@ -127,9 +129,9 @@ router.get('/ingredient-combos', async (req: Request, res: Response) => {
     expiresAt.setFullYear(expiresAt.getFullYear() + 10); // Set far future expiration
 
     await pool.query(`
-      INSERT INTO cached_ingredient_combos (pantry_signature, combos, expires_at)
-      VALUES ($1, $2, $3)
-    `, [pantrySignature, JSON.stringify(combos), expiresAt]);
+      INSERT INTO cached_ingredient_combos (household_id, pantry_signature, combos, expires_at)
+      VALUES ($1, $2, $3, $4)
+    `, [householdId, pantrySignature, JSON.stringify(combos), expiresAt]);
 
     console.log(`✅ Cached and returning ${combos.length} ingredient combo recommendations`);
 

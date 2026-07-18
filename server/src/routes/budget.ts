@@ -13,8 +13,8 @@ router.get('/', async (req: Request, res: Response) => {
     }
 
     const result = await pool.query(
-      'SELECT * FROM budgets WHERE week_start_date = $1',
-      [week_start_date]
+      'SELECT * FROM budgets WHERE week_start_date = $1 AND household_id = $2',
+      [week_start_date, req.householdId]
     );
 
     if (result.rows.length === 0) {
@@ -37,7 +37,10 @@ router.get('/', async (req: Request, res: Response) => {
 // Get all budgets
 router.get('/all', async (req: Request, res: Response) => {
   try {
-    const result = await pool.query('SELECT * FROM budgets ORDER BY week_start_date DESC');
+    const result = await pool.query(
+      'SELECT * FROM budgets WHERE household_id = $1 ORDER BY week_start_date DESC',
+      [req.householdId]
+    );
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching budgets:', error);
@@ -56,22 +59,22 @@ router.post('/', async (req: Request, res: Response) => {
 
     // Calculate estimated cost from grocery list
     const groceryResult = await pool.query(
-      'SELECT SUM(estimated_price * quantity) as total FROM grocery_list WHERE week_start_date = $1',
-      [week_start_date]
+      'SELECT SUM(estimated_price * quantity) as total FROM grocery_list WHERE week_start_date = $1 AND household_id = $2',
+      [week_start_date, req.householdId]
     );
 
     const estimatedCost = groceryResult.rows[0]?.total || 0;
 
     const result = await pool.query(`
-      INSERT INTO budgets (week_start_date, budget_amount, estimated_cost, calorie_budget)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (week_start_date)
+      INSERT INTO budgets (household_id, week_start_date, budget_amount, estimated_cost, calorie_budget)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (household_id, week_start_date)
       DO UPDATE SET
         budget_amount = EXCLUDED.budget_amount,
         estimated_cost = EXCLUDED.estimated_cost,
         calorie_budget = EXCLUDED.calorie_budget
       RETURNING *
-    `, [week_start_date, budget_amount, estimatedCost, calorie_budget ?? null]);
+    `, [req.householdId, week_start_date, budget_amount, estimatedCost, calorie_budget ?? null]);
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -93,9 +96,9 @@ router.patch('/:week_start_date/actual', async (req: Request, res: Response) => 
     const result = await pool.query(`
       UPDATE budgets
       SET actual_cost = $1
-      WHERE week_start_date = $2
+      WHERE week_start_date = $2 AND household_id = $3
       RETURNING *
-    `, [actual_cost, week_start_date]);
+    `, [actual_cost, week_start_date, req.householdId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Budget not found' });
@@ -114,8 +117,8 @@ router.post('/:week_start_date/recalculate', async (req: Request, res: Response)
     const { week_start_date } = req.params;
 
     const groceryResult = await pool.query(
-      'SELECT SUM(estimated_price * quantity) as total FROM grocery_list WHERE week_start_date = $1',
-      [week_start_date]
+      'SELECT SUM(estimated_price * quantity) as total FROM grocery_list WHERE week_start_date = $1 AND household_id = $2',
+      [week_start_date, req.householdId]
     );
 
     const estimatedCost = groceryResult.rows[0]?.total || 0;
@@ -123,17 +126,17 @@ router.post('/:week_start_date/recalculate', async (req: Request, res: Response)
     const result = await pool.query(`
       UPDATE budgets
       SET estimated_cost = $1
-      WHERE week_start_date = $2
+      WHERE week_start_date = $2 AND household_id = $3
       RETURNING *
-    `, [estimatedCost, week_start_date]);
+    `, [estimatedCost, week_start_date, req.householdId]);
 
     if (result.rows.length === 0) {
       // Create budget if it doesn't exist
       const createResult = await pool.query(`
-        INSERT INTO budgets (week_start_date, budget_amount, estimated_cost)
-        VALUES ($1, 0, $2)
+        INSERT INTO budgets (household_id, week_start_date, budget_amount, estimated_cost)
+        VALUES ($1, $2, 0, $3)
         RETURNING *
-      `, [week_start_date, estimatedCost]);
+      `, [req.householdId, week_start_date, estimatedCost]);
 
       return res.json(createResult.rows[0]);
     }
@@ -160,8 +163,8 @@ router.get('/monthly', async (req: Request, res: Response) => {
 
     // Get monthly budget settings
     const monthlyResult = await pool.query(
-      'SELECT * FROM monthly_budgets WHERE month = $1',
-      [month]
+      'SELECT * FROM monthly_budgets WHERE month = $1 AND household_id = $2',
+      [month, req.householdId]
     );
 
     // Aggregate estimated and actual costs from weekly budgets that overlap this month.
@@ -172,9 +175,10 @@ router.get('/monthly', async (req: Request, res: Response) => {
         COALESCE(SUM(estimated_cost), 0) AS estimated_cost,
         COALESCE(SUM(actual_cost), 0) AS actual_cost
       FROM budgets
-      WHERE week_start_date <= $1
+      WHERE household_id = $3
+        AND week_start_date <= $1
         AND week_start_date + INTERVAL '6 days' >= $2
-    `, [lastDayStr, firstDay]);
+    `, [lastDayStr, firstDay, req.householdId]);
 
     const monthly = monthlyResult.rows[0];
     const agg = weeklyResult.rows[0];
@@ -207,15 +211,15 @@ router.post('/monthly', async (req: Request, res: Response) => {
     }
 
     await pool.query(`
-      INSERT INTO monthly_budgets (month, budget_amount, calorie_budget, protein_goal, carbs_goal, fat_goal)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      ON CONFLICT (month) DO UPDATE SET
+      INSERT INTO monthly_budgets (household_id, month, budget_amount, calorie_budget, protein_goal, carbs_goal, fat_goal)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT (household_id, month) DO UPDATE SET
         budget_amount = EXCLUDED.budget_amount,
         calorie_budget = EXCLUDED.calorie_budget,
         protein_goal = EXCLUDED.protein_goal,
         carbs_goal = EXCLUDED.carbs_goal,
         fat_goal = EXCLUDED.fat_goal
-    `, [month, budget_amount, calorie_budget ?? null, protein_goal ?? null, carbs_goal ?? null, fat_goal ?? null]);
+    `, [req.householdId, month, budget_amount, calorie_budget ?? null, protein_goal ?? null, carbs_goal ?? null, fat_goal ?? null]);
 
     // Re-fetch with aggregated costs
     const [year, mon] = month.split('-').map(Number);
@@ -226,9 +230,10 @@ router.post('/monthly', async (req: Request, res: Response) => {
         COALESCE(SUM(estimated_cost), 0) AS estimated_cost,
         COALESCE(SUM(actual_cost), 0) AS actual_cost
       FROM budgets
-      WHERE week_start_date <= $1
+      WHERE household_id = $3
+        AND week_start_date <= $1
         AND week_start_date + INTERVAL '6 days' >= $2
-    `, [lastDay, firstDay]);
+    `, [lastDay, firstDay, req.householdId]);
 
     const agg = weeklyResult.rows[0];
     res.status(201).json({

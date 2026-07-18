@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { pantryApi, ingredientsApi, groceryApi, recipesApi, recommendationsApi, RecipeRecommendation, ParsedReceiptItem, UseItUpResult } from '../../services/api';
 import { PantryItem, Ingredient } from '../../types';
 import { getWeekStartDate } from '../../utils/dateUtils';
+import BarcodeScanner from '../../components/BarcodeScanner/BarcodeScanner';
 import styles from './Pantry.module.css';
 
 const SHELF_LIFE_DAYS: Record<string, number> = {
@@ -64,6 +65,11 @@ const Pantry: React.FC = () => {
   const [parsingReceipt, setParsingReceipt] = useState(false);
   const [parsedItems, setParsedItems] = useState<ParsedReceiptItem[] | null>(null);
   const [addingReceiptItems, setAddingReceiptItems] = useState(false);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [lookingUpBarcode, setLookingUpBarcode] = useState(false);
+  const [pendingRemovals, setPendingRemovals] = useState<
+    { id: number; name: string; timeoutId: ReturnType<typeof setTimeout> }[]
+  >([]);
 
   useEffect(() => {
     loadPantry();
@@ -178,16 +184,33 @@ const Pantry: React.FC = () => {
     }
   };
 
-  const handleRemoveItem = async (id: number) => {
-    if (!window.confirm('Remove this item from your pantry?')) return;
+  const UNDO_WINDOW_MS = 6000;
 
-    try {
-      await pantryApi.remove(id);
-      loadPantry();
-    } catch (error) {
-      console.error('Error removing item:', error);
-      showNotification('error', 'Failed to remove item');
-    }
+  const handleRemoveItem = (item: PantryItem) => {
+    setPantryItems(prev => prev.filter(p => p.id !== item.id));
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        await pantryApi.remove(item.id);
+      } catch (error) {
+        console.error('Error removing item:', error);
+        showNotification('error', 'Failed to remove item');
+        loadPantry();
+      } finally {
+        setPendingRemovals(prev => prev.filter(p => p.id !== item.id));
+      }
+    }, UNDO_WINDOW_MS);
+
+    setPendingRemovals(prev => [...prev, { id: item.id, name: item.ingredient_name, timeoutId }]);
+  };
+
+  const handleUndoRemove = (id: number) => {
+    setPendingRemovals(prev => {
+      const entry = prev.find(p => p.id === id);
+      if (entry) clearTimeout(entry.timeoutId);
+      return prev.filter(p => p.id !== id);
+    });
+    loadPantry();
   };
 
   const handleEditItem = (item: PantryItem) => {
@@ -356,6 +379,31 @@ const Pantry: React.FC = () => {
     setParsedItems(null);
   };
 
+  const handleBarcodeDetected = async (code: string) => {
+    setShowBarcodeScanner(false);
+    setLookingUpBarcode(true);
+    try {
+      const response = await pantryApi.lookupBarcode(code);
+      const product = response.data;
+      const autoExpiry = PERISHABLE_CATEGORIES.has(product.category)
+        ? getSuggestedExpiryDate(product.category) : '';
+      setNewItem({
+        ingredient_name: product.name,
+        quantity: '1',
+        unit: 'count',
+        category: product.category,
+        is_staple: false,
+        expiration_date: autoExpiry,
+      });
+      setShowAddForm(true);
+      showNotification('success', `Found "${product.name}" — review and add it below.`);
+    } catch {
+      showNotification('error', 'No product found for that barcode. Try adding it manually.');
+    } finally {
+      setLookingUpBarcode(false);
+    }
+  };
+
   const groupedItems = pantryItems.reduce((acc, item) => {
     const category = item.category || 'Other';
     if (!acc[category]) {
@@ -384,6 +432,13 @@ const Pantry: React.FC = () => {
               + Restock Staples
             </button>
           )}
+          <button
+            onClick={() => setShowBarcodeScanner(true)}
+            className={styles.scanReceiptButton}
+            disabled={lookingUpBarcode}
+          >
+            {lookingUpBarcode ? 'Looking up...' : 'Scan Barcode'}
+          </button>
           <button onClick={() => setShowReceiptModal(true)} className={styles.scanReceiptButton}>
             Scan Receipt
           </button>
@@ -887,7 +942,7 @@ const Pantry: React.FC = () => {
                             ✎
                           </button>
                           <button
-                            onClick={() => handleRemoveItem(item.id)}
+                            onClick={() => handleRemoveItem(item)}
                             className={styles.removeButton}
                             title="Remove from pantry"
                           >
@@ -1008,6 +1063,26 @@ const Pantry: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {showBarcodeScanner && (
+        <BarcodeScanner
+          onDetected={handleBarcodeDetected}
+          onClose={() => setShowBarcodeScanner(false)}
+        />
+      )}
+
+      {pendingRemovals.length > 0 && (
+        <div className={styles.undoToastContainer}>
+          {pendingRemovals.map(entry => (
+            <div key={entry.id} className={styles.undoToast}>
+              <span>{entry.name} removed</span>
+              <button className={styles.undoButton} onClick={() => handleUndoRemove(entry.id)}>
+                Undo
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>

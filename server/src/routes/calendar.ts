@@ -8,22 +8,17 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     const { start_date, end_date } = req.query;
 
-    let query = 'SELECT * FROM calendar_events';
-    const params: any[] = [];
-    const conditions: string[] = [];
+    let query = 'SELECT * FROM calendar_events WHERE household_id = $1';
+    const params: any[] = [req.householdId];
 
     if (start_date) {
       params.push(start_date);
-      conditions.push(`event_date >= $${params.length}`);
+      query += ` AND event_date >= $${params.length}`;
     }
 
     if (end_date) {
       params.push(end_date);
-      conditions.push(`event_date <= $${params.length}`);
-    }
-
-    if (conditions.length > 0) {
-      query += ` WHERE ${conditions.join(' AND ')}`;
+      query += ` AND event_date <= $${params.length}`;
     }
 
     query += ' ORDER BY event_date ASC';
@@ -41,7 +36,7 @@ router.get('/combined', async (req: Request, res: Response) => {
   try {
     const { start_date, end_date } = req.query;
 
-    const params: any[] = [];
+    const params: any[] = [req.householdId];
     const conditions: string[] = [];
 
     if (start_date) {
@@ -54,7 +49,7 @@ router.get('/combined', async (req: Request, res: Response) => {
       conditions.push(`date <= $${params.length}`);
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const extraWhere = conditions.length > 0 ? ` AND ${conditions.join(' AND ')}` : '';
 
     const query = `
       SELECT
@@ -73,7 +68,7 @@ router.get('/combined', async (req: Request, res: Response) => {
         END as calories
       FROM scheduled_meals sm
       JOIN recipes r ON sm.recipe_id = r.id
-      ${whereClause.replace(/date/g, 'sm.meal_date')}
+      WHERE sm.household_id = $1${extraWhere.replace(/date/g, 'sm.meal_date')}
 
       UNION ALL
 
@@ -88,7 +83,7 @@ router.get('/combined', async (req: Request, res: Response) => {
         NULL as recipe_id,
         NULL as calories
       FROM calendar_events ce
-      ${whereClause.replace(/date/g, 'ce.event_date')}
+      WHERE ce.household_id = $1${extraWhere.replace(/date/g, 'ce.event_date')}
 
       ORDER BY date ASC, meal_type ASC
     `;
@@ -107,10 +102,10 @@ router.post('/', async (req: Request, res: Response) => {
     const { title, event_date, event_type, meal_type, notes } = req.body;
 
     const result = await pool.query(`
-      INSERT INTO calendar_events (title, event_date, event_type, meal_type, notes)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO calendar_events (household_id, title, event_date, event_type, meal_type, notes)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
-    `, [title, event_date, event_type, meal_type, notes]);
+    `, [req.householdId, title, event_date, event_type, meal_type, notes]);
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -129,9 +124,9 @@ router.put('/:id', async (req: Request, res: Response) => {
     const result = await pool.query(`
       UPDATE calendar_events
       SET title = $1, event_date = $2, event_type = $3, meal_type = $4, notes = $5
-      WHERE id = $6
+      WHERE id = $6 AND household_id = $7
       RETURNING *
-    `, [title, event_date, event_type, meal_type, notes, id]);
+    `, [title, event_date, event_type, meal_type, notes, id, req.householdId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Calendar event not found' });
@@ -149,7 +144,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
-    await pool.query('DELETE FROM calendar_events WHERE id = $1', [id]);
+    await pool.query('DELETE FROM calendar_events WHERE id = $1 AND household_id = $2', [id, req.householdId]);
     res.json({ message: 'Calendar event deleted successfully' });
   } catch (error) {
     console.error('Error deleting calendar event:', error);

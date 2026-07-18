@@ -2,16 +2,14 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "dashboard",
+      "name": "client",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
         "--prefix",
-        "/Users/piercegruidl/Documents/Coding/Projects/Job Dashboard/client",
-        "run",
-        "dev"
+        "/Users/piercegruidl/Documents/Coding/Projects/Home Kitchen Site/client",
+        "start"
       ],
-      "autoPort": true,
-      "port": 5173
+      "port": 3000
     }
   ]
 }
