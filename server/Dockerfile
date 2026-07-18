@@ -2,17 +2,21 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
+# Skip Chromium download — recipe-scraper bundles puppeteer but we don't run a browser
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
 COPY package*.json ./
 RUN npm ci
 
 COPY tsconfig.json ./
 COPY src ./src
-RUN npm run build   # assumes "build": "tsc" outputting to ./dist
+RUN npm run build
 
 # ---- Runtime stage ----
 FROM node:20-alpine
 WORKDIR /app
 ENV NODE_ENV=production
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 COPY package*.json ./
 RUN npm ci --omit=dev
