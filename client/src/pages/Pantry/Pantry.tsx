@@ -570,15 +570,21 @@ const Pantry: React.FC = () => {
           ) : (
             <div className={styles.recommendationsGrid}>
               {recommendations.map((recipe) => (
-                <div key={recipe.id} className={styles.recipeCard}>
+                <div key={`${recipe.source ?? 'spoonacular'}-${recipe.id}`} className={styles.recipeCard}>
                   {recipe.image && (
                     <img src={recipe.image} alt={recipe.name} className={styles.recipeImage} />
                   )}
                   <div className={styles.recipeContent}>
                     <h3 className={styles.recipeName}>{recipe.name}</h3>
                     <div className={styles.recipeMetadata}>
-                      <span className={styles.recipeRating}>⭐ {recipe.rating.toFixed(1)}</span>
-                      <span className={styles.recipeTime}>🕐 {recipe.prepTime} min</span>
+                      {recipe.source === 'saved' ? (
+                        <span className={styles.recipeRating}>📌 Saved</span>
+                      ) : (
+                        <span className={styles.recipeRating}>⭐ {recipe.rating.toFixed(1)}</span>
+                      )}
+                      {recipe.prepTime > 0 && (
+                        <span className={styles.recipeTime}>🕐 {recipe.prepTime} min</span>
+                      )}
                       <span className={styles.recipeServings}>🍽️ {recipe.servings} servings</span>
                       {recipe.calories && (
                         <span className={styles.recipeCalories}>🔥 {recipe.calories} cal</span>
@@ -609,13 +615,15 @@ const Pantry: React.FC = () => {
                           View Recipe
                         </a>
                       )}
-                      <button
-                        onClick={() => handleAddRecipe(recipe.id)}
-                        className={styles.addRecipeButton}
-                        title="Add to my recipes"
-                      >
-                        +
-                      </button>
+                      {recipe.source !== 'saved' && (
+                        <button
+                          onClick={() => handleAddRecipe(recipe.id)}
+                          className={styles.addRecipeButton}
+                          title="Add to my recipes"
+                        >
+                          +
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

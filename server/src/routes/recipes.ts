@@ -23,6 +23,56 @@ const RECIPE_SELECT = `
   LEFT JOIN ingredients i ON ri.ingredient_id = i.id
 `;
 
+// Scrape a recipe URL and insert it (plus its ingredients) in one transaction.
+// Shared by the single-URL and bulk import routes. Returns the new recipe id.
+async function scrapeAndInsertRecipe(householdId: number, url: string): Promise<number> {
+  const scrapedData = await scrapeRecipe(url);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const recipeResult = await client.query(`
+      INSERT INTO recipes (household_id, name, description, source_url, category, servings, prep_time, cook_time,
+        instructions, calories, protein, carbs, fat, fiber, image_url)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+      RETURNING id
+    `, [
+      householdId, scrapedData.name, scrapedData.description, url, scrapedData.category ?? null,
+      scrapedData.servings || 4, scrapedData.prep_time, scrapedData.cook_time,
+      scrapedData.instructions, scrapedData.calories, scrapedData.protein,
+      scrapedData.carbs, scrapedData.fat, scrapedData.fiber,
+      scrapedData.image_url ?? null,
+    ]);
+
+    const recipeId = recipeResult.rows[0].id;
+
+    if (scrapedData.ingredients && scrapedData.ingredients.length > 0) {
+      for (const ing of scrapedData.ingredients) {
+        const cat = await categorizeIngredient(ing.name);
+        const ingResult = await client.query(`
+          INSERT INTO ingredients (household_id, name, category) VALUES ($1,$2,$3)
+          ON CONFLICT (household_id, name) DO UPDATE SET name = EXCLUDED.name RETURNING id
+        `, [householdId, ing.name, cat]);
+        const ingredientId = ingResult.rows[0].id;
+        await client.query(`
+          INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit, notes)
+          VALUES ($1,$2,$3,$4,$5)
+          ON CONFLICT (recipe_id, ingredient_id) DO UPDATE
+            SET quantity = COALESCE(recipe_ingredients.quantity,0) + COALESCE(EXCLUDED.quantity,0)
+        `, [recipeId, ingredientId, ing.quantity, ing.unit, ing.notes]);
+      }
+    }
+
+    await client.query('COMMIT');
+    return recipeId;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 // Get all recipes
 router.get('/', async (req: Request, res: Response) => {
   try {
@@ -147,62 +197,66 @@ router.post('/', async (req: Request, res: Response) => {
 
 // Import recipe from URL
 router.post('/import', async (req: Request, res: Response) => {
-  const client = await pool.connect();
   try {
     const { url } = req.body;
     if (!url) return res.status(400).json({ error: 'URL is required' });
-    const householdId = req.householdId;
 
-    const scrapedData = await scrapeRecipe(url);
-    console.log('Scraped recipe data:', JSON.stringify(scrapedData, null, 2));
-
-    await client.query('BEGIN');
-
-    const recipeResult = await client.query(`
-      INSERT INTO recipes (household_id, name, description, source_url, category, servings, prep_time, cook_time,
-        instructions, calories, protein, carbs, fat, fiber, image_url)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-      RETURNING *
-    `, [
-      householdId, scrapedData.name, scrapedData.description, url, scrapedData.category ?? null,
-      scrapedData.servings || 4, scrapedData.prep_time, scrapedData.cook_time,
-      scrapedData.instructions, scrapedData.calories, scrapedData.protein,
-      scrapedData.carbs, scrapedData.fat, scrapedData.fiber,
-      scrapedData.image_url ?? null,
-    ]);
-
-    const recipe = recipeResult.rows[0];
-
-    if (scrapedData.ingredients && scrapedData.ingredients.length > 0) {
-      for (const ing of scrapedData.ingredients) {
-        const cat = await categorizeIngredient(ing.name);
-        const ingResult = await client.query(`
-          INSERT INTO ingredients (household_id, name, category) VALUES ($1,$2,$3)
-          ON CONFLICT (household_id, name) DO UPDATE SET name = EXCLUDED.name RETURNING id
-        `, [householdId, ing.name, cat]);
-        const ingredientId = ingResult.rows[0].id;
-        await client.query(`
-          INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit, notes)
-          VALUES ($1,$2,$3,$4,$5)
-          ON CONFLICT (recipe_id, ingredient_id) DO UPDATE
-            SET quantity = COALESCE(recipe_ingredients.quantity,0) + COALESCE(EXCLUDED.quantity,0)
-        `, [recipe.id, ingredientId, ing.quantity, ing.unit, ing.notes]);
-      }
-    }
-
-    await client.query('COMMIT');
+    const recipeId = await scrapeAndInsertRecipe(req.householdId!, url);
 
     const complete = await pool.query(
-      RECIPE_SELECT + ' WHERE r.id = $1 GROUP BY r.id', [recipe.id]
+      RECIPE_SELECT + ' WHERE r.id = $1 GROUP BY r.id', [recipeId]
     );
     res.status(201).json(complete.rows[0]);
   } catch (error) {
-    await client.query('ROLLBACK');
     console.error('Error importing recipe:', error);
     res.status(500).json({ error: 'Failed to import recipe from URL' });
-  } finally {
-    client.release();
   }
+});
+
+// Bulk import recipes from a list of URLs. Each URL is scraped and inserted
+// independently, so one bad link never fails the whole batch. URLs already
+// imported for this household are skipped. Returns a per-URL report.
+router.post('/import-bulk', async (req: Request, res: Response) => {
+  const { urls } = req.body;
+  if (!Array.isArray(urls) || urls.length === 0) {
+    return res.status(400).json({ error: 'urls must be a non-empty array' });
+  }
+
+  const householdId = req.householdId!;
+  const results: Array<{ url: string; status: 'imported' | 'skipped' | 'failed'; recipeId?: number; error?: string }> = [];
+  let imported = 0, skipped = 0, failed = 0;
+
+  // De-duplicate the incoming list while preserving order.
+  const seen = new Set<string>();
+
+  for (const rawUrl of urls) {
+    const url = typeof rawUrl === 'string' ? rawUrl.trim() : '';
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+
+    try {
+      const existing = await pool.query(
+        'SELECT id FROM recipes WHERE household_id = $1 AND source_url = $2 LIMIT 1',
+        [householdId, url]
+      );
+      if (existing.rows.length > 0) {
+        skipped++;
+        results.push({ url, status: 'skipped', recipeId: existing.rows[0].id });
+        continue;
+      }
+
+      const recipeId = await scrapeAndInsertRecipe(householdId, url);
+      imported++;
+      results.push({ url, status: 'imported', recipeId });
+    } catch (error: any) {
+      failed++;
+      console.error(`Bulk import failed for ${url}:`, error.message);
+      results.push({ url, status: 'failed', error: error.message });
+    }
+  }
+
+  console.log(`📥 Bulk import: ${imported} imported, ${skipped} skipped, ${failed} failed`);
+  res.status(201).json({ imported, skipped, failed, results });
 });
 
 // Update recipe

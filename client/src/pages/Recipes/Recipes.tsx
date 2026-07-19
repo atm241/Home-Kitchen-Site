@@ -38,14 +38,27 @@ const Recipes: React.FC = () => {
 
   const handleImport = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!importUrl) return;
+    const urls = importUrl
+      .split('\n')
+      .map((u) => u.trim())
+      .filter(Boolean);
+    if (urls.length === 0) return;
     try {
       setImporting(true);
-      await recipesApi.importFromUrl(importUrl);
+      if (urls.length === 1) {
+        await recipesApi.importFromUrl(urls[0]);
+        showNotification('success', 'Recipe imported!');
+      } else {
+        const { data } = await recipesApi.importBulk(urls);
+        const parts = [`${data.imported} imported`];
+        if (data.skipped) parts.push(`${data.skipped} already saved`);
+        if (data.failed) parts.push(`${data.failed} failed`);
+        showNotification(data.failed ? 'error' : 'success', parts.join(', '));
+      }
       setImportUrl('');
       loadRecipes();
     } catch (error) {
-      showNotification('error', 'Failed to import recipe. Please try again.');
+      showNotification('error', 'Failed to import recipes. Please try again.');
     } finally {
       setImporting(false);
     }
@@ -104,14 +117,14 @@ const Recipes: React.FC = () => {
       </div>
 
       <div className={styles.importSection}>
-        <h2>Import Recipe from URL</h2>
+        <h2>Import Recipes from URLs</h2>
         <form onSubmit={handleImport} className={styles.importForm}>
-          <input
-            type="url"
+          <textarea
             value={importUrl}
             onChange={(e) => setImportUrl(e.target.value)}
-            placeholder="Enter recipe URL..."
+            placeholder="Paste one recipe URL per line to import a whole collection..."
             className={styles.input}
+            rows={4}
             disabled={importing}
           />
           <button type="submit" className={styles.button} disabled={importing}>

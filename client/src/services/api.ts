@@ -75,6 +75,7 @@ export const recipesApi = {
   delete: (id: number) => api.delete(`/recipes/${id}`),
   toggleFavorite: (id: number) => api.patch<{ is_favorite: boolean }>(`/recipes/${id}/favorite`),
   importFromUrl: (url: string) => api.post<Recipe>('/recipes/import', { url }),
+  importBulk: (urls: string[]) => api.post<BulkImportResult>('/recipes/import-bulk', { urls }),
   importFromSpoonacular: (id: number) => api.post<Recipe>(`/recipes/import-spoonacular/${id}`),
   filterByNutrition: (params: { maxCarbs?: number; minProtein?: number; dietaryTag?: string }) =>
     api.get<Recipe[]>('/recipes/filter/nutritional', { params }),
@@ -243,6 +244,21 @@ export interface RecipeRecommendation {
   missingIngredients: string[];
   availableIngredients: string[];
   calories?: number;
+  // 'saved' = one of the household's own recipes ranked against the pantry;
+  // undefined/'spoonacular' = a Spoonacular API result.
+  source?: 'spoonacular' | 'saved';
+}
+
+export interface BulkImportResult {
+  imported: number;
+  skipped: number;
+  failed: number;
+  results: Array<{
+    url: string;
+    status: 'imported' | 'skipped' | 'failed';
+    recipeId?: number;
+    error?: string;
+  }>;
 }
 
 export interface IngredientCombo {

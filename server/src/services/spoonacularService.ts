@@ -72,6 +72,9 @@ export interface RecipeRecommendation {
   missingIngredients: string[];
   availableIngredients: string[];
   calories?: number;
+  // 'spoonacular' (default/undefined) for API results, 'saved' for the
+  // household's own recipes ranked against the pantry.
+  source?: 'spoonacular' | 'saved';
 }
 
 /**

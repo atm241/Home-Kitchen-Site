@@ -1,7 +1,8 @@
 import express, { Request, Response } from 'express';
 import pool from '../config/database';
-import { findRecipesByIngredients } from '../services/spoonacularService';
+import { findRecipesByIngredients, RecipeRecommendation } from '../services/spoonacularService';
 import { findIngredientCombos } from '../services/ingredientRecommender';
+import { findSavedRecipeMatches } from '../services/savedRecipeRecommender';
 import { createPantrySignature } from '../utils/pantrySignature';
 
 const router = express.Router();
@@ -30,7 +31,12 @@ router.get('/', async (req: Request, res: Response) => {
     const ingredientNames = pantryResult.rows.map(row => row.name);
     const pantrySignature = createPantrySignature(ingredientNames);
 
-    // Always check cache first
+    // The household's own saved recipes are always ranked live against the
+    // pantry — no API cost, and they reflect newly imported recipes without a
+    // manual refresh. Only the Spoonacular half is cached/refresh-gated below.
+    const savedMatches = await findSavedRecipeMatches(householdId!);
+
+    // Check the Spoonacular cache
     const cachedResult = await pool.query(`
       SELECT recommendations
       FROM cached_recipe_recommendations
@@ -39,35 +45,34 @@ router.get('/', async (req: Request, res: Response) => {
       LIMIT 1
     `, [pantrySignature, householdId]);
 
-    // If we have cached data and not forcing refresh, return it
-    if (cachedResult.rows.length > 0 && !forceRefresh) {
-      console.log(`✅ Returning ${cachedResult.rows[0].recommendations.length} cached recipe recommendations`);
-      return res.json(cachedResult.rows[0].recommendations);
+    let spoonacularRecs: RecipeRecommendation[] = [];
+
+    if (forceRefresh) {
+      console.log(`🔍 Searching Spoonacular using ${ingredientNames.length} pantry ingredients`);
+      spoonacularRecs = await findRecipesByIngredients(ingredientNames, 2);
+
+      // Cache the Spoonacular results (no expiration - only refresh on demand)
+      const expiresAt = new Date();
+      expiresAt.setFullYear(expiresAt.getFullYear() + 10); // Set far future expiration
+      await pool.query(`
+        INSERT INTO cached_recipe_recommendations (household_id, pantry_signature, recommendations, expires_at)
+        VALUES ($1, $2, $3, $4)
+      `, [householdId, pantrySignature, JSON.stringify(spoonacularRecs), expiresAt]);
+      console.log(`✅ Cached ${spoonacularRecs.length} Spoonacular recommendations`);
+    } else if (cachedResult.rows.length > 0) {
+      spoonacularRecs = cachedResult.rows[0].recommendations;
+      console.log(`✅ Using ${spoonacularRecs.length} cached Spoonacular recommendations`);
+    } else {
+      console.log(`ℹ️  No cached Spoonacular recommendations. Use refresh=true to fetch them.`);
     }
 
-    // Only fetch from API if explicitly requested with refresh=true
-    if (!forceRefresh) {
-      console.log(`ℹ️  No cached recommendations found. Use refresh=true to fetch new recommendations.`);
-      return res.json([]);
-    }
+    // Merge saved-recipe matches with Spoonacular results, best match first.
+    const merged = [...savedMatches, ...spoonacularRecs].sort(
+      (a, b) => b.matchPercentage - a.matchPercentage
+    );
 
-    console.log(`🔍 Searching for recipes using ${ingredientNames.length} pantry ingredients`);
-
-    // Get recipe recommendations from Spoonacular
-    const recommendations = await findRecipesByIngredients(ingredientNames, 2);
-
-    // Cache the results (no expiration - only refresh on demand)
-    const expiresAt = new Date();
-    expiresAt.setFullYear(expiresAt.getFullYear() + 10); // Set far future expiration
-
-    await pool.query(`
-      INSERT INTO cached_recipe_recommendations (household_id, pantry_signature, recommendations, expires_at)
-      VALUES ($1, $2, $3, $4)
-    `, [householdId, pantrySignature, JSON.stringify(recommendations), expiresAt]);
-
-    console.log(`✅ Cached and returning ${recommendations.length} recipe recommendations`);
-
-    res.json(recommendations);
+    console.log(`✅ Returning ${merged.length} recommendations (${savedMatches.length} saved + ${spoonacularRecs.length} Spoonacular)`);
+    res.json(merged);
   } catch (error) {
     console.error('❌ Error fetching recipe recommendations:', error);
     res.status(500).json({ error: 'Failed to fetch recipe recommendations' });
