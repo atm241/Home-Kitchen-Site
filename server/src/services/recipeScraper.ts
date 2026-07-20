@@ -260,47 +260,68 @@ function parseISODuration(duration: string): number {
   return hours * 60 + minutes;
 }
 
+// Unicode vulgar fractions used throughout recipe sites (e.g. "¾ teaspoon").
+const UNICODE_FRACTIONS: Record<string, number> = {
+  '¼': 0.25, '½': 0.5, '¾': 0.75, '⅓': 1 / 3, '⅔': 2 / 3, '⅕': 0.2, '⅖': 0.4,
+  '⅗': 0.6, '⅘': 0.8, '⅙': 1 / 6, '⅚': 5 / 6, '⅛': 0.125, '⅜': 0.375,
+  '⅝': 0.625, '⅞': 0.875, '⅐': 1 / 7, '⅑': 1 / 9, '⅒': 0.1,
+};
+const FRAC_CHARS = Object.keys(UNICODE_FRACTIONS).join('');
+
+function parseQuantity(raw: string): number | undefined {
+  const s = raw.trim();
+  const fracCharMatch = s.match(new RegExp(`[${FRAC_CHARS}]`));
+  if (fracCharMatch) {
+    const frac = UNICODE_FRACTIONS[fracCharMatch[0]] ?? 0;
+    const intPart = s.replace(new RegExp(`[${FRAC_CHARS}]`), '').trim();
+    const whole = intPart ? parseInt(intPart, 10) : 0;
+    return Number((whole + frac).toFixed(3));
+  }
+  if (s.includes('/')) {
+    const mixed = s.match(/^(\d+)\s+(\d+)\/(\d+)$/); // "1 1/2"
+    if (mixed) {
+      return Number((parseInt(mixed[1]) + parseInt(mixed[2]) / parseInt(mixed[3])).toFixed(3));
+    }
+    const [num, denom] = s.split('/').map(Number);
+    return denom ? Number((num / denom).toFixed(3)) : undefined;
+  }
+  return parseFloat(s);
+}
+
 function parseIngredientString(ingredientStr: string): {
   name: string;
   quantity?: number;
   unit?: string;
   notes?: string;
 } {
-  // This is a basic parser - could be improved with a proper ingredient parsing library
-  const parts = ingredientStr.trim().split(' ');
-
+  const original = ingredientStr.trim();
+  let rest = original;
   let quantity: number | undefined;
   let unit: string | undefined;
-  let name = ingredientStr.trim();
 
-  // Try to extract quantity (first number in string)
-  const quantityMatch = ingredientStr.match(/^(\d+(?:\/\d+)?|\d+\.\d+)/);
-  if (quantityMatch) {
-    const quantityStr = quantityMatch[1];
-    if (quantityStr.includes('/')) {
-      const [num, denom] = quantityStr.split('/').map(Number);
-      quantity = num / denom;
-    } else {
-      quantity = parseFloat(quantityStr);
-    }
+  // Leading quantity: integer, decimal, ascii fraction, "1 1/2", unicode
+  // fraction, or "1 ½".
+  const qtyMatch = rest.match(
+    new RegExp(`^\\s*(\\d+\\s*[${FRAC_CHARS}]|\\d+\\s+\\d+/\\d+|\\d+/\\d+|\\d+\\.\\d+|\\d+|[${FRAC_CHARS}])`)
+  );
+  if (qtyMatch) {
+    quantity = parseQuantity(qtyMatch[1]);
+    rest = rest.slice(qtyMatch[0].length).trim();
 
-    // Remove quantity from name
-    name = ingredientStr.substring(quantityMatch[0].length).trim();
-
-    // Try to extract unit (common cooking units)
-    const unitMatch = name.match(/^(cup|cups|tbsp|tablespoon|tablespoons|tsp|teaspoon|teaspoons|oz|ounce|ounces|lb|pound|pounds|g|gram|grams|kg|ml|l|liter|liters|count|piece|pieces|clove|cloves|can|cans)/i);
+    // Unit must be a whole word — the trailing \b stops "g"/"l"/"oz" from
+    // eating the first letters of "garlic"/"large"/etc. Plurals via `s?`.
+    const unitMatch = rest.match(
+      /^(cups?|tbsps?|tablespoons?|tsps?|teaspoons?|ounces?|oz|lbs?|pounds?|grams?|g|kg|ml|liters?|l|cloves?|cans?|sticks?|pieces?|pinch(?:es)?|packages?|pkgs?)\b\.?/i
+    );
     if (unitMatch) {
       unit = unitMatch[1].toLowerCase();
-      // Normalize "piece" and "pieces" to "count"
-      if (unit === 'piece' || unit === 'pieces') {
-        unit = 'count';
-      }
-      name = name.substring(unitMatch[0].length).trim();
+      if (unit === 'piece' || unit === 'pieces') unit = 'count';
+      rest = rest.slice(unitMatch[0].length).trim();
     }
   }
 
   return {
-    name: name || ingredientStr.trim(),
+    name: rest || original,
     quantity,
     unit,
   };
