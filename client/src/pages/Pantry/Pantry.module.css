@@ -1311,3 +1311,22 @@
 .undoButton:hover {
   text-decoration: underline;
 }
+
+.showMoreButton {
+  display: block;
+  margin: 16px auto 0;
+  padding: 10px 24px;
+  background-color: transparent;
+  color: #6B8E4E;
+  border: 1px solid #8BAE66;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.showMoreButton:hover {
+  background-color: #8BAE66;
+  color: #2C3E50;
+}

@@ -21,6 +21,10 @@ const SHELF_LIFE_DAYS: Record<string, number> = {
 
 const PERISHABLE_CATEGORIES = new Set(['Produce', 'Proteins', 'Dairy', 'Beverages']);
 
+// Recommendation cards shown before "Show all" — keeps the pantry itself easy
+// to reach now that the recommender surfaces the whole saved-recipe library.
+const VISIBLE_RECOMMENDATIONS = 6;
+
 const getSuggestedExpiryDate = (category: string): string => {
   const days = SHELF_LIFE_DAYS[category] ?? 7;
   const d = new Date();
@@ -46,6 +50,7 @@ const Pantry: React.FC = () => {
   const [editingItem, setEditingItem] = useState<PantryItem | null>(null);
   const [recommendations, setRecommendations] = useState<RecipeRecommendation[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [showAllRecommendations, setShowAllRecommendations] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [newItem, setNewItem] = useState({
     ingredient_name: '',
@@ -569,7 +574,7 @@ const Pantry: React.FC = () => {
             </div>
           ) : (
             <div className={styles.recommendationsGrid}>
-              {recommendations.map((recipe) => (
+              {(showAllRecommendations ? recommendations : recommendations.slice(0, VISIBLE_RECOMMENDATIONS)).map((recipe) => (
                 <div key={`${recipe.source ?? 'spoonacular'}-${recipe.id}`} className={styles.recipeCard}>
                   {recipe.image && (
                     <img src={recipe.image} alt={recipe.name} className={styles.recipeImage} />
@@ -629,6 +634,16 @@ const Pantry: React.FC = () => {
                 </div>
               ))}
             </div>
+          )}
+          {!loadingRecommendations && recommendations.length > VISIBLE_RECOMMENDATIONS && (
+            <button
+              onClick={() => setShowAllRecommendations((prev) => !prev)}
+              className={styles.showMoreButton}
+            >
+              {showAllRecommendations
+                ? 'Show fewer'
+                : `Show all ${recommendations.length} recipes`}
+            </button>
           )}
         </div>
       )}
