@@ -64,6 +64,15 @@ export async function scrapeRecipe(url: string): Promise<ScrapedRecipe> {
             recipe.description = cleanText(recipeSchema.description);
             console.log(`  - Name: ${recipe.name}`);
 
+            // Site's own category label(s), e.g. "dinner, weeknight" — used as
+            // a hint for mapping into the app's fixed category list.
+            if (recipeSchema.recipeCategory) {
+              const rawCat = recipeSchema.recipeCategory;
+              recipe.category = cleanText(
+                Array.isArray(rawCat) ? rawCat.join(', ') : String(rawCat)
+              );
+            }
+
             // Parse servings/yield - can be a number, string, or array
             if (recipeSchema.recipeYield) {
               let yieldValue = recipeSchema.recipeYield;

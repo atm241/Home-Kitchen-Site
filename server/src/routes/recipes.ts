@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import pool from '../config/database';
 import { scrapeRecipe } from '../services/recipeScraper';
 import { categorizeIngredient } from '../services/ingredientCategorizer';
+import { categorizeRecipe } from '../services/recipeCategorizer';
 import { getRecipeDetails } from '../services/spoonacularService';
 import { cleanText } from '../utils/cleanText';
 
@@ -31,13 +32,19 @@ async function scrapeAndInsertRecipe(householdId: number, url: string): Promise<
   try {
     await client.query('BEGIN');
 
+    // Map the site's own category label (e.g. "dinner, weeknight") into one of
+    // the app's fixed categories rather than storing it raw.
+    const category = await categorizeRecipe(
+      scrapedData.name, scrapedData.description, scrapedData.category
+    );
+
     const recipeResult = await client.query(`
       INSERT INTO recipes (household_id, name, description, source_url, category, servings, prep_time, cook_time,
         instructions, calories, protein, carbs, fat, fiber, image_url)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
       RETURNING id
     `, [
-      householdId, scrapedData.name, scrapedData.description, url, scrapedData.category ?? null,
+      householdId, scrapedData.name, scrapedData.description, url, category,
       scrapedData.servings || 4, scrapedData.prep_time, scrapedData.cook_time,
       scrapedData.instructions, scrapedData.calories, scrapedData.protein,
       scrapedData.carbs, scrapedData.fat, scrapedData.fiber,
