@@ -252,6 +252,11 @@
   justify-content: center;
   width: 20px;
   height: 20px;
+  /* Keep the badge a perfect circle: don't let the flex row shrink it */
+  flex: 0 0 auto;
+  min-width: 20px;
+  min-height: 20px;
+  aspect-ratio: 1;
   background-color: #E67E22;
   color: #FFFFFF;
   border-radius: 50%;
