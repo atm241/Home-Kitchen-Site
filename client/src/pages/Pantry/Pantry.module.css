@@ -246,6 +246,12 @@
   color: #7F8C8D;
 }
 
+.lowStockWrapper {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
 .lowStockIndicator {
   display: inline-flex;
   align-items: center;
@@ -259,10 +265,56 @@
   aspect-ratio: 1;
   background-color: #E67E22;
   color: #FFFFFF;
+  border: none;
   border-radius: 50%;
+  padding: 0;
   font-size: 14px;
   font-weight: 700;
   line-height: 1;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.lowStockIndicator:hover {
+  transform: scale(1.15);
+}
+
+.lowStockMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 190px;
+  background-color: #FFFFFF;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  padding: 6px;
+}
+
+.lowStockMenuLabel {
+  padding: 6px 10px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #E67E22;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lowStockMenuAction {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  text-align: left;
+  font-size: 14px;
+  color: #2C3E50;
+  cursor: pointer;
+}
+
+.lowStockMenuAction:hover {
+  background-color: #F4EDDD;
 }
 
 .itemActions {
@@ -300,24 +352,6 @@
 
 .removeButton:hover {
   background-color: #C0392B;
-  transform: scale(1.1);
-}
-
-.groceryListButton {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #8BAE66;
-  color: #2C3E50;
-  border-radius: 50%;
-  font-size: 18px;
-  transition: all 0.2s ease;
-}
-
-.groceryListButton:hover {
-  background-color: #628141;
   transform: scale(1.1);
 }
 

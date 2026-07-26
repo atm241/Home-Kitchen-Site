@@ -51,6 +51,7 @@ const Pantry: React.FC = () => {
   const [recommendations, setRecommendations] = useState<RecipeRecommendation[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [showAllRecommendations, setShowAllRecommendations] = useState(false);
+  const [lowStockMenuId, setLowStockMenuId] = useState<number | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [newItem, setNewItem] = useState({
     ingredient_name: '',
@@ -82,6 +83,14 @@ const Pantry: React.FC = () => {
     loadRecommendations(false);
     loadUseItUp();
   }, []);
+
+  // Close the low-stock dropdown on any outside click/tap
+  useEffect(() => {
+    if (lowStockMenuId === null) return;
+    const close = () => setLowStockMenuId(null);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [lowStockMenuId]);
 
   const loadUseItUp = async () => {
     try {
@@ -282,12 +291,7 @@ const Pantry: React.FC = () => {
   };
 
   const handleAddLowStockToGrocery = async (item: PantryItem) => {
-    const confirmAdd = window.confirm(
-      `Add ${item.ingredient_name} to your grocery list for this week?`
-    );
-
-    if (!confirmAdd) return;
-
+    setLowStockMenuId(null);
     try {
       const weekStartDate = getWeekStartDate();
       await groceryApi.addManual({
@@ -944,19 +948,34 @@ const Pantry: React.FC = () => {
                                 + Set expiry
                               </button>
                             ) : null}
-                            {isLowStock && <span className={styles.lowStockIndicator}>!</span>}
+                            {isLowStock && (
+                              <span className={styles.lowStockWrapper}>
+                                <button
+                                  className={styles.lowStockIndicator}
+                                  title="Low stock — tap for options"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setLowStockMenuId(lowStockMenuId === item.id ? null : item.id);
+                                  }}
+                                >
+                                  !
+                                </button>
+                                {lowStockMenuId === item.id && (
+                                  <div className={styles.lowStockMenu} onClick={(e) => e.stopPropagation()}>
+                                    <div className={styles.lowStockMenuLabel}>Running low</div>
+                                    <button
+                                      className={styles.lowStockMenuAction}
+                                      onClick={() => handleAddLowStockToGrocery(item)}
+                                    >
+                                      📋 Add to grocery list
+                                    </button>
+                                  </div>
+                                )}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className={styles.itemActions}>
-                          {isLowStock && (
-                            <button
-                              onClick={() => handleAddLowStockToGrocery(item)}
-                              className={styles.groceryListButton}
-                              title="Add to grocery list"
-                            >
-                              📋
-                            </button>
-                          )}
                           <button
                             onClick={() => handleEditItem(item)}
                             className={styles.editButton}
