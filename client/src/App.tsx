@@ -12,7 +12,6 @@ import AddRecipe from './pages/Recipes/AddRecipe';
 import Pantry from './pages/Pantry/Pantry';
 import GroceryList from './pages/GroceryList/GroceryList';
 import CookHistory from './pages/CookHistory/CookHistory';
-import './App.css';
 
 function App() {
   return (
