@@ -3,7 +3,11 @@
     "allow": [
       "Bash(BROWSER=none npm start)",
       "Bash(git -C \"/Users/piercegruidl/Documents/Coding/Projects/Home Kitchen Site\" worktree list)",
-      "Bash(git -C \"/Users/piercegruidl/Documents/Coding/Projects/Home Kitchen Site\" worktree remove \".claude/worktrees/stoic-goldstine\" --force)"
+      "Bash(git -C \"/Users/piercegruidl/Documents/Coding/Projects/Home Kitchen Site\" worktree remove \".claude/worktrees/stoic-goldstine\" --force)",
+      "Bash(sed 's/:\\\\/\\\\/.*@/:\\\\/\\\\/***@/')",
+      "Bash(pg_isready)",
+      "Bash(node -e ' *)",
+      "Bash(xargs kill)"
     ]
   }
 }

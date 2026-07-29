@@ -40,7 +40,7 @@ export async function findIngredientCombos(
           apiKey: SPOONACULAR_API_KEY,
           ingredients: pantryIngredients.join(',+'),
           number: 30, // Get more recipes to analyze
-          ranking: 1, // Minimize missing ingredients
+          ranking: 2, // Minimize missing ingredients
           ignorePantry: false,
         },
       }
@@ -51,8 +51,7 @@ export async function findIngredientCombos(
     // Filter to recipes that are missing 2-4 ingredients
     const almostMakeableRecipes = recipes.filter((recipe: any) =>
       recipe.missedIngredientCount >= 2 &&
-      recipe.missedIngredientCount <= 4 &&
-      recipe.likes > 10 // Only popular recipes
+      recipe.missedIngredientCount <= 4
     );
 
     console.log(`✅ Found ${almostMakeableRecipes.length} almost-makeable recipes`);
