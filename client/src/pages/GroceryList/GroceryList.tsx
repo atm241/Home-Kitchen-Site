@@ -415,13 +415,6 @@ const GroceryList: React.FC = () => {
                   <div className={styles.ingredientsList}>
                     {combo.ingredients.map((ingredient, idx) => (
                       <div key={idx} className={styles.ingredientItem}>
-                        {ingredient.image && (
-                          <img
-                            src={ingredient.image}
-                            alt={ingredient.name}
-                            className={styles.ingredientImage}
-                          />
-                        )}
                         <span className={styles.ingredientName}>{ingredient.name}</span>
                       </div>
                     ))}
