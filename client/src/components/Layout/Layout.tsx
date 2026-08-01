@@ -15,10 +15,52 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { household, logout, refreshHousehold } = useAuth();
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const openPasswordModal = () => {
+    setShowAccountMenu(false);
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordError('');
+    setPasswordSuccess(false);
+    setShowPasswordModal(true);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+
+    if (newPassword.length < 8) {
+      setPasswordError('New password must be at least 8 characters');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    try {
+      setSavingPassword(true);
+      await authApi.changePassword({ currentPassword, newPassword });
+      setPasswordSuccess(true);
+      setTimeout(() => setShowPasswordModal(false), 1500);
+    } catch (error: any) {
+      setPasswordError(error.response?.data?.error || 'Failed to change password');
+    } finally {
+      setSavingPassword(false);
+    }
   };
 
   const handleRegenerateInviteCode = async () => {
@@ -103,6 +145,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <button className={styles.linkButton} onClick={handleRegenerateInviteCode}>
                   Generate new code
                 </button>
+                <button className={styles.linkButton} onClick={openPasswordModal}>
+                  Change password
+                </button>
                 <button className={styles.logoutButton} onClick={handleLogout}>
                   Log Out
                 </button>
@@ -111,6 +156,56 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </div>
       </header>
+      {showPasswordModal && (
+        <div className={styles.modal} onClick={() => setShowPasswordModal(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h2>Change Password</h2>
+            {passwordSuccess ? (
+              <div className={styles.passwordSuccess}>✅ Password updated!</div>
+            ) : (
+              <form onSubmit={handleChangePassword} className={styles.passwordForm}>
+                <input
+                  type="password"
+                  placeholder="Current password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="New password (min 8 characters)"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="Confirm new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                />
+                {passwordError && <div className={styles.passwordError}>{passwordError}</div>}
+                <div className={styles.modalActions}>
+                  <button type="submit" className={styles.saveButton} disabled={savingPassword}>
+                    {savingPassword ? 'Saving...' : 'Update Password'}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.cancelButton}
+                    onClick={() => setShowPasswordModal(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
       <main className={styles.main}>{children}</main>
     </div>
   );

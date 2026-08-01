@@ -63,6 +63,8 @@ export const authApi = {
   login: (data: { email: string; password: string }) =>
     api.post<{ token: string; user: AuthUser }>('/auth/login', data),
   me: () => api.get<{ user: AuthUser; household: Household }>('/auth/me'),
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    api.post<{ success: boolean }>('/auth/change-password', data),
   regenerateInviteCode: () => api.post<{ inviteCode: string }>('/auth/household/invite-code'),
 };
 

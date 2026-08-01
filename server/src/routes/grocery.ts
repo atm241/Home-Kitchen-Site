@@ -4,6 +4,7 @@ import { categorizeIngredient } from '../services/ingredientCategorizer';
 import { findRecipesByIngredients } from '../services/spoonacularService';
 import { findIngredientCombos } from '../services/ingredientRecommender';
 import { createPantrySignature } from '../utils/pantrySignature';
+import { cacheExpiry } from '../utils/recommendationCache';
 
 const router = express.Router();
 
@@ -469,25 +470,21 @@ router.post('/add-to-pantry', async (req: Request, res: Response) => {
 
         // Fetch and cache new recipe recommendations
         const recommendations = await findRecipesByIngredients(ingredientNames, 2);
-        const recipeExpiresAt = new Date();
-        recipeExpiresAt.setFullYear(recipeExpiresAt.getFullYear() + 10);
 
         await pool.query(`
           INSERT INTO cached_recipe_recommendations (household_id, pantry_signature, recommendations, expires_at)
           VALUES ($1, $2, $3, $4)
-        `, [householdId, pantrySignature, JSON.stringify(recommendations), recipeExpiresAt]);
+        `, [householdId, pantrySignature, JSON.stringify(recommendations), cacheExpiry()]);
 
         console.log(`✅ Cached ${recommendations.length} new recipe recommendations`);
 
         // Fetch and cache new ingredient combos
         const combos = await findIngredientCombos(ingredientNames, 5);
-        const combosExpiresAt = new Date();
-        combosExpiresAt.setFullYear(combosExpiresAt.getFullYear() + 10);
 
         await pool.query(`
           INSERT INTO cached_ingredient_combos (household_id, pantry_signature, combos, expires_at)
           VALUES ($1, $2, $3, $4)
-        `, [householdId, pantrySignature, JSON.stringify(combos), combosExpiresAt]);
+        `, [householdId, pantrySignature, JSON.stringify(combos), cacheExpiry()]);
 
         console.log(`✅ Cached ${combos.length} new ingredient combos`);
       } catch (cacheError) {

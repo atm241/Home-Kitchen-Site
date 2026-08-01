@@ -9,6 +9,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "init-db": "node init-db.js",
+    "reset-password": "node reset-password.js",
     "test": "echo \"No server test suite yet\" && exit 0"
   },
   "keywords": [],
