@@ -98,23 +98,29 @@ router.get('/use-it-up', async (req: Request, res: Response) => {
       ORDER BY p.expiration_date ASC
     `, [days, req.householdId]);
 
+    // Recipe imports create their own ingredient rows, so pantry items and
+    // recipe ingredients rarely share an id — match by name containment
+    // instead ("Black Beans" ⊂ "(15-ounce) can black beans, rinsed").
     const recipesResult = await pool.query(`
       SELECT
         r.id, r.name, r.image_url, r.category, r.servings, r.calories,
         r.prep_time, r.cook_time, r.difficulty, r.dietary_tags, r.is_favorite,
-        COUNT(DISTINCT p.ingredient_id)::int as expiring_ingredient_count,
+        COUNT(DISTINCT p.id)::int as expiring_ingredient_count,
         json_agg(DISTINCT jsonb_build_object(
-          'name', i.name,
+          'name', pi.name,
           'expiration_date', p.expiration_date,
           'days_until_expiry', (p.expiration_date::date - CURRENT_DATE)::int
         )) as expiring_ingredients
       FROM recipes r
       JOIN recipe_ingredients ri ON r.id = ri.recipe_id
       JOIN ingredients i ON ri.ingredient_id = i.id
-      JOIN pantry p ON p.ingredient_id = ri.ingredient_id AND p.household_id = r.household_id
+      JOIN pantry p ON p.household_id = r.household_id
+      JOIN ingredients pi ON p.ingredient_id = pi.id
       WHERE r.household_id = $2
         AND p.expiration_date IS NOT NULL
         AND p.expiration_date::date <= CURRENT_DATE + ($1 * INTERVAL '1 day')
+        AND (LOWER(i.name) LIKE '%' || LOWER(pi.name) || '%'
+          OR LOWER(pi.name) LIKE '%' || LOWER(i.name) || '%')
       GROUP BY r.id
       ORDER BY expiring_ingredient_count DESC, r.name ASC
       LIMIT 10

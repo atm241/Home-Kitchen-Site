@@ -93,16 +93,14 @@ router.patch('/:week_start_date/actual', async (req: Request, res: Response) => 
       return res.status(400).json({ error: 'actual_cost is required' });
     }
 
+    // Upsert so recording spend works even when no budget was set for the week
     const result = await pool.query(`
-      UPDATE budgets
-      SET actual_cost = $1
-      WHERE week_start_date = $2 AND household_id = $3
+      INSERT INTO budgets (household_id, week_start_date, budget_amount, actual_cost)
+      VALUES ($1, $2, 0, $3)
+      ON CONFLICT (household_id, week_start_date)
+      DO UPDATE SET actual_cost = EXCLUDED.actual_cost
       RETURNING *
-    `, [actual_cost, week_start_date, req.householdId]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Budget not found' });
-    }
+    `, [req.householdId, week_start_date, actual_cost]);
 
     res.json(result.rows[0]);
   } catch (error) {
@@ -145,6 +143,40 @@ router.post('/:week_start_date/recalculate', async (req: Request, res: Response)
   } catch (error) {
     console.error('Error recalculating budget:', error);
     res.status(500).json({ error: 'Failed to recalculate budget' });
+  }
+});
+
+// Monthly history: estimated vs actual spend over time. Each week is
+// attributed to the month its start date falls in.
+router.get('/history', async (req: Request, res: Response) => {
+  try {
+    const months = Math.min(parseInt(req.query.months as string) || 6, 24);
+
+    const result = await pool.query(`
+      SELECT
+        to_char(b.week_start_date, 'YYYY-MM') AS month,
+        COALESCE(SUM(b.estimated_cost), 0) AS estimated_cost,
+        COALESCE(SUM(b.actual_cost), 0) AS actual_cost,
+        COALESCE(MAX(mb.budget_amount), 0) AS budget_amount
+      FROM budgets b
+      LEFT JOIN monthly_budgets mb
+        ON mb.household_id = b.household_id
+        AND mb.month = to_char(b.week_start_date, 'YYYY-MM')
+      WHERE b.household_id = $1
+        AND b.week_start_date >= date_trunc('month', CURRENT_DATE) - ($2 - 1) * INTERVAL '1 month'
+      GROUP BY to_char(b.week_start_date, 'YYYY-MM')
+      ORDER BY month DESC
+    `, [req.householdId, months]);
+
+    res.json(result.rows.map(row => ({
+      month: row.month,
+      estimated_cost: parseFloat(row.estimated_cost),
+      actual_cost: parseFloat(row.actual_cost),
+      budget_amount: parseFloat(row.budget_amount),
+    })));
+  } catch (error) {
+    console.error('Error fetching budget history:', error);
+    res.status(500).json({ error: 'Failed to fetch budget history' });
   }
 });
 

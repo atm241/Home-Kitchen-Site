@@ -218,9 +218,18 @@ export interface MonthlyBudget {
 }
 
 // Budget
+export interface BudgetHistoryMonth {
+  month: string;
+  estimated_cost: number;
+  actual_cost: number;
+  budget_amount: number;
+}
+
 export const budgetApi = {
   updateActual: (weekStartDate: string, actualCost: number) =>
     api.patch(`/budget/${weekStartDate}/actual`, { actual_cost: actualCost }),
+  getHistory: (months = 6) =>
+    api.get<BudgetHistoryMonth[]>('/budget/history', { params: { months } }),
   getMonthly: (month: string) => api.get<MonthlyBudget>('/budget/monthly', { params: { month } }),
   createOrUpdateMonthly: (data: {
     month: string;

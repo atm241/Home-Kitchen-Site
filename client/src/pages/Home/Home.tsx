@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { calendarApi, mealsApi, budgetApi, pantryApi, MonthlyBudget, UseItUpResult } from '../../services/api';
+import { calendarApi, mealsApi, budgetApi, pantryApi, MonthlyBudget, UseItUpResult, BudgetHistoryMonth } from '../../services/api';
 import { CombinedCalendarItem } from '../../types';
 import {
   getWeekDays,
@@ -19,6 +19,7 @@ const Home: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [monthlyBudget, setMonthlyBudget] = useState<MonthlyBudget | null>(null);
   const [useItUp, setUseItUp] = useState<UseItUpResult | null>(null);
+  const [budgetHistory, setBudgetHistory] = useState<BudgetHistoryMonth[]>([]);
 
   const weekGridRef = useRef<HTMLDivElement>(null);
 
@@ -69,6 +70,13 @@ const Home: React.FC = () => {
       setUseItUp(useItUpResponse.data);
     } catch (error) {
       console.error('Error loading use-it-up data:', error);
+    }
+
+    try {
+      const historyResponse = await budgetApi.getHistory(6);
+      setBudgetHistory(historyResponse.data);
+    } catch (error) {
+      console.error('Error loading budget history:', error);
     }
   };
 
@@ -220,6 +228,44 @@ const Home: React.FC = () => {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Budget history card */}
+      {budgetHistory.length > 0 && (
+        <div className={styles.budgetHistoryCard}>
+          <h2 className={styles.budgetHistoryTitle}>Budget History</h2>
+          <div className={styles.budgetHistoryTableWrap}>
+            <table className={styles.budgetHistoryTable}>
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th>Budget</th>
+                  <th>Estimated</th>
+                  <th>Actual</th>
+                  <th>Difference</th>
+                </tr>
+              </thead>
+              <tbody>
+                {budgetHistory.map(row => {
+                  const reference = row.budget_amount > 0 ? row.budget_amount : row.estimated_cost;
+                  const diff = reference - row.actual_cost;
+                  const monthLabel = new Date(`${row.month}-01T00:00:00`).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+                  return (
+                    <tr key={row.month}>
+                      <td>{monthLabel}</td>
+                      <td>{row.budget_amount > 0 ? `$${row.budget_amount.toFixed(2)}` : '—'}</td>
+                      <td>${row.estimated_cost.toFixed(2)}</td>
+                      <td>${row.actual_cost.toFixed(2)}</td>
+                      <td style={{ color: diff >= 0 ? '#628141' : '#e74c3c', fontWeight: 600 }}>
+                        {diff >= 0 ? `$${diff.toFixed(2)} under` : `$${Math.abs(diff).toFixed(2)} over`}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

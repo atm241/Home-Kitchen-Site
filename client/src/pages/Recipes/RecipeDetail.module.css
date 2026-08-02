@@ -594,6 +594,82 @@
   justify-content: flex-end;
 }
 
+.cookModalContent {
+  max-width: 640px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.cookModalHint {
+  margin: -12px 0 16px;
+  color: #7F8C8D;
+  font-size: 14px;
+}
+
+.cookModalRows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.cookModalRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background-color: #F8F9FA;
+  border-radius: 8px;
+}
+
+.cookModalRowExcluded {
+  opacity: 0.5;
+}
+
+.cookModalRowInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cookModalRowName {
+  font-weight: 600;
+  color: #2C3E50;
+  text-transform: capitalize;
+}
+
+.cookModalRowDetail {
+  font-size: 13px;
+  color: #7F8C8D;
+}
+
+.cookModalUnitWarning {
+  color: #E67E22;
+  font-weight: 600;
+}
+
+.cookModalDeduct {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.cookModalDeductInput {
+  width: 80px;
+  padding: 8px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.cookModalDeductUnit {
+  font-size: 13px;
+  color: #7F8C8D;
+  white-space: nowrap;
+}
+
 .cancelButton,
 .saveButton {
   padding: 10px 24px;

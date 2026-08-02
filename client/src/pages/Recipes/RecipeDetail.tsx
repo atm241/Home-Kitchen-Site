@@ -46,6 +46,18 @@ const RecipeDetail: React.FC = () => {
     personal_notes: '', ingredients: [],
   });
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [cookPlan, setCookPlan] = useState<Array<{
+    pantryId: number;
+    name: string;
+    pantryQty: number;
+    pantryUnit: string | null;
+    pantryIsStaple: boolean;
+    useQty: number;
+    recipeUnit: string | null;
+    deduct: string;
+    include: boolean;
+  }> | null>(null);
+  const [applyingCook, setApplyingCook] = useState(false);
 
   useEffect(() => {
     if (id) loadRecipe(parseInt(id));
@@ -101,39 +113,99 @@ const RecipeDetail: React.FC = () => {
     try {
       const pantryResponse = await pantryApi.getAll();
       const pantryItems = pantryResponse.data;
-      const scaleFactor = servings / (recipe.servings || 1);
+      const cookScale = servings / (recipe.servings || 1);
 
-      if (recipe.ingredients && recipe.ingredients.length > 0) {
-        for (const ing of recipe.ingredients) {
-          const pantryItem = pantryItems.find((p) => p.ingredient_id === ing.ingredient_id);
-          if (pantryItem && ing.quantity) {
-            const newQuantity = (pantryItem.quantity || 0) - ing.quantity * scaleFactor;
-            if (newQuantity <= 0) {
-              await pantryApi.remove(pantryItem.id);
-            } else {
-              await pantryApi.update(pantryItem.id, {
-                quantity: newQuantity,
-                unit: pantryItem.unit,
-                is_staple: pantryItem.is_staple,
-              });
-            }
-          }
+      // Recipe ingredients rarely share an id with pantry items (imports
+      // create their own ingredient rows), so fall back to name matching:
+      // exact first, then containment ("Black Beans" ⊂ "can black beans").
+      const norm = (s: string) => s.toLowerCase().trim();
+      const findPantryMatch = (ing: { ingredient_id?: number; name: string }) =>
+        pantryItems.find(p => p.ingredient_id === ing.ingredient_id) ||
+        pantryItems.find(p => norm(p.ingredient_name) === norm(ing.name)) ||
+        pantryItems.find(p => {
+          const pn = norm(p.ingredient_name);
+          const rn = norm(ing.name);
+          return pn.length > 2 && rn.length > 2 && (rn.includes(pn) || pn.includes(rn));
+        });
+
+      const matchedPantryIds = new Set<number>();
+      const plan = (recipe.ingredients || [])
+        .filter(ing => ing.quantity)
+        .map(ing => {
+          const pantryItem = findPantryMatch(ing);
+          if (!pantryItem || matchedPantryIds.has(pantryItem.id)) return null;
+          matchedPantryIds.add(pantryItem.id);
+          const useQty = Math.round(ing.quantity! * cookScale * 100) / 100;
+          return {
+            pantryId: pantryItem.id,
+            name: ing.name,
+            pantryQty: pantryItem.quantity || 0,
+            pantryUnit: pantryItem.unit || null,
+            pantryIsStaple: pantryItem.is_staple || false,
+            useQty,
+            recipeUnit: ing.unit || null,
+            deduct: String(Math.min(useQty, pantryItem.quantity || 0)),
+            include: true,
+          };
+        })
+        .filter((row): row is NonNullable<typeof row> => row !== null);
+
+      if (plan.length === 0) {
+        // Nothing in the pantry matches this recipe — just log the cook
+        await cookHistoryApi.log({ recipe_id: recipe.id, recipe_name: recipe.name, servings_cooked: servings });
+        showNotification('success', 'Cook logged! No matching pantry items to deduct.');
+        setServingsCooked('');
+        return;
+      }
+
+      setCookPlan(plan);
+    } catch (error) {
+      console.error('Error preparing cook deduction:', error);
+      showNotification('error', 'Failed to load pantry for deduction');
+    }
+  };
+
+  const handleConfirmCook = async () => {
+    if (!recipe || !cookPlan) return;
+    const servings = parseFloat(servingsCooked);
+    try {
+      setApplyingCook(true);
+      for (const row of cookPlan) {
+        if (!row.include) continue;
+        const deduct = parseFloat(row.deduct);
+        if (isNaN(deduct) || deduct <= 0) continue;
+        const newQuantity = row.pantryQty - deduct;
+        if (newQuantity <= 0) {
+          await pantryApi.remove(row.pantryId);
+        } else {
+          await pantryApi.update(row.pantryId, {
+            quantity: newQuantity,
+            unit: row.pantryUnit || undefined,
+            is_staple: row.pantryIsStaple,
+          });
         }
       }
 
-      // Log to cook history
       await cookHistoryApi.log({
         recipe_id: recipe.id,
         recipe_name: recipe.name,
         servings_cooked: servings,
       });
 
-      showNotification('success', 'Recipe marked as cooked! Ingredients deducted from pantry.');
+      const deductedCount = cookPlan.filter(r => r.include && parseFloat(r.deduct) > 0).length;
+      showNotification('success', `Recipe marked as cooked! ${deductedCount} pantry item${deductedCount === 1 ? '' : 's'} updated.`);
+      setCookPlan(null);
       setServingsCooked('');
     } catch (error) {
       console.error('Error marking recipe as cooked:', error);
       showNotification('error', 'Failed to update pantry');
+    } finally {
+      setApplyingCook(false);
     }
+  };
+
+  const updateCookPlanRow = (index: number, changes: Partial<{ deduct: string; include: boolean }>) => {
+    setCookPlan(prev => prev ? prev.map((row, i) => i === index ? { ...row, ...changes } : row) : prev);
   };
 
   const handleStartEdit = () => {
@@ -552,6 +624,59 @@ const RecipeDetail: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {cookPlan && (
+        <div className={styles.modal} onClick={() => setCookPlan(null)}>
+          <div className={`${styles.modalContent} ${styles.cookModalContent}`} onClick={e => e.stopPropagation()}>
+            <h2>Update Pantry</h2>
+            <p className={styles.cookModalHint}>
+              Here's what this cook will use. Adjust the amounts to match what you actually have left, or uncheck items you don't want deducted.
+            </p>
+            <div className={styles.cookModalRows}>
+              {cookPlan.map((row, idx) => {
+                const unitsDiffer = row.recipeUnit && row.pantryUnit &&
+                  row.recipeUnit.toLowerCase() !== row.pantryUnit.toLowerCase();
+                return (
+                  <div key={row.pantryId} className={`${styles.cookModalRow} ${!row.include ? styles.cookModalRowExcluded : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={row.include}
+                      onChange={e => updateCookPlanRow(idx, { include: e.target.checked })}
+                    />
+                    <div className={styles.cookModalRowInfo}>
+                      <span className={styles.cookModalRowName}>{row.name}</span>
+                      <span className={styles.cookModalRowDetail}>
+                        Have: {row.pantryQty} {row.pantryUnit || ''} · Recipe uses: {row.useQty} {row.recipeUnit || ''}
+                        {unitsDiffer && <span className={styles.cookModalUnitWarning}> ⚠️ units differ — check the amount</span>}
+                      </span>
+                    </div>
+                    <div className={styles.cookModalDeduct}>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={row.deduct}
+                        disabled={!row.include}
+                        onChange={e => updateCookPlanRow(idx, { deduct: e.target.value })}
+                        className={styles.cookModalDeductInput}
+                      />
+                      <span className={styles.cookModalDeductUnit}>{row.pantryUnit || ''} used</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className={styles.modalActions}>
+              <button className={styles.cancelButton} onClick={() => setCookPlan(null)} disabled={applyingCook}>
+                Cancel
+              </button>
+              <button className={styles.saveButton} onClick={handleConfirmCook} disabled={applyingCook}>
+                {applyingCook ? 'Updating...' : 'Confirm & Log Cook'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
