@@ -217,7 +217,8 @@ router.get('/monthly', async (req: Request, res: Response) => {
 
     res.json({
       month,
-      budget_amount: monthly?.budget_amount ?? 0,
+      // numeric columns come back from pg as strings
+      budget_amount: monthly ? parseFloat(monthly.budget_amount) : 0,
       calorie_budget: monthly?.calorie_budget ?? null,
       protein_goal: monthly?.protein_goal ?? null,
       carbs_goal: monthly?.carbs_goal ?? null,
@@ -270,7 +271,7 @@ router.post('/monthly', async (req: Request, res: Response) => {
     const agg = weeklyResult.rows[0];
     res.status(201).json({
       month,
-      budget_amount,
+      budget_amount: parseFloat(budget_amount),
       calorie_budget: calorie_budget ?? null,
       protein_goal: protein_goal ?? null,
       carbs_goal: carbs_goal ?? null,

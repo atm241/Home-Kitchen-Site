@@ -519,6 +519,65 @@
   font-size: 14px;
 }
 
+.recipeSearchWrap {
+  position: relative;
+}
+
+.recipeDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  background-color: #FFFFFF;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  z-index: 1100;
+}
+
+.recipeDropdownItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  background-color: transparent;
+  border-bottom: 1px solid #F2F2F2;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.recipeDropdownItem:last-child {
+  border-bottom: none;
+}
+
+.recipeDropdownItem:hover {
+  background-color: #F3F7EE;
+}
+
+.recipeDropdownName {
+  color: #2C3E50;
+}
+
+.recipeDropdownCategory {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #7F8C8D;
+  background-color: #F2F2F2;
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+
+.recipeDropdownEmpty {
+  padding: 12px;
+  color: #7F8C8D;
+  font-size: 14px;
+}
+
 .select,
 .input {
   padding: 12px;

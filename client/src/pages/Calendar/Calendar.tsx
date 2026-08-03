@@ -29,6 +29,8 @@ const Calendar: React.FC = () => {
     recurrence_pattern: 'weekly',
     recurrence_end_date: '',
   });
+  const [recipeSearch, setRecipeSearch] = useState('');
+  const [showRecipeDropdown, setShowRecipeDropdown] = useState(false);
   const [editingMealId, setEditingMealId] = useState<number | null>(null);
   const [editMealData, setEditMealData] = useState({ meal_type: 'dinner', servings: '2' });
   const [monthlyBudget, setMonthlyBudget] = useState<MonthlyBudget | null>(null);
@@ -45,6 +47,7 @@ const Calendar: React.FC = () => {
       const date = new Date(state.selectedDate);
       setSelectedDate(date);
       setCurrentDate(date);
+      setRecipeSearch('');
       setShowMealModal(true);
     }
   }, [location]);
@@ -98,6 +101,7 @@ const Calendar: React.FC = () => {
 
   const handleDayClick = (day: Date) => {
     setSelectedDate(day);
+    setRecipeSearch('');
     setShowMealModal(true);
   };
 
@@ -183,6 +187,7 @@ const Calendar: React.FC = () => {
       // Close modal and reset
       setShowMealModal(false);
       setFormData({ recipe_id: '', meal_type: 'dinner', servings: '2', is_recurring: false, recurrence_pattern: 'weekly', recurrence_end_date: '' });
+      setRecipeSearch('');
       showNotification('success', 'Meal scheduled successfully!');
     } catch (error) {
       console.error('Error scheduling meal:', error);
@@ -456,20 +461,50 @@ const Calendar: React.FC = () => {
             <form onSubmit={handleScheduleMeal} className={styles.form}>
               <div className={styles.formGroup}>
                 <label htmlFor="recipe">Recipe *</label>
-                <select
-                  id="recipe"
-                  value={formData.recipe_id}
-                  onChange={(e) => setFormData({ ...formData, recipe_id: e.target.value })}
-                  className={styles.select}
-                  required
-                >
-                  <option value="">Select a recipe</option>
-                  {recipes.map((recipe) => (
-                    <option key={recipe.id} value={recipe.id}>
-                      {recipe.name}
-                    </option>
-                  ))}
-                </select>
+                <div className={styles.recipeSearchWrap}>
+                  <input
+                    id="recipe"
+                    type="text"
+                    value={recipeSearch}
+                    onChange={(e) => {
+                      setRecipeSearch(e.target.value);
+                      setShowRecipeDropdown(true);
+                      if (formData.recipe_id) setFormData({ ...formData, recipe_id: '' });
+                    }}
+                    onFocus={() => setShowRecipeDropdown(true)}
+                    onBlur={() => setShowRecipeDropdown(false)}
+                    placeholder="Type to search recipes..."
+                    className={styles.input}
+                    autoComplete="off"
+                  />
+                  {showRecipeDropdown && (
+                    <div className={styles.recipeDropdown}>
+                      {recipes.filter(r => r.name.toLowerCase().includes(recipeSearch.toLowerCase().trim())).length === 0 ? (
+                        <div className={styles.recipeDropdownEmpty}>No recipes match "{recipeSearch}"</div>
+                      ) : (
+                        recipes
+                          .filter(r => r.name.toLowerCase().includes(recipeSearch.toLowerCase().trim()))
+                          .slice(0, 50)
+                          .map((recipe) => (
+                            <button
+                              type="button"
+                              key={recipe.id}
+                              className={styles.recipeDropdownItem}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                setFormData({ ...formData, recipe_id: String(recipe.id) });
+                                setRecipeSearch(recipe.name);
+                                setShowRecipeDropdown(false);
+                              }}
+                            >
+                              <span className={styles.recipeDropdownName}>{recipe.name}</span>
+                              {recipe.category && <span className={styles.recipeDropdownCategory}>{recipe.category}</span>}
+                            </button>
+                          ))
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className={styles.formGroup}>
