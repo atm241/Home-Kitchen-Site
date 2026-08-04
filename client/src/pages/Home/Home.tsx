@@ -83,14 +83,14 @@ const Home: React.FC = () => {
   const getItemsForDay = (day: Date) => weekItems.filter((item) => isSameDayUtil(item.date, day));
 
   const getCaloriesForDay = (day: Date) =>
-    getItemsForDay(day).reduce((total, item) => total + (item.calories || 0), 0);
+    getItemsForDay(day).reduce((total, item) => total + (Number(item.calories) || 0), 0);
 
   // Weekly nutrition totals from scheduled meals
   const weekTotals = weekItems
     .filter(i => i.type === 'meal')
     .reduce(
       (acc, item) => ({
-        calories: acc.calories + (item.calories || 0),
+        calories: acc.calories + (Number(item.calories) || 0),
       }),
       { calories: 0 }
     );

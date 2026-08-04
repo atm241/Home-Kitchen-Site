@@ -63,7 +63,7 @@ router.get('/combined', async (req: Request, res: Response) => {
         sm.recipe_id,
         CASE
           WHEN r.calories IS NOT NULL AND r.servings > 0
-          THEN ROUND((r.calories::numeric / r.servings) * sm.servings)
+          THEN ROUND((r.calories::numeric / r.servings) * sm.servings)::int
           ELSE NULL
         END as calories
       FROM scheduled_meals sm
