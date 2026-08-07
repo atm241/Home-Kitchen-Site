@@ -12,6 +12,9 @@ client/.env
 client/build/
 server/dist/
 
+# User-uploaded recipe images
+server/uploads/
+
 # OS files
 .DS_Store
 .DS_Store?

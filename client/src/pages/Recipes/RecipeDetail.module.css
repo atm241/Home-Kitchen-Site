@@ -818,3 +818,44 @@
   .content { box-shadow: none; padding: 0; border-radius: 0; }
   .recipeImageWrap { height: 200px; }
 }
+
+.imageUploadRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.imageUploadRow .editInput {
+  flex: 1;
+}
+
+.uploadPhotoButton {
+  flex-shrink: 0;
+  padding: 10px 18px;
+  background-color: #FFFFFF;
+  border: 2px solid #628141;
+  color: #628141;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.uploadPhotoButton:hover:not(:disabled) {
+  background-color: #628141;
+  color: #FFFFFF;
+}
+
+.uploadPhotoButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.editImagePreview {
+  margin-top: 12px;
+  max-width: 280px;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #E0E0E0;
+}

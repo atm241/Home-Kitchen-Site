@@ -7,7 +7,14 @@
       "Bash(sed 's/:\\\\/\\\\/.*@/:\\\\/\\\\/***@/')",
       "Bash(pg_isready)",
       "Bash(node -e ' *)",
-      "Bash(xargs kill)"
+      "Bash(xargs kill)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(python3 -c \"import PIL; print\\('PIL available'\\)\")",
+      "Bash(rm -f \"/Users/piercegruidl/Documents/Coding/Projects/Home Kitchen Site/server/uploads/\"recipe-17861*.png *)"
+    ],
+    "additionalDirectories": [
+      "/Users/piercegruidl/Documents/Coding/Projects/Home Kitchen Site/server/uploads"
     ]
   }
 }

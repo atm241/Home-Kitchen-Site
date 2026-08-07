@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { recipesApi } from '../../services/api';
 import { DIETARY_TAGS } from '../../types';
+import { prepareImage } from '../../utils/imageUtils';
 import styles from './AddRecipe.module.css';
 
 interface IngredientInput {
@@ -35,6 +36,76 @@ const AddRecipe: React.FC = () => {
   const [instructions, setInstructions] = useState<string[]>(['']);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [parsingPhoto, setParsingPhoto] = useState(false);
+  const coverPhotoInputRef = useRef<HTMLInputElement>(null);
+  const importPhotoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCoverPhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      setUploadingImage(true);
+      setError(null);
+      const prepared = await prepareImage(file);
+      const response = await recipesApi.uploadImage({
+        image: prepared.base64,
+        mediaType: prepared.mediaType,
+      });
+      setFormData(prev => ({ ...prev, image_url: response.data.url }));
+      setImagePreview(prepared.dataUrl);
+    } catch (err) {
+      console.error('Error uploading photo:', err);
+      setError('Failed to upload photo. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleImportPhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      setParsingPhoto(true);
+      setError(null);
+      const prepared = await prepareImage(file, 2000);
+      const response = await recipesApi.parsePhoto({
+        image: prepared.base64,
+        mediaType: prepared.mediaType,
+      });
+      const recipe = response.data;
+
+      setFormData(prev => ({
+        ...prev,
+        name: recipe.name,
+        description: recipe.description || '',
+        category: recipe.category || prev.category,
+        servings: recipe.servings ? String(recipe.servings) : prev.servings,
+        prep_time: recipe.prep_time ? String(recipe.prep_time) : '',
+        cook_time: recipe.cook_time ? String(recipe.cook_time) : '',
+      }));
+      if (recipe.ingredients.length > 0) {
+        setIngredients(recipe.ingredients.map(ing => ({
+          name: ing.name,
+          quantity: ing.quantity != null ? String(ing.quantity) : '',
+          unit: ing.unit || 'count',
+          notes: ing.notes || '',
+        })));
+      }
+      if (recipe.instructions) {
+        const steps = recipe.instructions.split('\n').filter(s => s.trim());
+        if (steps.length > 0) setInstructions(steps);
+      }
+    } catch (err: any) {
+      console.error('Error importing recipe from photo:', err);
+      setError(err.response?.data?.error || 'Could not read a recipe from that photo. Try a clearer shot.');
+    } finally {
+      setParsingPhoto(false);
+    }
+  };
 
   const toggleDietaryTag = (tag: string) => {
     setDietaryTags(prev =>
@@ -132,6 +203,29 @@ const AddRecipe: React.FC = () => {
       </div>
 
       <form onSubmit={handleSubmit} className={styles.form}>
+        {/* Import from photo */}
+        <div className={styles.photoImportBanner}>
+          <div>
+            <strong>Have a photo of this recipe?</strong>
+            <p>Snap a cookbook page, recipe card, or screenshot and the form fills itself in for you to review.</p>
+          </div>
+          <input
+            ref={importPhotoInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImportPhotoSelect}
+            style={{ display: 'none' }}
+          />
+          <button
+            type="button"
+            className={styles.photoImportButton}
+            onClick={() => importPhotoInputRef.current?.click()}
+            disabled={parsingPhoto}
+          >
+            {parsingPhoto ? 'Reading photo...' : '📷 Import from Photo'}
+          </button>
+        </div>
+
         {/* Basic Info */}
         <div className={styles.section}>
           <h2>Basic Information</h2>
@@ -150,10 +244,34 @@ const AddRecipe: React.FC = () => {
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="image_url">Recipe Image URL (optional)</label>
-            <input type="url" id="image_url" value={formData.image_url}
-              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-              placeholder="https://example.com/image.jpg" className={styles.input} />
+            <label htmlFor="image_url">Recipe Photo (optional)</label>
+            <div className={styles.imageUploadRow}>
+              <input
+                ref={coverPhotoInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleCoverPhotoSelect}
+                style={{ display: 'none' }}
+              />
+              <button
+                type="button"
+                className={styles.uploadPhotoButton}
+                onClick={() => coverPhotoInputRef.current?.click()}
+                disabled={uploadingImage}
+              >
+                {uploadingImage ? 'Uploading...' : '⬆ Upload Photo'}
+              </button>
+              <input type="url" id="image_url" value={formData.image_url}
+                onChange={(e) => { setFormData({ ...formData, image_url: e.target.value }); setImagePreview(null); }}
+                placeholder="...or paste an image URL" className={styles.input} />
+            </div>
+            {(imagePreview || formData.image_url) && (
+              <img
+                src={imagePreview || formData.image_url}
+                alt="Recipe preview"
+                className={styles.imagePreview}
+              />
+            )}
           </div>
 
           <div className={styles.formRow}>

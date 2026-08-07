@@ -306,3 +306,100 @@
 }
 .dietaryTagBtn:hover { border-color: #628141; color: #628141; }
 .dietaryTagBtnActive { border-color: #628141; background-color: #628141; color: #fff; }
+
+.photoImportBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background-color: #F3F7EE;
+  border: 2px dashed #8BAE66;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.photoImportBanner strong {
+  color: #628141;
+  font-size: 16px;
+}
+
+.photoImportBanner p {
+  margin: 4px 0 0;
+  color: #7F8C8D;
+  font-size: 14px;
+}
+
+.photoImportButton {
+  flex-shrink: 0;
+  padding: 12px 24px;
+  background-color: #628141;
+  color: #FFFFFF;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  transition: all 0.2s ease;
+}
+
+.photoImportButton:hover:not(:disabled) {
+  background-color: #8BAE66;
+}
+
+.photoImportButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.imageUploadRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.imageUploadRow .input {
+  flex: 1;
+}
+
+.uploadPhotoButton {
+  flex-shrink: 0;
+  padding: 10px 18px;
+  background-color: #FFFFFF;
+  border: 2px solid #628141;
+  color: #628141;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.uploadPhotoButton:hover:not(:disabled) {
+  background-color: #628141;
+  color: #FFFFFF;
+}
+
+.uploadPhotoButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.imagePreview {
+  margin-top: 12px;
+  max-width: 280px;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #E0E0E0;
+}
+
+@media (max-width: 768px) {
+  .photoImportBanner {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .imageUploadRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

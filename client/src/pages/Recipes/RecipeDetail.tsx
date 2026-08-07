@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { recipesApi, pantryApi, groceryApi, cookHistoryApi } from '../../services/api';
 import { Recipe } from '../../types';
 import { DIETARY_TAGS } from '../../types';
 import { getWeekStartDate } from '../../utils/dateUtils';
+import { prepareImage } from '../../utils/imageUtils';
 import styles from './RecipeDetail.module.css';
 
 const CATEGORIES = [
@@ -58,6 +59,29 @@ const RecipeDetail: React.FC = () => {
     include: boolean;
   }> | null>(null);
   const [applyingCook, setApplyingCook] = useState(false);
+  const [uploadingEditPhoto, setUploadingEditPhoto] = useState(false);
+  const editPhotoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleEditPhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      setUploadingEditPhoto(true);
+      const prepared = await prepareImage(file);
+      const response = await recipesApi.uploadImage({
+        image: prepared.base64,
+        mediaType: prepared.mediaType,
+      });
+      setEditForm(prev => ({ ...prev, image_url: response.data.url }));
+      showNotification('success', 'Photo uploaded!');
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      showNotification('error', 'Failed to upload photo');
+    } finally {
+      setUploadingEditPhoto(false);
+    }
+  };
 
   useEffect(() => {
     if (id) loadRecipe(parseInt(id));
@@ -358,10 +382,30 @@ const RecipeDetail: React.FC = () => {
                 className={styles.editTextarea} rows={3} />
             </div>
             <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
-              <label>Image URL</label>
-              <input type="url" value={editForm.image_url}
-                onChange={e => setEditForm({ ...editForm, image_url: e.target.value })}
-                className={styles.editInput} placeholder="https://..." />
+              <label>Recipe Photo</label>
+              <div className={styles.imageUploadRow}>
+                <input
+                  ref={editPhotoInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleEditPhotoSelect}
+                  style={{ display: 'none' }}
+                />
+                <button
+                  type="button"
+                  className={styles.uploadPhotoButton}
+                  onClick={() => editPhotoInputRef.current?.click()}
+                  disabled={uploadingEditPhoto}
+                >
+                  {uploadingEditPhoto ? 'Uploading...' : '⬆ Upload Photo'}
+                </button>
+                <input type="url" value={editForm.image_url}
+                  onChange={e => setEditForm({ ...editForm, image_url: e.target.value })}
+                  className={styles.editInput} placeholder="...or paste an image URL" />
+              </div>
+              {editForm.image_url && (
+                <img src={editForm.image_url} alt="Recipe preview" className={styles.editImagePreview} />
+              )}
             </div>
             <div className={styles.formGroup}>
               <label>Servings</label>

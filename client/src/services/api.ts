@@ -81,7 +81,22 @@ export const recipesApi = {
   importFromSpoonacular: (id: number) => api.post<Recipe>(`/recipes/import-spoonacular/${id}`),
   filterByNutrition: (params: { maxCarbs?: number; minProtein?: number; dietaryTag?: string }) =>
     api.get<Recipe[]>('/recipes/filter/nutritional', { params }),
+  uploadImage: (data: { image: string; mediaType: string }) =>
+    api.post<{ url: string }>('/recipes/upload-image', data),
+  parsePhoto: (data: { image: string; mediaType: string }) =>
+    api.post<ParsedRecipePhoto>('/recipes/parse-photo', data),
 };
+
+export interface ParsedRecipePhoto {
+  name: string;
+  description?: string;
+  category?: string;
+  servings?: number;
+  prep_time?: number;
+  cook_time?: number;
+  instructions?: string;
+  ingredients: Array<{ name: string; quantity?: number; unit?: string; notes?: string }>;
+}
 
 // Ingredients
 export const ingredientsApi = {

@@ -1,12 +1,80 @@
 import express, { Request, Response } from 'express';
+import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
 import pool from '../config/database';
+import { UPLOADS_DIR, ensureUploadsDir } from '../config/uploads';
 import { scrapeRecipe } from '../services/recipeScraper';
 import { categorizeIngredient } from '../services/ingredientCategorizer';
 import { categorizeRecipe } from '../services/recipeCategorizer';
 import { getRecipeDetails } from '../services/spoonacularService';
+import { parseRecipePhoto, AllowedImageType } from '../services/recipePhotoParser';
 import { cleanText } from '../utils/cleanText';
 
 const router = express.Router();
+
+const ALLOWED_IMAGE_TYPES: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+};
+
+// Upload a recipe photo (base64 JSON body). Saves to the uploads dir and
+// returns an absolute URL that can be stored in recipes.image_url.
+router.post('/upload-image', async (req: Request, res: Response) => {
+  try {
+    const { image, mediaType } = req.body;
+    if (!image || typeof image !== 'string') {
+      return res.status(400).json({ error: 'Image data is required' });
+    }
+    const ext = ALLOWED_IMAGE_TYPES[mediaType];
+    if (!ext) {
+      return res.status(400).json({ error: 'Unsupported image type' });
+    }
+
+    const buffer = Buffer.from(image, 'base64');
+    if (buffer.length === 0) return res.status(400).json({ error: 'Invalid image data' });
+    if (buffer.length > 10 * 1024 * 1024) {
+      return res.status(400).json({ error: 'Image too large (max 10MB)' });
+    }
+
+    const filename = `recipe-${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
+    ensureUploadsDir();
+    fs.writeFileSync(path.join(UPLOADS_DIR, filename), buffer);
+
+    const url = `${req.protocol}://${req.get('host')}/uploads/${filename}`;
+    res.status(201).json({ url });
+  } catch (error) {
+    console.error('Error uploading recipe image:', error);
+    res.status(500).json({ error: 'Failed to upload image' });
+  }
+});
+
+// Extract a structured recipe from a photo (cookbook page, handwritten card)
+router.post('/parse-photo', async (req: Request, res: Response) => {
+  try {
+    const { image, mediaType } = req.body;
+    if (!image || typeof image !== 'string') {
+      return res.status(400).json({ error: 'Image data is required' });
+    }
+    const safeMediaType = (
+      mediaType in ALLOWED_IMAGE_TYPES ? mediaType : 'image/jpeg'
+    ) as AllowedImageType;
+
+    console.log('📷 Parsing recipe photo with AI vision');
+    const recipe = await parseRecipePhoto(image, safeMediaType);
+    if (!recipe) {
+      return res.status(422).json({ error: 'No readable recipe found in this photo' });
+    }
+
+    console.log(`✅ Extracted recipe "${recipe.name}" (${recipe.ingredients.length} ingredients)`);
+    res.json(recipe);
+  } catch (error) {
+    console.error('Error parsing recipe photo:', error);
+    res.status(500).json({ error: 'Failed to parse recipe photo' });
+  }
+});
 
 const RECIPE_SELECT = `
   SELECT r.*,

@@ -2,6 +2,7 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
 import pool from './config/database';
+import { UPLOADS_DIR, ensureUploadsDir } from './config/uploads';
 import { requireAuth } from './middleware/auth';
 
 // Import routes
@@ -35,8 +36,13 @@ const port = process.env.PORT || 5000;
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:3000',
 }));
-app.use(express.json());
+// Large limit so base64 photos (recipe images, receipts) fit in JSON bodies
+app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Uploaded recipe images are stored on disk and served statically
+ensureUploadsDir();
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 // Routes
 app.use('/api/auth', authRoutes);
