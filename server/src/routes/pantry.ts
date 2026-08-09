@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import pool from '../config/database';
 import { categorizeIngredient } from '../services/ingredientCategorizer';
 import { lookupBarcode } from '../services/barcodeService';
+import { getExpirationDate } from '../services/shelfLife';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -81,6 +82,21 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // Get expiring pantry items and recipes that can use them
+// Suggested expiration date for a food, from the shelf-life reference table
+router.get('/suggested-expiry', async (req: Request, res: Response) => {
+  try {
+    const name = (req.query.name as string) || '';
+    const category = (req.query.category as string) || null;
+    if (!name) return res.status(400).json({ error: 'name is required' });
+
+    const expiration_date = await getExpirationDate(name, category);
+    res.json({ expiration_date });
+  } catch (error) {
+    console.error('Error computing suggested expiry:', error);
+    res.status(500).json({ error: 'Failed to compute suggested expiration' });
+  }
+});
+
 router.get('/use-it-up', async (req: Request, res: Response) => {
   try {
     const days = parseInt(req.query.days as string) || 5;
@@ -188,12 +204,6 @@ Rules:
       return res.status(500).json({ error: 'Failed to parse AI response' });
     }
 
-    const SHELF_LIFE_DAYS: Record<string, number> = {
-      'Produce': 5, 'Proteins': 3, 'Dairy': 7, 'Beverages': 7,
-      'Snacks': 30, 'Condiments & Sauces': 90, 'Grains & Pasta': 180,
-      'Oils & Vinegars': 365, 'Baking': 365, 'Canned Goods': 730, 'Spices & Seasonings': 730,
-    };
-
     const results = [];
     for (const item of rawItems) {
       if (!item.name) continue;
@@ -214,13 +224,7 @@ Rules:
         ingredientId = newIng.rows[0].id;
       }
 
-      const days = SHELF_LIFE_DAYS[category];
-      let expiration_date: string | null = null;
-      if (days) {
-        const d = new Date();
-        d.setDate(d.getDate() + days);
-        expiration_date = d.toISOString().split('T')[0];
-      }
+      const expiration_date = await getExpirationDate(item.name, category);
 
       results.push({
         ingredient_id: ingredientId,

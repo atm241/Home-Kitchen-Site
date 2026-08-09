@@ -5,31 +5,21 @@ import { getWeekStartDate } from '../../utils/dateUtils';
 import BarcodeScanner from '../../components/BarcodeScanner/BarcodeScanner';
 import styles from './Pantry.module.css';
 
-const SHELF_LIFE_DAYS: Record<string, number> = {
-  'Produce': 5,
-  'Proteins': 3,
-  'Dairy': 7,
-  'Beverages': 7,
-  'Snacks': 30,
-  'Condiments & Sauces': 90,
-  'Grains & Pasta': 180,
-  'Oils & Vinegars': 365,
-  'Baking': 365,
-  'Canned Goods': 730,
-  'Spices & Seasonings': 730,
-};
-
-const PERISHABLE_CATEGORIES = new Set(['Produce', 'Proteins', 'Dairy', 'Beverages']);
-
 // Recommendation cards shown before "Show all" — keeps the pantry itself easy
 // to reach now that the recommender surfaces the whole saved-recipe library.
 const VISIBLE_RECOMMENDATIONS = 6;
 
-const getSuggestedExpiryDate = (category: string): string => {
-  const days = SHELF_LIFE_DAYS[category] ?? 7;
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split('T')[0];
+// Shelf life comes from the server's shelf_life reference table, which matches
+// on the ingredient name first (parmesan keeps far longer than milk) and falls
+// back to the category. Returns '' when there's no data for the food.
+const fetchSuggestedExpiry = async (name: string, category?: string): Promise<string> => {
+  if (!name.trim()) return '';
+  try {
+    const response = await pantryApi.suggestedExpiry(name.trim(), category);
+    return response.data.expiration_date || '';
+  } catch {
+    return '';
+  }
 };
 
 const getExpiryStatus = (expiration_date?: string): 'expired' | 'soon' | null => {
@@ -61,6 +51,17 @@ const Pantry: React.FC = () => {
     is_staple: false,
     expiration_date: '',
   });
+  // Tracks whether the date in the form was suggested rather than typed, so we
+  // can refine our own guess but never overwrite the user's
+  const [expiryWasSuggested, setExpiryWasSuggested] = useState(false);
+
+  const suggestExpiryFor = async (name: string, category: string) => {
+    if (newItem.expiration_date && !expiryWasSuggested) return;
+    const suggested = await fetchSuggestedExpiry(name, category);
+    if (!suggested) return;
+    setNewItem(prev => ({ ...prev, expiration_date: suggested }));
+    setExpiryWasSuggested(true);
+  };
   const [useItUp, setUseItUp] = useState<UseItUpResult | null>(null);
   const [editingExpiryId, setEditingExpiryId] = useState<number | null>(null);
   const [editingExpiryValue, setEditingExpiryValue] = useState('');
@@ -190,6 +191,7 @@ const Pantry: React.FC = () => {
         is_staple: false,
         expiration_date: '',
       });
+      setExpiryWasSuggested(false);
       setShowAddForm(false);
       loadPantry();
     } catch (error) {
@@ -394,8 +396,7 @@ const Pantry: React.FC = () => {
     try {
       const response = await pantryApi.lookupBarcode(code);
       const product = response.data;
-      const autoExpiry = PERISHABLE_CATEGORIES.has(product.category)
-        ? getSuggestedExpiryDate(product.category) : '';
+      const autoExpiry = await fetchSuggestedExpiry(product.name, product.category);
       setNewItem({
         ingredient_name: product.name,
         quantity: '1',
@@ -404,6 +405,7 @@ const Pantry: React.FC = () => {
         is_staple: false,
         expiration_date: autoExpiry,
       });
+      setExpiryWasSuggested(!!autoExpiry);
       setShowAddForm(true);
       showNotification('success', `Found "${product.name}" — review and add it below.`);
     } catch {
@@ -666,6 +668,7 @@ const Pantry: React.FC = () => {
                   onChange={(e) =>
                     setNewItem({ ...newItem, ingredient_name: e.target.value })
                   }
+                  onBlur={(e) => suggestExpiryFor(e.target.value, newItem.category)}
                   placeholder="e.g., Olive Oil, Rice, Tomatoes"
                   className={styles.input}
                   required
@@ -678,9 +681,8 @@ const Pantry: React.FC = () => {
                   value={newItem.category}
                   onChange={(e) => {
                     const cat = e.target.value;
-                    const autoExpiry = !newItem.expiration_date && PERISHABLE_CATEGORIES.has(cat)
-                      ? getSuggestedExpiryDate(cat) : newItem.expiration_date;
-                    setNewItem({ ...newItem, category: cat, expiration_date: autoExpiry });
+                    setNewItem({ ...newItem, category: cat });
+                    suggestExpiryFor(newItem.ingredient_name, cat);
                   }}
                   className={styles.select}
                 >
@@ -752,12 +754,20 @@ const Pantry: React.FC = () => {
                 </label>
               </div>
               <div className={styles.formGroup}>
-                <label htmlFor="expiration_date">Expiration Date (optional)</label>
+                <label htmlFor="expiration_date">
+                  Expiration Date (optional)
+                  {expiryWasSuggested && newItem.expiration_date && (
+                    <span className={styles.suggestedHint}> · estimated</span>
+                  )}
+                </label>
                 <input
                   type="date"
                   id="expiration_date"
                   value={newItem.expiration_date}
-                  onChange={(e) => setNewItem({ ...newItem, expiration_date: e.target.value })}
+                  onChange={(e) => {
+                    setNewItem({ ...newItem, expiration_date: e.target.value });
+                    setExpiryWasSuggested(false);
+                  }}
                   className={styles.input}
                 />
               </div>
@@ -940,14 +950,19 @@ const Pantry: React.FC = () => {
                               >
                                 exp. {new Date(item.expiration_date).toLocaleDateString()}
                               </button>
-                            ) : PERISHABLE_CATEGORIES.has(item.category || '') ? (
+                            ) : (
                               <button
                                 className={styles.setExpiryBtn}
-                                onClick={() => { setEditingExpiryId(item.id); setEditingExpiryValue(getSuggestedExpiryDate(item.category || 'Other')); }}
+                                onClick={async () => {
+                                  setEditingExpiryId(item.id);
+                                  setEditingExpiryValue(
+                                    await fetchSuggestedExpiry(item.ingredient_name, item.category)
+                                  );
+                                }}
                               >
                                 + Set expiry
                               </button>
-                            ) : null}
+                            )}
                             {isLowStock && (
                               <span className={styles.lowStockWrapper}>
                                 <button

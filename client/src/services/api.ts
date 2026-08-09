@@ -170,6 +170,10 @@ export const pantryApi = {
     api.post<ParsedReceiptItem[]>('/pantry/parse-receipt', data),
   useItUp: (days = 5) =>
     api.get<UseItUpResult>('/pantry/use-it-up', { params: { days } }),
+  suggestedExpiry: (name: string, category?: string) =>
+    api.get<{ expiration_date: string | null }>('/pantry/suggested-expiry', {
+      params: { name, category },
+    }),
   lookupBarcode: (code: string) => api.get<BarcodeProduct>(`/pantry/barcode/${code}`),
 };
 

@@ -5,6 +5,7 @@ import { findRecipesByIngredients } from '../services/spoonacularService';
 import { findIngredientCombos } from '../services/ingredientRecommender';
 import { createPantrySignature } from '../utils/pantrySignature';
 import { cacheExpiry } from '../utils/recommendationCache';
+import { getExpirationDate } from '../services/shelfLife';
 
 const router = express.Router();
 
@@ -416,7 +417,7 @@ router.post('/add-to-pantry', async (req: Request, res: Response) => {
 
     // Get all purchased items from grocery list
     const purchasedItems = await client.query(`
-      SELECT gl.*, i.name as ingredient_name
+      SELECT gl.*, i.name as ingredient_name, i.category
       FROM grocery_list gl
       JOIN ingredients i ON gl.ingredient_id = i.id
       WHERE gl.week_start_date = $1 AND gl.is_purchased = true AND gl.household_id = $2
@@ -425,24 +426,30 @@ router.post('/add-to-pantry', async (req: Request, res: Response) => {
     let addedCount = 0;
 
     for (const item of purchasedItems.rows) {
+      // Shelf life runs from today — the items are being bought now
+      const expirationDate = await getExpirationDate(item.ingredient_name, item.category);
+
       // Check if item already exists in pantry
       const existingPantry = await client.query(
-        'SELECT id, quantity FROM pantry WHERE ingredient_id = $1 AND household_id = $2',
+        'SELECT id, quantity, expiration_date FROM pantry WHERE ingredient_id = $1 AND household_id = $2',
         [item.ingredient_id, householdId]
       );
 
       if (existingPantry.rows.length > 0) {
-        // Update existing pantry item quantity
+        // Restocking: add to the quantity and push the expiration out to the
+        // fresher of the two, so old stock doesn't keep the item flagged
         const newQuantity = (existingPantry.rows[0].quantity || 0) + (item.quantity || 0);
-        await client.query(
-          'UPDATE pantry SET quantity = $1 WHERE id = $2',
-          [newQuantity, existingPantry.rows[0].id]
-        );
+        await client.query(`
+          UPDATE pantry
+          SET quantity = $1,
+              expiration_date = GREATEST(expiration_date, $2::date)
+          WHERE id = $3
+        `, [newQuantity, expirationDate, existingPantry.rows[0].id]);
       } else {
         // Add new item to pantry
         await client.query(
-          'INSERT INTO pantry (household_id, ingredient_id, quantity, unit, is_staple) VALUES ($1, $2, $3, $4, false)',
-          [householdId, item.ingredient_id, item.quantity, item.unit]
+          'INSERT INTO pantry (household_id, ingredient_id, quantity, unit, expiration_date, is_staple) VALUES ($1, $2, $3, $4, $5, false)',
+          [householdId, item.ingredient_id, item.quantity, item.unit, expirationDate]
         );
       }
 

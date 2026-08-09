@@ -9,6 +9,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "init-db": "node init-db.js",
+    "migrate": "node migrate.js",
+    "backfill-expiry": "ts-node src/scripts/backfillExpiry.ts",
     "reset-password": "node reset-password.js",
     "test": "echo \"No server test suite yet\" && exit 0"
   },

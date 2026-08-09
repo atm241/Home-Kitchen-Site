@@ -11,7 +11,8 @@
       "Skill(claude-api)",
       "Skill(claude-api:*)",
       "Bash(python3 -c \"import PIL; print\\('PIL available'\\)\")",
-      "Bash(rm -f \"/Users/piercegruidl/Documents/Coding/Projects/Home Kitchen Site/server/uploads/\"recipe-17861*.png *)"
+      "Bash(rm -f \"/Users/piercegruidl/Documents/Coding/Projects/Home Kitchen Site/server/uploads/\"recipe-17861*.png *)",
+      "Bash(awk '/Compiling\\\\.\\\\.\\\\./{buf=\"\"} {buf=buf\"\\\\n\"$0} END{print buf}' /private/tmp/claude-501/-Users-piercegruidl-Documents-Coding-Projects-Home-Kitchen-Site/c6b55571-9553-48fb-81ba-13e2c36924a3/scratchpad/client.log)"
     ],
     "additionalDirectories": [
       "/Users/piercegruidl/Documents/Coding/Projects/Home Kitchen Site/server/uploads"
