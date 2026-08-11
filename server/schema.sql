@@ -224,3 +224,24 @@ CREATE INDEX IF NOT EXISTS idx_cached_combos_household_signature ON cached_ingre
 CREATE INDEX IF NOT EXISTS idx_cached_combos_expires ON cached_ingredient_combos(expires_at);
 CREATE INDEX IF NOT EXISTS idx_cached_recipes_household_signature ON cached_recipe_recommendations(household_id, pantry_signature);
 CREATE INDEX IF NOT EXISTS idx_cached_recipes_expires ON cached_recipe_recommendations(expires_at);
+
+-- ---------------------------------------------------------------------------
+-- Migration bookkeeping
+--
+-- This file is the source of truth for a FRESH database; files in migrations/
+-- upgrade an EXISTING one. The rows below mark the upgrade-only migrations as
+-- already satisfied, so `npm run migrate` on a brand-new database skips them
+-- (003 in particular fails against a fresh schema — its constraints exist here
+-- already) and applies only the ones that still have work to do, such as the
+-- shelf_life reference data.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  filename VARCHAR(255) PRIMARY KEY,
+  applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO schema_migrations (filename) VALUES
+  ('001_add_missing_columns.sql'),
+  ('002_add_monthly_budgets.sql'),
+  ('003_add_auth_and_households.sql')
+ON CONFLICT (filename) DO NOTHING;

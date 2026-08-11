@@ -12,7 +12,11 @@
       "Skill(claude-api:*)",
       "Bash(python3 -c \"import PIL; print\\('PIL available'\\)\")",
       "Bash(rm -f \"/Users/piercegruidl/Documents/Coding/Projects/Home Kitchen Site/server/uploads/\"recipe-17861*.png *)",
-      "Bash(awk '/Compiling\\\\.\\\\.\\\\./{buf=\"\"} {buf=buf\"\\\\n\"$0} END{print buf}' /private/tmp/claude-501/-Users-piercegruidl-Documents-Coding-Projects-Home-Kitchen-Site/c6b55571-9553-48fb-81ba-13e2c36924a3/scratchpad/client.log)"
+      "Bash(awk '/Compiling\\\\.\\\\.\\\\./{buf=\"\"} {buf=buf\"\\\\n\"$0} END{print buf}' /private/tmp/claude-501/-Users-piercegruidl-Documents-Coding-Projects-Home-Kitchen-Site/c6b55571-9553-48fb-81ba-13e2c36924a3/scratchpad/client.log)",
+      "Bash(awk '{print $NF}')",
+      "Bash(git show *)",
+      "Bash(python3 -c ' *)",
+      "Bash(DATABASE_URL=postgresql://localhost:5432/__TRACKED_VAR__ node migrate.js)"
     ],
     "additionalDirectories": [
       "/Users/piercegruidl/Documents/Coding/Projects/Home Kitchen Site/server/uploads"
