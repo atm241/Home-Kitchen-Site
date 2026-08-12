@@ -16,7 +16,13 @@
       "Bash(awk '{print $NF}')",
       "Bash(git show *)",
       "Bash(python3 -c ' *)",
-      "Bash(DATABASE_URL=postgresql://localhost:5432/__TRACKED_VAR__ node migrate.js)"
+      "Bash(DATABASE_URL=postgresql://localhost:5432/__TRACKED_VAR__ node migrate.js)",
+      "WebSearch",
+      "Bash(npm audit *)",
+      "Bash(cp package.json /tmp/pkg.bak)",
+      "Bash(cp package-lock.json /tmp/lock.bak)",
+      "Bash(cp /tmp/pkg.bak package.json)",
+      "Bash(cp /tmp/lock.bak package-lock.json)"
     ],
     "additionalDirectories": [
       "/Users/piercegruidl/Documents/Coding/Projects/Home Kitchen Site/server/uploads"
