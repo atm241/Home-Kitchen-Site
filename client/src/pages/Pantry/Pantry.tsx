@@ -3,6 +3,7 @@ import { pantryApi, ingredientsApi, groceryApi, recipesApi, recommendationsApi, 
 import { PantryItem, Ingredient } from '../../types';
 import { getWeekStartDate } from '../../utils/dateUtils';
 import BarcodeScanner from '../../components/BarcodeScanner/BarcodeScanner';
+import { resolveImageUrl } from '../../utils/imageUtils';
 import styles from './Pantry.module.css';
 
 // Recommendation cards shown before "Show all" — keeps the pantry itself easy
@@ -519,7 +520,7 @@ const Pantry: React.FC = () => {
               {useItUp.recipes.map(recipe => (
                 <a key={recipe.id} href={`/recipes/${recipe.id}`} className={styles.useItUpCard}>
                   {recipe.image_url && (
-                    <img src={recipe.image_url} alt={recipe.name} className={styles.useItUpCardImg} />
+                    <img src={resolveImageUrl(recipe.image_url)} alt={recipe.name} className={styles.useItUpCardImg} />
                   )}
                   <div className={styles.useItUpCardBody}>
                     <div className={styles.useItUpCardName}>{recipe.name}</div>

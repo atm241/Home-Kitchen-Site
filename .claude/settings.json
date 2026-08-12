@@ -22,7 +22,11 @@
       "Bash(cp package.json /tmp/pkg.bak)",
       "Bash(cp package-lock.json /tmp/lock.bak)",
       "Bash(cp /tmp/pkg.bak package.json)",
-      "Bash(cp /tmp/lock.bak package-lock.json)"
+      "Bash(cp /tmp/lock.bak package-lock.json)",
+      "Bash(node -p \"require\\('./package.json'\\).dependencies['express-rate-limit']\")",
+      "Bash(npx react-scripts *)",
+      "Bash(docker run *)",
+      "Bash(git diff *)"
     ],
     "additionalDirectories": [
       "/Users/piercegruidl/Documents/Coding/Projects/Home Kitchen Site/server/uploads"

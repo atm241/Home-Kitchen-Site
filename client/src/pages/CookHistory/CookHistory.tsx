@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { cookHistoryApi } from '../../services/api';
 import { CookHistoryEntry } from '../../types';
+import { resolveImageUrl } from '../../utils/imageUtils';
 import styles from './CookHistory.module.css';
 
 const CookHistory: React.FC = () => {
@@ -75,7 +76,7 @@ const CookHistory: React.FC = () => {
               {entries.map(entry => (
                 <div key={entry.id} className={styles.historyEntry}>
                   {entry.image_url && (
-                    <img src={entry.image_url} alt={entry.recipe_name} className={styles.entryImage} />
+                    <img src={resolveImageUrl(entry.image_url)} alt={entry.recipe_name} className={styles.entryImage} />
                   )}
                   <div className={styles.entryBody}>
                     <div className={styles.entryName}>

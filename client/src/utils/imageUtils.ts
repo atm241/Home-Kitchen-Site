@@ -4,6 +4,33 @@ export interface PreparedImage {
   dataUrl: string;
 }
 
+// Turn a stored image_url into something an <img> can load.
+//
+// image_url holds two different kinds of value: absolute URLs from scraped
+// recipes (someone else's CDN) and root-relative paths from our own uploads
+// (/uploads/recipe-123.jpg). Absolute ones are already loadable and pass
+// through untouched.
+//
+// Relative ones need an origin. In production that's the same host serving the
+// app, so the path works as-is and we return it unchanged. In development the
+// app runs on :3000 while uploads are served by Express on :5001, so we borrow
+// the origin from REACT_APP_API_URL — the only place that knows where the API
+// actually lives.
+export function resolveImageUrl(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  if (/^(https?:)?\/\//i.test(url) || url.startsWith('data:')) return url;
+
+  const apiUrl = process.env.REACT_APP_API_URL;
+  // Relative API base (production behind nginx): the path is already correct.
+  if (!apiUrl || !/^https?:\/\//i.test(apiUrl)) return url;
+
+  try {
+    return new URL(url, new URL(apiUrl).origin).toString();
+  } catch {
+    return url;
+  }
+}
+
 // Read a photo and downscale it on a canvas so multi-MB phone photos become
 // reasonable JSON payloads while staying sharp enough for display and AI vision.
 export function prepareImage(file: File, maxDimension = 1600): Promise<PreparedImage> {

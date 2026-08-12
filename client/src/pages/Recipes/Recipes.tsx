@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { recipesApi } from '../../services/api';
 import { Recipe, DIETARY_TAGS } from '../../types';
+import { resolveImageUrl } from '../../utils/imageUtils';
 import styles from './Recipes.module.css';
 
 
@@ -196,7 +197,7 @@ const Recipes: React.FC = () => {
             <Link key={recipe.id} to={`/recipes/${recipe.id}`} className={styles.recipeCard}>
               {recipe.image_url && (
                 <div className={styles.cardImageWrap}>
-                  <img src={recipe.image_url} alt={recipe.name} className={styles.cardImage} />
+                  <img src={resolveImageUrl(recipe.image_url)} alt={recipe.name} className={styles.cardImage} />
                 </div>
               )}
               <div className={styles.cardBody}>

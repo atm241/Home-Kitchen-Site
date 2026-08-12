@@ -1,5 +1,6 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import * as dotenv from 'dotenv';
 import pool from './config/database';
 import { UPLOADS_DIR, ensureUploadsDir } from './config/uploads';
@@ -32,10 +33,40 @@ if (majorVersion < 20) {
 const app: Express = express();
 const port = process.env.PORT || 5000;
 
+// In Docker, nginx is the only thing that talks to us, so without this every
+// request looks like it comes from the proxy's IP — the rate limiters below
+// would then count the whole household as one client and lock everyone out
+// together. One hop: nginx.
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:3000',
 }));
+
+// Login and registration are the only unauthenticated, brute-forceable
+// endpoints. Deliberately tight: a real person mistyping a password a few
+// times stays well under this, while an automated guesser stalls immediately.
+// Successful logins don't count, so getting it right doesn't burn the budget.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  skipSuccessfulRequests: true,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many attempts. Please try again in 15 minutes.' },
+});
+
+// Broad backstop for everything else. Generous enough that normal use never
+// notices — it exists to blunt runaway clients and scripted scraping, not to
+// police real usage.
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 1000,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please slow down.' },
+});
 // Large limit so base64 photos (recipe images, receipts) fit in JSON bodies
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -45,7 +76,8 @@ ensureUploadsDir();
 app.use('/uploads', express.static(UPLOADS_DIR));
 
 // Routes
-app.use('/api/auth', authRoutes);
+app.use('/api', apiLimiter);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/recipes', requireAuth, recipeRoutes);
 app.use('/api/ingredients', requireAuth, ingredientRoutes);
 app.use('/api/pantry', requireAuth, pantryRoutes);

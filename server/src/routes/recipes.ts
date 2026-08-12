@@ -21,7 +21,13 @@ const ALLOWED_IMAGE_TYPES: Record<string, string> = {
 };
 
 // Upload a recipe photo (base64 JSON body). Saves to the uploads dir and
-// returns an absolute URL that can be stored in recipes.image_url.
+// returns a root-relative path to store in recipes.image_url.
+//
+// Relative, not absolute: an absolute URL bakes in whichever host the uploader
+// happened to use, so a photo added from the machine running the server would
+// be saved as http://localhost:5001/... and then fail to load for every phone
+// and laptop in the house. The client resolves the path against its own API
+// origin instead.
 router.post('/upload-image', async (req: Request, res: Response) => {
   try {
     const { image, mediaType } = req.body;
@@ -43,8 +49,7 @@ router.post('/upload-image', async (req: Request, res: Response) => {
     ensureUploadsDir();
     fs.writeFileSync(path.join(UPLOADS_DIR, filename), buffer);
 
-    const url = `${req.protocol}://${req.get('host')}/uploads/${filename}`;
-    res.status(201).json({ url });
+    res.status(201).json({ url: `/uploads/${filename}` });
   } catch (error) {
     console.error('Error uploading recipe image:', error);
     res.status(500).json({ error: 'Failed to upload image' });

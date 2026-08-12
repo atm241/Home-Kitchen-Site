@@ -4,7 +4,7 @@ import { recipesApi, pantryApi, groceryApi, cookHistoryApi } from '../../service
 import { Recipe } from '../../types';
 import { DIETARY_TAGS } from '../../types';
 import { getWeekStartDate } from '../../utils/dateUtils';
-import { prepareImage } from '../../utils/imageUtils';
+import { prepareImage, resolveImageUrl } from '../../utils/imageUtils';
 import styles from './RecipeDetail.module.css';
 
 const CATEGORIES = [
@@ -404,7 +404,7 @@ const RecipeDetail: React.FC = () => {
                   className={styles.editInput} placeholder="...or paste an image URL" />
               </div>
               {editForm.image_url && (
-                <img src={editForm.image_url} alt="Recipe preview" className={styles.editImagePreview} />
+                <img src={resolveImageUrl(editForm.image_url)} alt="Recipe preview" className={styles.editImagePreview} />
               )}
             </div>
             <div className={styles.formGroup}>
@@ -543,7 +543,7 @@ const RecipeDetail: React.FC = () => {
       <div className={styles.content}>
         {recipe.image_url && (
           <div className={styles.recipeImageWrap}>
-            <img src={recipe.image_url} alt={recipe.name} className={styles.recipeImage} />
+            <img src={resolveImageUrl(recipe.image_url)} alt={recipe.name} className={styles.recipeImage} />
           </div>
         )}
 
