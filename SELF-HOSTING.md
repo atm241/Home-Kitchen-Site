@@ -40,8 +40,16 @@ recommended) with Docker + Docker Compose installed — no changes needed.
 git clone <your fork/repo> home-kitchen
 cd home-kitchen
 cp .env.example .env
-# edit .env: set POSTGRES_PASSWORD, ANTHROPIC_API_KEY, and JWT_SECRET
-#   generate a secret with: openssl rand -base64 48
+# edit .env and set all five required values:
+#   POSTGRES_PASSWORD    database password
+#   ANTHROPIC_API_KEY    recipe photo import / receipt scanning
+#   JWT_SECRET           generate with: openssl rand -base64 48
+#   SPOONACULAR_API_KEY  recipe + ingredient-combo recommendations
+#   CLIENT_URL           the address you open the app from, e.g.
+#                        http://192.168.1.50:3000 — this is the CORS origin,
+#                        so "localhost" here breaks access from every phone
+# The server refuses to start if any are missing, rather than booting into a
+# half-broken state where recommendations silently return nothing.
 docker compose up -d
 ```
 

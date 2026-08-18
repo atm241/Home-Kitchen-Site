@@ -26,7 +26,8 @@
       "Bash(node -p \"require\\('./package.json'\\).dependencies['express-rate-limit']\")",
       "Bash(npx react-scripts *)",
       "Bash(docker run *)",
-      "Bash(git diff *)"
+      "Bash(git diff *)",
+      "Bash(grep -oE '\\\\$\\\\{[A-Z_]+:\\\\?' docker-compose.yml)"
     ],
     "additionalDirectories": [
       "/Users/piercegruidl/Documents/Coding/Projects/Home Kitchen Site/server/uploads"
