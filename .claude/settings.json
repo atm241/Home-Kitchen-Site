@@ -27,7 +27,11 @@
       "Bash(npx react-scripts *)",
       "Bash(docker run *)",
       "Bash(git diff *)",
-      "Bash(grep -oE '\\\\$\\\\{[A-Z_]+:\\\\?' docker-compose.yml)"
+      "Bash(grep -oE '\\\\$\\\\{[A-Z_]+:\\\\?' docker-compose.yml)",
+      "Bash(node -p \"Object.keys\\({...require\\('./package.json'\\).dependencies,...require\\('./package.json'\\).devDependencies}\\).filter\\(d=>d.includes\\('workbox'\\)\\).join\\(', '\\)||' none'\")",
+      "Bash(kill %1)",
+      "Bash(wait)",
+      "Bash(DATABASE_URL=\"postgresql://localhost:5432/home_kitchen_authtest\" PORT=5098 NODE_ENV=development npx ts-node src/index.ts)"
     ],
     "additionalDirectories": [
       "/Users/piercegruidl/Documents/Coding/Projects/Home Kitchen Site/server/uploads"

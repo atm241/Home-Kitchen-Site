@@ -200,11 +200,22 @@
   gap: 16px;
 }
 
-.passwordForm input {
+/* 16px on the inputs is deliberate: iOS Safari zooms the page when a focused
+   field is smaller than that, which is jarring on a phone. */
+.passwordForm input,
+.passwordForm select {
   padding: 12px;
   border: 1px solid #DDD;
   border-radius: 8px;
   font-size: 16px;
+  background-color: #FFFFFF;
+}
+
+.passwordHint {
+  color: #6B7B8C;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
 }
 
 .passwordError {

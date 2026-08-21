@@ -144,6 +144,80 @@ router.get('/me', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
+// List the members of the caller's household.
+// Only ever exposes people who share a household with the caller.
+router.get('/household/members', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, email, name FROM users WHERE household_id = $1 ORDER BY name',
+      [req.householdId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching household members:', error);
+    res.status(500).json({ error: 'Failed to fetch household members' });
+  }
+});
+
+// Reset another household member's password.
+//
+// This is the "I forgot my password" path for a self-hosted household app. A
+// mailed reset link would need an SMTP server, which is a lot of setup for a
+// household — so instead, someone else in the house who is already logged in
+// does it for you. Everyone in a household already shares all the data, so this
+// grants no access they didn't have; it only avoids an SSH session.
+//
+// The caller re-enters their OWN password: it stops a device left unlocked on
+// the counter from being used to lock the owner out of their own account.
+//
+// If EVERY member is locked out at once, the fallback is still the CLI:
+// `npm run reset-password` on the server. That case can't be solved in-app.
+router.post('/household/members/:id/reset-password', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const targetId = parseInt(req.params.id, 10);
+    const { newPassword, currentPassword } = req.body;
+
+    if (Number.isNaN(targetId)) {
+      return res.status(400).json({ error: 'Invalid member id' });
+    }
+    if (!newPassword || !currentPassword) {
+      return res.status(400).json({ error: 'currentPassword and newPassword are required' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    }
+    if (targetId === req.userId) {
+      return res.status(400).json({ error: 'Use Change Password to update your own password' });
+    }
+
+    // Wrong password returns 400, not 401, so the client's global 401
+    // interceptor doesn't log the caller out mid-form.
+    const me = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.userId]);
+    if (me.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const valid = await comparePassword(currentPassword, me.rows[0].password_hash);
+    if (!valid) {
+      return res.status(400).json({ error: 'Your password is incorrect' });
+    }
+
+    // Scoping the UPDATE by household_id as well as id means a forged member id
+    // from another household matches zero rows instead of resetting a stranger.
+    const updated = await pool.query(
+      'UPDATE users SET password_hash = $1 WHERE id = $2 AND household_id = $3 RETURNING name',
+      [await hashPassword(newPassword), targetId, req.householdId]
+    );
+    if (updated.rows.length === 0) {
+      return res.status(404).json({ error: 'That person is not in your household' });
+    }
+
+    res.json({ success: true, name: updated.rows[0].name });
+  } catch (error) {
+    console.error('Error resetting member password:', error);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
 // Regenerate the household's invite code (invalidates the old one)
 router.post('/household/invite-code', requireAuth, async (req: Request, res: Response) => {
   try {

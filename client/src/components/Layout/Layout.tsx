@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styles from './Layout.module.css';
 import logoImg from '../../HomeKitchen.png';
 import { useAuth } from '../../context/AuthContext';
-import { authApi } from '../../services/api';
+import { authApi, HouseholdMember } from '../../services/api';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,7 +12,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { household, logout, refreshHousehold } = useAuth();
+  const { user, household, logout, refreshHousehold } = useAuth();
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -22,6 +22,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+
+  // Resetting a housemate's forgotten password
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [members, setMembers] = useState<HouseholdMember[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [resetTargetId, setResetTargetId] = useState<number | ''>('');
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -60,6 +69,61 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       setPasswordError(error.response?.data?.error || 'Failed to change password');
     } finally {
       setSavingPassword(false);
+    }
+  };
+
+  const openResetModal = async () => {
+    setShowAccountMenu(false);
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setResetTargetId('');
+    setResetError('');
+    setResetSuccess('');
+    setShowResetModal(true);
+
+    try {
+      setMembersLoading(true);
+      const response = await authApi.householdMembers();
+      // You reset your own password through Change Password, which requires
+      // knowing the old one — so exclude yourself from this list.
+      setMembers(response.data.filter((m) => m.id !== user?.id));
+    } catch {
+      setResetError('Could not load household members');
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
+  const handleResetMemberPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError('');
+
+    if (!resetTargetId) {
+      setResetError('Choose whose password to reset');
+      return;
+    }
+    if (newPassword.length < 8) {
+      setResetError('New password must be at least 8 characters');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setResetError('New passwords do not match');
+      return;
+    }
+
+    try {
+      setResettingPassword(true);
+      const response = await authApi.resetMemberPassword(Number(resetTargetId), {
+        currentPassword,
+        newPassword,
+      });
+      setResetSuccess(`Password reset for ${response.data.name}.`);
+      setTimeout(() => setShowResetModal(false), 2500);
+    } catch (error: any) {
+      setResetError(error.response?.data?.error || 'Failed to reset password');
+    } finally {
+      setResettingPassword(false);
     }
   };
 
@@ -148,6 +212,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <button className={styles.linkButton} onClick={openPasswordModal}>
                   Change password
                 </button>
+                <button className={styles.linkButton} onClick={openResetModal}>
+                  Reset a member's password
+                </button>
                 <button className={styles.logoutButton} onClick={handleLogout}>
                   Log Out
                 </button>
@@ -197,6 +264,79 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     type="button"
                     className={styles.cancelButton}
                     onClick={() => setShowPasswordModal(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+      {showResetModal && (
+        <div className={styles.modal} onClick={() => setShowResetModal(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h2>Reset a Member's Password</h2>
+            {resetSuccess ? (
+              <div className={styles.passwordSuccess}>✅ {resetSuccess}</div>
+            ) : membersLoading ? (
+              <div className={styles.passwordHint}>Loading household members…</div>
+            ) : members.length === 0 ? (
+              <div className={styles.passwordHint}>
+                There's nobody else in your household yet. Share your invite code to add
+                someone.
+              </div>
+            ) : (
+              <form onSubmit={handleResetMemberPassword} className={styles.passwordForm}>
+                <p className={styles.passwordHint}>
+                  For when someone forgets their password. They'll sign in with the new one
+                  and can change it afterwards.
+                </p>
+                <select
+                  value={resetTargetId}
+                  onChange={(e) => setResetTargetId(e.target.value ? Number(e.target.value) : '')}
+                  required
+                >
+                  <option value="">Whose password?</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} ({m.email})
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="password"
+                  placeholder="New password for them (min 8 characters)"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="Confirm their new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="Your own password, to confirm it's you"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+                {resetError && <div className={styles.passwordError}>{resetError}</div>}
+                <div className={styles.modalActions}>
+                  <button type="submit" className={styles.saveButton} disabled={resettingPassword}>
+                    {resettingPassword ? 'Resetting...' : 'Reset Password'}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.cancelButton}
+                    onClick={() => setShowResetModal(false)}
                   >
                     Cancel
                   </button>

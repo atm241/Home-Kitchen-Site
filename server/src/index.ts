@@ -103,13 +103,18 @@ app.get('/', (req: Request, res: Response) => {
   res.json({ message: 'Home Kitchen API' });
 });
 
-// Global error handler
+// Global error handler.
+//
+// The full error goes to the server log; the client gets a generic message.
+// Internal error text tends to carry table names, file paths, and query
+// fragments, and there's nothing a user can do with that anyway. In
+// development the real message and stack come through so debugging still works.
 app.use((err: Error, req: Request, res: Response, next: Function) => {
   console.error('❌ Unhandled error:', err);
+  const isDev = process.env.NODE_ENV === 'development';
   res.status(500).json({
     error: 'Internal server error',
-    message: err.message,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    ...(isDev && { message: err.message, stack: err.stack }),
   });
 });
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
+import UpdatePrompt from './components/UpdatePrompt/UpdatePrompt';
 import Layout from './components/Layout/Layout';
 import Auth from './pages/Auth/Auth';
 import Home from './pages/Home/Home';
@@ -17,6 +18,8 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        {/* Outside Routes so the banner shows on every page, including login */}
+        <UpdatePrompt />
         <Routes>
           <Route path="/login" element={<Auth />} />
           <Route

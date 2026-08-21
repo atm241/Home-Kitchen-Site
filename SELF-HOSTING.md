@@ -107,7 +107,37 @@ It'll behave like a native app — its own icon, no browser chrome — and the
 app shell (everything except live pantry/recipe data, which always needs a
 live connection) keeps working if your connection drops mid-session.
 
-## 4. Cloud-hosted or paid-hosting-by-you
+## 4. Forgotten passwords
+
+There's no emailed reset link — that would mean running an SMTP server for a
+household of two or three people. Instead:
+
+- **Someone else in the household is logged in** (the normal case): they open
+  the account menu → **Reset a member's password**, pick the person, and set a
+  new one. They confirm with their own password, so an unlocked phone left on
+  the counter can't be used to lock someone out of their own account. This
+  grants no access they didn't already have — household members share all the
+  same data by design.
+
+- **Everyone is locked out at once**: this can only be fixed on the server.
+  SSH to the Pi and run:
+
+  ```bash
+  docker compose exec server npm run reset-password -- you@example.com new-password
+  ```
+
+  The new password must be at least 8 characters. Change it from inside the app
+  afterwards so it isn't left sitting in your shell history.
+
+## 5. Updating the app
+
+The app is installable as a PWA, which means a browser tab can keep serving a
+cached older build after you deploy. When a new version is detected, a banner
+appears offering to refresh. If you're testing a change and don't see it, use
+that banner (or fully close and reopen the app) rather than assuming the
+deploy failed.
+
+## 6. Cloud-hosted or paid-hosting-by-you
 
 Because the app is already multi-tenant (accounts + households, added in
 [migration 003](server/migrations/003_add_auth_and_households.sql)), the same

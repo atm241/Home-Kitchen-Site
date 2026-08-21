@@ -57,6 +57,12 @@ export interface Household {
   inviteCode: string;
 }
 
+export interface HouseholdMember {
+  id: number;
+  email: string;
+  name: string;
+}
+
 export const authApi = {
   signup: (data: { email: string; password: string; name: string; householdName?: string; inviteCode?: string }) =>
     api.post<{ token: string; user: AuthUser }>('/auth/signup', data),
@@ -66,6 +72,9 @@ export const authApi = {
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     api.post<{ success: boolean }>('/auth/change-password', data),
   regenerateInviteCode: () => api.post<{ inviteCode: string }>('/auth/household/invite-code'),
+  householdMembers: () => api.get<HouseholdMember[]>('/auth/household/members'),
+  resetMemberPassword: (memberId: number, data: { currentPassword: string; newPassword: string }) =>
+    api.post<{ success: boolean; name: string }>(`/auth/household/members/${memberId}/reset-password`, data),
 };
 
 // Recipes
