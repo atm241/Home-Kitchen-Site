@@ -31,7 +31,11 @@ if (majorVersion < 20) {
 }
 
 const app: Express = express();
-const port = process.env.PORT || 5000;
+// 5001 everywhere: docker-compose, nginx's proxy target, and the client's
+// REACT_APP_API_URL all use it. The default matters when PORT is unset — a
+// 5000 fallback would bind a port the client isn't calling, and every request
+// would fail with a connection error that looks like the server is down.
+const port = process.env.PORT || 5001;
 
 // In Docker, nginx is the only thing that talks to us, so without this every
 // request looks like it comes from the proxy's IP — the rate limiters below
