@@ -297,7 +297,7 @@ function parseQuantity(raw: string): number | undefined {
   return parseFloat(s);
 }
 
-function parseIngredientString(ingredientStr: string): {
+export function parseIngredientString(ingredientStr: string): {
   name: string;
   quantity?: number;
   unit?: string;
@@ -305,6 +305,21 @@ function parseIngredientString(ingredientStr: string): {
 } {
   const original = ingredientStr.trim();
   let rest = original;
+  // Recipes often spell out the count ("One 14-ounce can..."). Strip it so the
+  // numeric-quantity and unit matching below get a chance to run.
+  const WORD_NUMBERS: Record<string, number> = {
+    one: 1, two: 2, three: 3, four: 4, five: 5, six: 6,
+    seven: 7, eight: 8, nine: 9, ten: 10, a: 1, an: 1,
+  };
+  let wordQty: number | undefined;
+  const wordMatch = rest.match(/^(one|two|three|four|five|six|seven|eight|nine|ten|an|a)\b\s+/i);
+  if (wordMatch) {
+    wordQty = WORD_NUMBERS[wordMatch[1].toLowerCase()];
+    rest = rest.slice(wordMatch[0].length).trim();
+    // "14-ounce" style sizes right after the count aren't the unit.
+    rest = rest.replace(/^\d+(\.\d+)?\s*-?\s*(ounce|oz|pound|lb|gram|g|kg|ml|liter|inch)s?\b\.?\s*/i, '');
+    rest = rest.replace(/^\([^)]*\)\s*/, '');
+  }
   let quantity: number | undefined;
   let unit: string | undefined;
 
@@ -316,22 +331,38 @@ function parseIngredientString(ingredientStr: string): {
   if (qtyMatch) {
     quantity = parseQuantity(qtyMatch[1]);
     rest = rest.slice(qtyMatch[0].length).trim();
+  }
+
+  // Unit matching runs for both numeric ("1 can") and spelled-out ("One can")
+  // counts. Keeping it inside the numeric branch meant "One 14-ounce can
+  // tomatoes" kept "can" as the first word of the ingredient name.
+  if (quantity !== undefined || wordQty !== undefined) {
+    // A size in parentheses sits between the count and the unit —
+    // "1 (15-ounce) can black beans". Dropping it lets the unit match below
+    // succeed; leaving it there stranded "(15-ounce) can black beans" in the
+    // name, which is how 22 ingredients ended up starting with "(15-ounce)".
+    rest = rest.replace(/^\([^)]*\)\s*/, '');
 
     // Unit must be a whole word — the trailing \b stops "g"/"l"/"oz" from
     // eating the first letters of "garlic"/"large"/etc. Plurals via `s?`.
+    // "c" is the common recipe abbreviation for cup; without it, "1/4 c. broth"
+    // left the name as "c. broth".
     const unitMatch = rest.match(
-      /^(cups?|tbsps?|tablespoons?|tsps?|teaspoons?|ounces?|oz|lbs?|pounds?|grams?|g|kg|ml|liters?|l|cloves?|cans?|sticks?|pieces?|pinch(?:es)?|packages?|pkgs?)\b\.?/i
+      /^(cups?|c|tbsps?|tablespoons?|tsps?|teaspoons?|ounces?|oz|lbs?|pounds?|grams?|g|kg|ml|liters?|l|qts?|quarts?|pts?|pints?|gal(?:lons?)?|cloves?|cans?|jars?|bottles?|bags?|boxes?|sticks?|slices?|strips?|sprigs?|stalks?|heads?|bunch(?:es)?|handfuls?|dashes?|pieces?|pinch(?:es)?|packages?|pkgs?|containers?)\b\.?/i
     );
     if (unitMatch) {
       unit = unitMatch[1].toLowerCase();
       if (unit === 'piece' || unit === 'pieces') unit = 'count';
+      if (unit === 'c') unit = 'cup';
       rest = rest.slice(unitMatch[0].length).trim();
+      // A size can also follow the unit: "1 can (15 ounces) tomatoes".
+      rest = rest.replace(/^\([^)]*\)\s*/, '');
     }
   }
 
   return {
     name: rest || original,
-    quantity,
+    quantity: quantity ?? wordQty,
     unit,
   };
 }

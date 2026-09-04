@@ -137,7 +137,68 @@ appears offering to refresh. If you're testing a change and don't see it, use
 that banner (or fully close and reopen the app) rather than assuming the
 deploy failed.
 
-## 6. Cloud-hosted or paid-hosting-by-you
+## 6. Backups
+
+Your recipes, pantry, and photos live in two Docker volumes on the Pi's SD
+card. SD cards are the most common way a Pi deployment dies, and
+`docker compose down -v` destroys the same data instantly. Set this up before
+you have anything you'd be upset to lose.
+
+Two things get backed up, because they live in two different places: a
+`pg_dump` of the database, and a tar of the uploads volume. A database dump
+does **not** include your recipe photos — restore only one and you get recipes
+pointing at images that no longer exist.
+
+### Taking a backup
+
+```bash
+cd ~/home-kitchen          # wherever you cloned it
+scripts/backup.sh          # writes into backups/
+```
+
+Pass a directory to write somewhere else — an external drive or a mounted
+network share is a much better home for these than the same SD card you're
+protecting against:
+
+```bash
+scripts/backup.sh /mnt/usb/kitchen-backups
+```
+
+Old backups are pruned after 14 days (`BACKUP_KEEP_DAYS` to change it), and
+pruning only happens *after* the new backup is verified, so a failed run can
+never delete your last good copy.
+
+### Running it nightly
+
+```bash
+crontab -e
+```
+
+```cron
+0 3 * * * cd /home/pi/home-kitchen && scripts/backup.sh >> backups/backup.log 2>&1
+```
+
+The stack must be running — the script backs up through the containers. If the
+database container is down it exits with an error rather than writing an empty
+file, so a silent failure can't masquerade as a good backup.
+
+### Restoring
+
+```bash
+scripts/restore.sh backups/db-20260904-030000.sql.gz
+```
+
+The matching uploads archive is found automatically next to the database dump.
+It asks you to type `restore` first, because this replaces everything.
+
+### Actually test it
+
+A backup nobody has restored isn't a backup. Once, on purpose, restore into
+the running stack and confirm your recipes come back. The round trip in this
+repo was verified end to end — database wiped, photos deleted, both restored,
+login and images working afterwards — but that was on a test stack, not yours.
+
+## 7. Cloud-hosted or paid-hosting-by-you
 
 Because the app is already multi-tenant (accounts + households, added in
 [migration 003](server/migrations/003_add_auth_and_households.sql)), the same

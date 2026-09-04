@@ -1,3 +1,10 @@
+# Pinned so volume names stay stable. Without this, Compose derives the
+# project name from the directory, so renaming or cloning the folder
+# elsewhere would create fresh empty volumes and look like total data
+# loss. "homekitchensite" is what the current directory already resolves
+# to, so this changes nothing for an existing deployment.
+name: homekitchensite
+
 services:
   db:
     image: postgres:16-alpine

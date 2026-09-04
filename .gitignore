@@ -39,3 +39,6 @@ logs/
 # Git subdirectories
 client/.git/
 server/.git/
+
+# Database and photo backups - never commit these
+backups/
