@@ -21,8 +21,8 @@
 
 .staplesButton {
   padding: 12px 20px;
-  background-color: #8BAE66;
-  color: #2C3E50;
+  background-color: var(--sage);
+  color: var(--ink);
   border-radius: 8px;
   font-weight: 500;
   font-size: 16px;
@@ -30,13 +30,13 @@
 }
 
 .staplesButton:hover {
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
 }
 
 .addButton {
   padding: 12px 24px;
-  background-color: #E67E22;
+  background-color: var(--primary);
   color: #FFFFFF;
   border-radius: 8px;
   font-weight: 500;
@@ -45,7 +45,7 @@
 }
 
 .addButton:hover {
-  background-color: #D35400;
+  background-color: var(--primary-strong);
 }
 
 .addFormCard {
@@ -59,7 +59,7 @@
 .addFormCard h2 {
   margin-top: 0;
   margin-bottom: 20px;
-  color: #628141;
+  color: var(--olive);
 }
 
 .addForm {
@@ -83,13 +83,13 @@
 .formGroup label {
   font-size: 14px;
   font-weight: 600;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .input,
 .select {
   padding: 10px 12px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 8px;
   font-size: 16px;
 }
@@ -97,7 +97,7 @@
 .input:focus,
 .select:focus {
   outline: none;
-  border-color: #8BAE66;
+  border-color: var(--sage);
 }
 
 .checkboxLabel {
@@ -116,8 +116,8 @@
 
 .submitButton {
   padding: 12px 24px;
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
   border-radius: 8px;
   font-weight: 500;
   font-size: 16px;
@@ -126,8 +126,8 @@
 }
 
 .submitButton:hover {
-  background-color: #8BAE66;
-  color: #2C3E50;
+  background-color: var(--sage);
+  color: var(--ink);
 }
 
 .categoriesGrid {
@@ -146,7 +146,7 @@
 .categoryCard h2 {
   margin-top: 0;
   margin-bottom: 16px;
-  color: #628141;
+  color: var(--olive);
   font-size: 18px;
 }
 
@@ -160,7 +160,7 @@
   display: flex;
   flex-direction: column;
   padding: 12px;
-  background-color: #F8F9FA;
+  background-color: var(--bg-subtle);
   border-radius: 8px;
   transition: all 0.2s ease;
   position: relative;
@@ -171,7 +171,7 @@
 }
 
 .item.lowStock {
-  border-left: 4px solid #E67E22;
+  border-left: 4px solid var(--primary);
   background-color: #FFF9F0;
 }
 
@@ -180,12 +180,12 @@
 }
 
 .item.expiringSoon {
-  border-left: 4px solid #E67E22;
+  border-left: 4px solid var(--primary);
   background-color: #FFF9F0;
 }
 
 .item.expired {
-  border-left: 4px solid #E74C3C;
+  border-left: 4px solid var(--danger);
   background-color: #FFF5F5;
 }
 
@@ -196,7 +196,7 @@
 .expiredBadge {
   font-size: 11px;
   padding: 2px 6px;
-  background-color: #E74C3C;
+  background-color: var(--danger);
   color: #FFFFFF;
   border-radius: 4px;
   font-weight: 600;
@@ -205,7 +205,7 @@
 .expiringSoonBadge {
   font-size: 11px;
   padding: 2px 6px;
-  background-color: #E67E22;
+  background-color: var(--primary);
   color: #FFFFFF;
   border-radius: 4px;
   font-weight: 600;
@@ -213,7 +213,7 @@
 
 .expiryDate {
   font-size: 12px;
-  color: #95A5A6;
+  color: var(--muted);
   margin-left: 4px;
 }
 
@@ -233,7 +233,7 @@
 
 .itemName {
   font-weight: 500;
-  color: #2C3E50;
+  color: var(--ink);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -243,7 +243,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
 .lowStockWrapper {
@@ -263,7 +263,7 @@
   min-width: 20px;
   min-height: 20px;
   aspect-ratio: 1;
-  background-color: #E67E22;
+  background-color: var(--primary);
   color: #FFFFFF;
   border: none;
   border-radius: 50%;
@@ -295,7 +295,7 @@
   padding: 6px 10px 4px;
   font-size: 12px;
   font-weight: 600;
-  color: #E67E22;
+  color: var(--primary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -309,7 +309,7 @@
   border-radius: 8px;
   text-align: left;
   font-size: 14px;
-  color: #2C3E50;
+  color: var(--ink);
   cursor: pointer;
 }
 
@@ -337,35 +337,35 @@
 }
 
 .editButton {
-  background-color: #628141;
+  background-color: var(--olive);
 }
 
 .editButton:hover {
-  background-color: #8BAE66;
+  background-color: var(--sage);
   transform: scale(1.1);
 }
 
 .removeButton {
-  background-color: #E74C3C;
+  background-color: var(--danger);
   font-size: 24px;
 }
 
 .removeButton:hover {
-  background-color: #C0392B;
+  background-color: var(--danger-strong);
   transform: scale(1.1);
 }
 
 .staple {
   font-size: 12px;
   padding: 2px 8px;
-  background-color: #8BAE66;
+  background-color: var(--sage);
   color: #FFFFFF;
   border-radius: 4px;
   font-weight: 600;
 }
 
 .itemQuantity {
-  color: #7F8C8D;
+  color: var(--muted);
   font-size: 14px;
 }
 
@@ -374,14 +374,14 @@
   border-radius: 12px;
   padding: 48px 24px;
   text-align: center;
-  color: #7F8C8D;
+  color: var(--muted);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .loading {
   text-align: center;
   padding: 48px;
-  color: #7F8C8D;
+  color: var(--muted);
   font-size: 18px;
 }
 
@@ -412,7 +412,7 @@
 .modalContent h2 {
   margin-top: 0;
   margin-bottom: 24px;
-  color: #628141;
+  color: var(--olive);
 }
 
 .editForm {
@@ -429,7 +429,7 @@
 
 .cancelButton {
   padding: 12px 24px;
-  background-color: #7F8C8D;
+  background-color: var(--muted);
   color: #FFFFFF;
   border-radius: 8px;
   font-weight: 500;
@@ -438,7 +438,7 @@
 }
 
 .cancelButton:hover {
-  background-color: #95A5A6;
+  background-color: var(--muted);
 }
 
 @media (max-width: 768px) {
@@ -492,13 +492,13 @@
 
 .recommendationsHeader h2 {
   margin: 0 0 8px 0;
-  color: #628141;
+  color: var(--olive);
   font-size: 24px;
 }
 
 .recommendationsHeader p {
   margin: 0;
-  color: #7F8C8D;
+  color: var(--muted);
   font-size: 14px;
 }
 
@@ -506,7 +506,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: #8BAE66;
+  background-color: var(--sage);
   color: #FFFFFF;
   font-size: 20px;
   display: flex;
@@ -519,7 +519,7 @@
 }
 
 .refreshButton:hover:not(:disabled) {
-  background-color: #628141;
+  background-color: var(--olive);
   transform: rotate(180deg);
 }
 
@@ -531,16 +531,16 @@
 .loadingRecommendations {
   text-align: center;
   padding: 40px;
-  color: #7F8C8D;
+  color: var(--muted);
   font-size: 16px;
 }
 
 .noRecommendations {
   text-align: center;
   padding: 40px;
-  color: #95A5A6;
+  color: var(--muted);
   font-size: 16px;
-  background-color: #F8F9FA;
+  background-color: var(--bg-subtle);
   border-radius: 8px;
 }
 
@@ -552,7 +552,7 @@
 
 .recipeCard {
   background-color: #FFFFFF;
-  border: 1px solid #E0E0E0;
+  border: 1px solid var(--line);
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.3s ease;
@@ -582,7 +582,7 @@
   margin: 0 0 12px 0;
   font-size: 18px;
   font-weight: 600;
-  color: #2C3E50;
+  color: var(--ink);
   line-height: 1.3;
 }
 
@@ -592,7 +592,7 @@
   gap: 12px;
   margin-bottom: 12px;
   font-size: 13px;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
 .recipeRating,
@@ -610,7 +610,7 @@
 
 .matchBar {
   height: 6px;
-  background-color: #E0E0E0;
+  background-color: var(--line);
   border-radius: 3px;
   overflow: hidden;
   margin-bottom: 6px;
@@ -618,7 +618,7 @@
 
 .matchBarFill {
   height: 100%;
-  background: linear-gradient(90deg, #8BAE66, #628141);
+  background: linear-gradient(90deg, var(--sage), var(--olive));
   border-radius: 3px;
   transition: width 0.5s ease;
 }
@@ -626,21 +626,21 @@
 .matchText {
   font-size: 12px;
   font-weight: 600;
-  color: #628141;
+  color: var(--olive);
 }
 
 .missingIngredients {
   font-size: 12px;
-  color: #7F8C8D;
+  color: var(--muted);
   margin-bottom: 12px;
   padding: 8px;
   background-color: #FFF5EB;
   border-radius: 6px;
-  border-left: 3px solid #E67E22;
+  border-left: 3px solid var(--primary);
 }
 
 .missingIngredients strong {
-  color: #E67E22;
+  color: var(--primary);
 }
 
 .recipeActions {
@@ -654,7 +654,7 @@
   flex: 1;
   text-align: center;
   padding: 10px 16px;
-  background-color: #628141;
+  background-color: var(--olive);
   color: #FFFFFF;
   border-radius: 8px;
   font-weight: 500;
@@ -664,7 +664,7 @@
 }
 
 .viewRecipeButton:hover {
-  background-color: #4A6330;
+  background-color: var(--olive-deep);
   transform: scale(1.02);
 }
 
@@ -672,7 +672,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: #E67E22;
+  background-color: var(--primary);
   color: #FFFFFF;
   font-size: 24px;
   font-weight: 700;
@@ -688,7 +688,7 @@
 }
 
 .addRecipeButton:hover {
-  background-color: #D35400;
+  background-color: var(--primary-strong);
   transform: scale(1.1);
 }
 
@@ -715,7 +715,7 @@
 }
 
 .error {
-  background-color: #e74c3c;
+  background-color: var(--danger);
   color: #fff;
 }
 
@@ -768,13 +768,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px 16px;
-  border-bottom: 1px solid #E0E0E0;
+  border-bottom: 1px solid var(--line);
 }
 
 .receiptModalHeader h2 {
   margin: 0;
   font-size: 20px;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .receiptModalClose {
@@ -794,7 +794,7 @@
 }
 
 .receiptModalClose:hover {
-  background-color: #E74C3C;
+  background-color: var(--danger);
   color: #FFFFFF;
 }
 
@@ -816,7 +816,7 @@
 }
 
 .receiptImageLabel:hover {
-  border-color: #628141;
+  border-color: var(--olive);
 }
 
 .receiptPickerPlaceholder {
@@ -826,7 +826,7 @@
   align-items: center;
   gap: 12px;
   text-align: center;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
 .receiptPickerIcon {
@@ -837,12 +837,12 @@
   margin: 0;
   font-size: 15px;
   font-weight: 500;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .receiptPickerHint {
   font-size: 13px;
-  color: #95A5A6;
+  color: var(--muted);
 }
 
 .receiptPreview {
@@ -850,7 +850,7 @@
   max-height: 300px;
   object-fit: contain;
   display: block;
-  background-color: #F8F9FA;
+  background-color: var(--bg-subtle);
 }
 
 .receiptFileInput {
@@ -859,7 +859,7 @@
 
 .parseReceiptButton {
   padding: 14px 24px;
-  background-color: #628141;
+  background-color: var(--olive);
   color: #FFFFFF;
   border-radius: 10px;
   font-weight: 700;
@@ -869,7 +869,7 @@
 }
 
 .parseReceiptButton:hover:not(:disabled) {
-  background-color: #4A6330;
+  background-color: var(--olive-deep);
 }
 
 .parseReceiptButton:disabled {
@@ -880,7 +880,7 @@
 .parsingHint {
   text-align: center;
   font-size: 14px;
-  color: #7F8C8D;
+  color: var(--muted);
   margin: 0;
 }
 
@@ -888,7 +888,7 @@
 .noParsedItems {
   padding: 40px 24px;
   text-align: center;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
 .noParsedItems p {
@@ -922,7 +922,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  background-color: #F8F9FA;
+  background-color: var(--bg-subtle);
   border-radius: 8px;
 }
 
@@ -936,20 +936,20 @@
 .parsedItemName {
   font-weight: 600;
   font-size: 15px;
-  color: #2C3E50;
+  color: var(--ink);
   text-transform: capitalize;
 }
 
 .parsedItemDetails {
   font-size: 13px;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
 .parsedItemRemove {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background-color: #E74C3C;
+  background-color: var(--danger);
   color: #FFFFFF;
   font-size: 20px;
   line-height: 0.85;
@@ -963,7 +963,7 @@
 }
 
 .parsedItemRemove:hover {
-  background-color: #C0392B;
+  background-color: var(--danger-strong);
 }
 
 .receiptModalActions {
@@ -984,13 +984,13 @@
 }
 
 .tryAgainButton:hover {
-  background-color: #E0E0E0;
+  background-color: var(--line);
 }
 
 .addParsedButton {
   flex: 1;
   padding: 12px 20px;
-  background-color: #628141;
+  background-color: var(--olive);
   color: #FFFFFF;
   border-radius: 8px;
   font-weight: 700;
@@ -1001,7 +1001,7 @@
 }
 
 .addParsedButton:hover:not(:disabled) {
-  background-color: #4A6330;
+  background-color: var(--olive-deep);
 }
 
 .addParsedButton:disabled {
@@ -1032,7 +1032,7 @@
 }
 
 .expiredText {
-  color: #C0392B;
+  color: var(--danger-strong);
 }
 
 /* Inline expiry editing on item cards */
@@ -1041,7 +1041,7 @@
   border: none;
   padding: 2px 6px;
   font-size: 13px;
-  color: #7F8C8D;
+  color: var(--muted);
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.15s ease;
@@ -1049,7 +1049,7 @@
 }
 
 .expiryDateBtn:hover {
-  color: #E67E22;
+  color: var(--primary);
   background-color: #FFF5EB;
 }
 
@@ -1058,7 +1058,7 @@
   border: 1px dashed #BDC3C7;
   padding: 2px 8px;
   font-size: 12px;
-  color: #95A5A6;
+  color: var(--muted);
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.15s ease;
@@ -1066,8 +1066,8 @@
 }
 
 .setExpiryBtn:hover {
-  border-color: #E67E22;
-  color: #E67E22;
+  border-color: var(--primary);
+  color: var(--primary);
   background-color: #FFF5EB;
 }
 
@@ -1080,18 +1080,18 @@
 
 .expiryDateInput {
   padding: 3px 6px;
-  border: 1.5px solid #628141;
+  border: 1.5px solid var(--olive);
   border-radius: 5px;
   font-size: 13px;
   outline: none;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .expiryConfirmBtn {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background-color: #628141;
+  background-color: var(--olive);
   color: #FFFFFF;
   font-size: 14px;
   font-weight: 700;
@@ -1105,7 +1105,7 @@
 }
 
 .expiryConfirmBtn:hover {
-  background-color: #4A6330;
+  background-color: var(--olive-deep);
 }
 
 .expiryCancelBtn {
@@ -1126,7 +1126,7 @@
 }
 
 .expiryCancelBtn:hover {
-  background-color: #95A5A6;
+  background-color: var(--muted);
 }
 
 /* Receipt modal — expiry date row per item */
@@ -1139,7 +1139,7 @@
 
 .parsedItemExpiryLabel {
   font-size: 12px;
-  color: #95A5A6;
+  color: var(--muted);
   font-weight: 600;
 }
 
@@ -1149,12 +1149,12 @@
   border-radius: 5px;
   font-size: 13px;
   outline: none;
-  color: #2C3E50;
+  color: var(--ink);
   transition: border-color 0.15s ease;
 }
 
 .parsedItemDateInput:focus {
-  border-color: #628141;
+  border-color: var(--olive);
 }
 
 /* ── Use It Up section ─────────────────────────────── */
@@ -1205,13 +1205,13 @@
 
 .expiringChipExpired {
   background-color: #FDECEA;
-  color: #C0392B;
+  color: var(--danger-strong);
   border: 1px solid #E8A09A;
 }
 
 .expiringChipUrgent {
   background-color: #FFF0DC;
-  color: #C0600A;
+  color: var(--primary-strong);
   border: 1px solid #F0C080;
 }
 
@@ -1247,7 +1247,7 @@
 }
 
 .useItUpCard:hover {
-  border-color: #628141;
+  border-color: var(--olive);
   box-shadow: 0 3px 10px rgba(98,129,65,0.15);
   transform: translateY(-1px);
 }
@@ -1257,7 +1257,7 @@
   min-height: 80px;
   object-fit: cover;
   flex-shrink: 0;
-  background-color: #F8F9FA;
+  background-color: var(--bg-subtle);
 }
 
 .useItUpCardBody {
@@ -1271,7 +1271,7 @@
 .useItUpCardName {
   font-weight: 700;
   font-size: 14px;
-  color: #2C3E50;
+  color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1281,7 +1281,7 @@
   display: flex;
   gap: 8px;
   font-size: 12px;
-  color: #95A5A6;
+  color: var(--muted);
   text-transform: capitalize;
 }
 
@@ -1291,12 +1291,12 @@
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
 .useItUpIngredient {
   background-color: #FFF0DC;
-  color: #C0600A;
+  color: var(--primary-strong);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 11px;
@@ -1306,12 +1306,12 @@
 
 .useItUpIngredientUrgent {
   background-color: #FDECEA;
-  color: #C0392B;
+  color: var(--danger-strong);
 }
 
 .useItUpNoRecipes {
   font-size: 14px;
-  color: #95A5A6;
+  color: var(--muted);
   margin: 0;
   font-style: italic;
 }
@@ -1331,7 +1331,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  background-color: #2C3E50;
+  background-color: var(--ink);
   color: #FFFFFF;
   padding: 12px 16px;
   border-radius: 8px;
@@ -1341,7 +1341,7 @@
 }
 
 .undoButton {
-  color: #8BAE66;
+  color: var(--sage);
   font-weight: 700;
   font-size: 14px;
   white-space: nowrap;
@@ -1357,7 +1357,7 @@
   padding: 10px 24px;
   background-color: transparent;
   color: #6B8E4E;
-  border: 1px solid #8BAE66;
+  border: 1px solid var(--sage);
   border-radius: 8px;
   font-weight: 500;
   font-size: 15px;
@@ -1366,12 +1366,12 @@
 }
 
 .showMoreButton:hover {
-  background-color: #8BAE66;
-  color: #2C3E50;
+  background-color: var(--sage);
+  color: var(--ink);
 }
 
 .suggestedHint {
-  color: #7F8C8D;
+  color: var(--muted);
   font-weight: 400;
   font-size: 13px;
   font-style: italic;

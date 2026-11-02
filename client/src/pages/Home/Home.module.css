@@ -20,16 +20,16 @@
 
 .link {
   padding: 10px 20px;
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
   border-radius: 8px;
   font-weight: 500;
   transition: all 0.2s ease;
 }
 
 .link:hover {
-  background-color: #8BAE66;
-  color: #2C3E50;
+  background-color: var(--sage);
+  color: var(--ink);
 }
 
 .weekGrid {
@@ -53,12 +53,12 @@
 }
 
 .dayCard.today {
-  border: 2px solid #E67E22;
+  border: 2px solid var(--primary);
 }
 
 .dayHeader {
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
   padding: 12px;
   text-align: center;
   position: relative;
@@ -85,8 +85,8 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background-color: #EBD5AB;
-  color: #628141;
+  background-color: var(--sand);
+  color: var(--olive);
   font-size: 16px;
   font-weight: 700;
   display: flex;
@@ -100,7 +100,7 @@
 }
 
 .addMealButton:hover {
-  background-color: #E67E22;
+  background-color: var(--primary);
   color: #FFFFFF;
   transform: translateY(-50%) scale(1.1);
 }
@@ -111,7 +111,7 @@
 }
 
 .noMeals {
-  color: #7F8C8D;
+  color: var(--muted);
   font-size: 14px;
   text-align: center;
   padding: 20px 0;
@@ -121,7 +121,7 @@
   border-left: 3px solid;
   padding: 8px 12px;
   margin-bottom: 8px;
-  background-color: #F8F9FA;
+  background-color: var(--bg-subtle);
   border-radius: 4px;
 }
 
@@ -139,7 +139,7 @@
 .mealType {
   font-size: 12px;
   font-weight: 600;
-  color: #7F8C8D;
+  color: var(--muted);
   text-transform: capitalize;
 }
 
@@ -160,25 +160,25 @@
 }
 
 .deleteMealButton:hover {
-  background-color: #E74C3C;
+  background-color: var(--danger);
   color: #FFFFFF;
 }
 
 .mealTitle {
   font-size: 14px;
   font-weight: 500;
-  color: #2C3E50;
+  color: var(--ink);
   margin-bottom: 2px;
 }
 
 .mealServings {
   font-size: 12px;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
 .mealCalories {
   font-size: 11px;
-  color: #8BAE66;
+  color: var(--sage);
   font-weight: 600;
   margin-top: 2px;
 }
@@ -186,7 +186,7 @@
 .dayCalorieTotal {
   margin-top: 12px;
   padding-top: 8px;
-  border-top: 1px solid #E0E0E0;
+  border-top: 1px solid var(--line);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -195,13 +195,13 @@
 .calorieLabel {
   font-size: 12px;
   font-weight: 600;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .calorieValue {
   font-size: 12px;
   font-weight: 700;
-  color: #628141;
+  color: var(--olive);
 }
 
 .quickActions {
@@ -234,26 +234,26 @@
 .actionCard h3 {
   margin-top: 0;
   margin-bottom: 8px;
-  color: #628141;
+  color: var(--olive);
 }
 
 .actionCard p {
   margin: 0;
-  color: #7F8C8D;
+  color: var(--muted);
   font-size: 14px;
 }
 
 .loading {
   text-align: center;
   padding: 48px;
-  color: #7F8C8D;
+  color: var(--muted);
   font-size: 18px;
 }
 
 .errorState {
   text-align: center;
   padding: 60px 24px;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
 .errorState p {
@@ -263,8 +263,8 @@
 
 .retryButton {
   padding: 10px 24px;
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
   border-radius: 8px;
   font-weight: 500;
   font-size: 15px;
@@ -274,8 +274,8 @@
 }
 
 .retryButton:hover {
-  background-color: #8BAE66;
-  color: #2C3E50;
+  background-color: var(--sage);
+  color: var(--ink);
 }
 
 @media (max-width: 1024px) {
@@ -344,7 +344,7 @@
 .nutritionCardTitle {
   margin: 0 0 16px 0;
   font-size: 18px;
-  color: #2C3E50;
+  color: var(--ink);
 }
 .nutritionStats {
   display: flex;
@@ -353,11 +353,11 @@
   flex-wrap: wrap;
 }
 .nutritionStat { display: flex; flex-direction: column; }
-.nutritionStatValue { font-size: 22px; font-weight: 700; color: #E67E22; }
-.nutritionStatLabel { font-size: 12px; color: #7F8C8D; margin-top: 2px; }
+.nutritionStatValue { font-size: 22px; font-weight: 700; color: var(--primary); }
+.nutritionStatLabel { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .nutritionBarWrap {
   height: 8px;
-  background-color: #E0E0E0;
+  background-color: var(--line);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -366,8 +366,8 @@
   border-radius: 4px;
   transition: width 0.4s ease;
 }
-.nutritionHint { margin: 10px 0 0; font-size: 13px; color: #7F8C8D; }
-.nutritionLink { color: #628141; font-weight: 500; }
+.nutritionHint { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+.nutritionLink { color: var(--olive); font-weight: 500; }
 
 /* ── Use It Up card on Home page ─────────────────── */
 .budgetHistoryCard {
@@ -383,7 +383,7 @@
   margin: 0 0 12px;
   font-size: 17px;
   font-weight: 700;
-  color: #628141;
+  color: var(--olive);
 }
 
 .budgetHistoryTableWrap {
@@ -399,7 +399,7 @@
 .budgetHistoryTable th {
   text-align: left;
   padding: 8px 12px;
-  color: #7F8C8D;
+  color: var(--muted);
   font-weight: 600;
   border-bottom: 2px solid #EEE;
   white-space: nowrap;
@@ -408,7 +408,7 @@
 .budgetHistoryTable td {
   padding: 8px 12px;
   border-bottom: 1px solid #F2F2F2;
-  color: #2C3E50;
+  color: var(--ink);
   white-space: nowrap;
 }
 
@@ -449,7 +449,7 @@
   margin-left: auto;
   font-size: 13px;
   font-weight: 600;
-  color: #628141;
+  color: var(--olive);
   text-decoration: none;
   white-space: nowrap;
   flex-shrink: 0;
@@ -479,13 +479,13 @@
 
 .useItUpChipExpired {
   background-color: #FDECEA;
-  color: #C0392B;
+  color: var(--danger-strong);
   border: 1px solid #E8A09A;
 }
 
 .useItUpChipUrgent {
   background-color: #FFF0DC;
-  color: #C0600A;
+  color: var(--primary-strong);
   border: 1px solid #F0C080;
 }
 
@@ -521,7 +521,7 @@
 }
 
 .useItUpRecipeLink {
-  color: #628141;
+  color: var(--olive);
   text-decoration: none;
   font-weight: 600;
   font-size: 13px;
@@ -536,6 +536,6 @@
 
 .useItUpRecipeCount {
   font-size: 11px;
-  color: #C0600A;
+  color: var(--primary-strong);
   font-weight: 400;
 }

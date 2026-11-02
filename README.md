@@ -1,12 +1,16 @@
-# Home Kitchen - Recipe & Meal Planning App
+# Simmer (formerly Home Kitchen)
 
-A React-based meal planning application that helps you manage recipes, schedule meals, track your pantry, and generate grocery lists within your weekly budget.
+Save the cooking videos you scroll past as real recipes. Paste or share a TikTok, YouTube or Instagram link and Simmer turns the creator's caption (and YouTube's transcript) into a clean recipe with ingredients, steps and times. Planning, pantry tracking, grocery lists and budgets are built in around your cookbook.
 
 ## TODO
 - Export Grocery List to phone notes
 
 ## Features
 
+- **Video recipe import**: Paste a TikTok, YouTube or Instagram link (or any recipe website) and get a structured recipe. If the caption links to the creator's blog, that page is used for exact amounts. Instagram is best effort unless `INSTAGRAM_OEMBED_TOKEN` is set.
+- **Save from your phone**: Android installs the app into the share menu. iPhone uses a Shortcut with a per-user share key (set up under Account → Save from your phone).
+- **Cook mode**: Full-screen, one step at a time, keeps the screen awake, and offers timers for steps that mention a time.
+- **Pantry match**: Every recipe shows how many of its ingredients you already have, with one tap to add the missing ones to your grocery list.
 - **Accounts & Households**: Email/password accounts; each household's data (pantry, recipes, budgets, etc.) is fully isolated. Invite others to your household with a shareable code (see Layout's "Account" menu).
 - **Recipe Management**: Import recipes from URLs, view nutritional information, and manage your recipe collection
 - **Weekly Calendar**: View your meals for the week on the home screen
@@ -26,7 +30,7 @@ This app is designed to run three ways from the same codebase:
 2. **Cloud-hosted by you**: deploy the same Docker images to any VPS/cloud provider. The app is already multi-tenant (households + accounts), so multiple people can sign up on one instance without seeing each other's data.
 3. **Hosted for a fee**: since the app is multi-tenant, the same deployment can serve paying customers as separate households — no per-customer infrastructure needed.
 
-New installs get the full schema (including accounts/households) from [server/schema.sql](server/schema.sql). Existing installs upgrading from an older version should run the files in [server/migrations/](server/migrations/) in order — in particular `003_add_auth_and_households.sql`, which adds accounts and folds all pre-existing data into a "My Household" account (check the server logs or query the `households` table for its invite code after migrating).
+New installs get the full schema (including accounts/households) from [server/schema.sql](server/schema.sql). Existing installs upgrading from an older version should run the files in [server/migrations/](server/migrations/) in order — in particular `003_add_auth_and_households.sql` (accounts) and `008_video_imports.sql` (video sources and phone share keys). 003 adds accounts and folds all pre-existing data into a "My Household" account (check the server logs or query the `households` table for its invite code after migrating).
 
 ## Tech Stack
 

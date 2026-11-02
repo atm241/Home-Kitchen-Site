@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import styles from './Layout.module.css';
-import logoImg from '../../HomeKitchen.png';
+import Logo from '../Brand/Logo';
+import Icon, { IconName } from '../Icon/Icon';
 import { useAuth } from '../../context/AuthContext';
 import { authApi, HouseholdMember } from '../../services/api';
 
@@ -140,95 +141,133 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const isActive = (path: string) => {
-    return location.pathname === path;
-  };
+  // Close the account menu on navigation or an outside tap.
+  const accountRef = useRef<HTMLDivElement>(null);
+  useEffect(() => setShowAccountMenu(false), [location.pathname]);
+  useEffect(() => {
+    if (!showAccountMenu) return;
+    const close = (e: MouseEvent) => {
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) setShowAccountMenu(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [showAccountMenu]);
+
+  // Recipes live at "/" and "/recipes/:id", so both count as the Cookbook tab.
+  const isCookbook = location.pathname === '/' || location.pathname.startsWith('/recipes');
+  // Cook mode is full-screen: no header or tab bar.
+  const immersive = /^\/recipes\/\d+\/cook/.test(location.pathname);
+
+  const NAV: Array<{ to: string; label: string; icon: IconName; active?: boolean }> = [
+    { to: '/', label: 'Cookbook', icon: 'book', active: isCookbook },
+    { to: '/plan', label: 'Plan', icon: 'calendar', active: ['/plan', '/calendar'].includes(location.pathname) },
+    { to: '/grocery', label: 'Grocery', icon: 'cart' },
+    { to: '/pantry', label: 'Pantry', icon: 'pantry' },
+  ];
+
+  const initials = (user?.name || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+  const navClass = (item: typeof NAV[number]) => ({ isActive }: { isActive: boolean }) =>
+    `${styles.navLink} ${(item.active ?? isActive) ? styles.active : ''}`;
+  const tabClass = (item: typeof NAV[number]) => ({ isActive }: { isActive: boolean }) =>
+    `${styles.tab} ${(item.active ?? isActive) ? styles.tabActive : ''}`;
+
+  if (immersive) {
+    return <div className={styles.immersive}>{children}</div>;
+  }
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <div className={styles.logoGroup}>
-            <img src={logoImg} alt="Home Kitchen" className={styles.logoImg} />
-            <h1 className={styles.logo}>Home Kitchen</h1>
-          </div>
-          <nav className={styles.nav}>
-            <Link
-              to="/"
-              className={`${styles.navLink} ${isActive('/') ? styles.active : ''}`}
-            >
-              Home
-            </Link>
-            <Link
-              to="/calendar"
-              className={`${styles.navLink} ${isActive('/calendar') ? styles.active : ''}`}
-            >
-              Calendar
-            </Link>
-            <Link
-              to="/recipes"
-              className={`${styles.navLink} ${isActive('/recipes') || location.pathname.startsWith('/recipes/') ? styles.active : ''}`}
-            >
-              Recipes
-            </Link>
-            <Link
-              to="/pantry"
-              className={`${styles.navLink} ${isActive('/pantry') ? styles.active : ''}`}
-            >
-              Pantry
-            </Link>
-            <Link
-              to="/grocery"
-              className={`${styles.navLink} ${isActive('/grocery') ? styles.active : ''}`}
-            >
-              Grocery List
-            </Link>
-            <Link
-              to="/history"
-              className={`${styles.navLink} ${isActive('/history') ? styles.active : ''}`}
-            >
-              Cook History
-            </Link>
+          <Link to="/" className={styles.logoLink} aria-label="Cookbook">
+            <Logo size={30} />
+          </Link>
+          <nav className={styles.nav} aria-label="Main">
+            {NAV.map(item => (
+              <NavLink key={item.to} to={item.to} end className={navClass(item)}>
+                {item.label}
+              </NavLink>
+            ))}
           </nav>
-          <div className={styles.account}>
-            <button
-              className={styles.accountButton}
-              onClick={() => setShowAccountMenu(!showAccountMenu)}
-            >
-              {household?.name || 'Account'} ▾
-            </button>
-            {showAccountMenu && (
-              <div className={styles.accountMenu}>
-                <div className={styles.accountMenuLabel}>Invite code</div>
-                <div className={styles.inviteCodeRow}>
-                  <code className={styles.inviteCode}>{household?.inviteCode}</code>
-                  <button className={styles.smallButton} onClick={handleCopyInviteCode}>
-                    {copied ? 'Copied!' : 'Copy'}
+          <div className={styles.headerActions}>
+            <Link to="/import" className={`btn btn-primary ${styles.addButton}`}>
+              <Icon name="plus" size={18} strokeWidth={2.5} /> Add recipe
+            </Link>
+            <div className={styles.account} ref={accountRef}>
+              <button
+                className={styles.avatar}
+                onClick={() => setShowAccountMenu(!showAccountMenu)}
+                aria-haspopup="menu"
+                aria-expanded={showAccountMenu}
+                aria-label="Account"
+              >
+                {initials}
+              </button>
+              {showAccountMenu && (
+                <div className={styles.accountMenu} role="menu">
+                  <div className={styles.accountHeader}>
+                    <div className={styles.accountName}>{user?.name}</div>
+                    <div className={styles.accountSub}>{household?.name}</div>
+                  </div>
+                  <Link to="/settings/share" className={styles.menuItem}>
+                    <Icon name="phone" size={18} /> Save from your phone
+                  </Link>
+                  <Link to="/history" className={styles.menuItem}>
+                    <Icon name="clock" size={18} /> Cook history
+                  </Link>
+                  <div className={styles.menuDivider} />
+                  <div className={styles.accountMenuLabel}>Household invite code</div>
+                  <div className={styles.inviteCodeRow}>
+                    <code className={styles.inviteCode}>{household?.inviteCode}</code>
+                    <button className={styles.smallButton} onClick={handleCopyInviteCode}>
+                      {copied ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+                  <button className={styles.menuItem} onClick={handleRegenerateInviteCode}>
+                    <Icon name="users" size={18} /> New invite code
+                  </button>
+                  <button className={styles.menuItem} onClick={openPasswordModal}>
+                    <Icon name="key" size={18} /> Change password
+                  </button>
+                  <button className={styles.menuItem} onClick={openResetModal}>
+                    <Icon name="user" size={18} /> Reset a member's password
+                  </button>
+                  <div className={styles.menuDivider} />
+                  <button className={`${styles.menuItem} ${styles.logoutItem}`} onClick={handleLogout}>
+                    <Icon name="logout" size={18} /> Log out
                   </button>
                 </div>
-                <button className={styles.linkButton} onClick={handleRegenerateInviteCode}>
-                  Generate new code
-                </button>
-                <button className={styles.linkButton} onClick={openPasswordModal}>
-                  Change password
-                </button>
-                <button className={styles.linkButton} onClick={openResetModal}>
-                  Reset a member's password
-                </button>
-                <button className={styles.logoutButton} onClick={handleLogout}>
-                  Log Out
-                </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </header>
+
+      {/* Phone navigation: thumb-reachable tabs with a raised "add" button. */}
+      <nav className={styles.tabBar} aria-label="Main">
+        {NAV.slice(0, 2).map(item => (
+          <NavLink key={item.to} to={item.to} end className={tabClass(item)}>
+            <Icon name={item.icon} size={22} />
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+        <Link to="/import" className={styles.tabAdd} aria-label="Add recipe">
+          <Icon name="plus" size={26} strokeWidth={2.5} />
+        </Link>
+        {NAV.slice(2).map(item => (
+          <NavLink key={item.to} to={item.to} end className={tabClass(item)}>
+            <Icon name={item.icon} size={22} />
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+      </nav>
       {showPasswordModal && (
         <div className={styles.modal} onClick={() => setShowPasswordModal(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <h2>Change Password</h2>
+            <h2>Change password</h2>
             {passwordSuccess ? (
-              <div className={styles.passwordSuccess}>✅ Password updated!</div>
+              <div className={styles.passwordSuccess}>Password updated.</div>
             ) : (
               <form onSubmit={handleChangePassword} className={styles.passwordForm}>
                 <input
@@ -257,12 +296,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 />
                 {passwordError && <div className={styles.passwordError}>{passwordError}</div>}
                 <div className={styles.modalActions}>
-                  <button type="submit" className={styles.saveButton} disabled={savingPassword}>
+                  <button type="submit" className="btn btn-primary" disabled={savingPassword}>
                     {savingPassword ? 'Saving...' : 'Update Password'}
                   </button>
                   <button
                     type="button"
-                    className={styles.cancelButton}
+                    className="btn btn-secondary"
                     onClick={() => setShowPasswordModal(false)}
                   >
                     Cancel
@@ -276,9 +315,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {showResetModal && (
         <div className={styles.modal} onClick={() => setShowResetModal(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <h2>Reset a Member's Password</h2>
+            <h2>Reset a member's password</h2>
             {resetSuccess ? (
-              <div className={styles.passwordSuccess}>✅ {resetSuccess}</div>
+              <div className={styles.passwordSuccess}>{resetSuccess}</div>
             ) : membersLoading ? (
               <div className={styles.passwordHint}>Loading household members…</div>
             ) : members.length === 0 ? (
@@ -330,12 +369,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 />
                 {resetError && <div className={styles.passwordError}>{resetError}</div>}
                 <div className={styles.modalActions}>
-                  <button type="submit" className={styles.saveButton} disabled={resettingPassword}>
+                  <button type="submit" className="btn btn-primary" disabled={resettingPassword}>
                     {resettingPassword ? 'Resetting...' : 'Reset Password'}
                   </button>
                   <button
                     type="button"
-                    className={styles.cancelButton}
+                    className="btn btn-secondary"
                     onClick={() => setShowResetModal(false)}
                   >
                     Cancel

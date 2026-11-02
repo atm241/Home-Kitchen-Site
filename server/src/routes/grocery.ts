@@ -226,7 +226,11 @@ router.post('/from-recipe', async (req: Request, res: Response) => {
     await client.query('BEGIN');
     const householdId = req.householdId;
 
-    const { recipe_id, week_start_date, servings } = req.body;
+    // ingredient_names (optional): only add these, e.g. just what the pantry is missing.
+    const { recipe_id, week_start_date, servings, ingredient_names } = req.body;
+    const onlyNames: Set<string> | null = Array.isArray(ingredient_names)
+      ? new Set(ingredient_names.filter((n: unknown) => typeof n === 'string').map((n: string) => n.toLowerCase()))
+      : null;
 
     if (!recipe_id || !week_start_date) {
       return res.status(400).json({ error: 'recipe_id and week_start_date are required' });
@@ -256,6 +260,7 @@ router.post('/from-recipe', async (req: Request, res: Response) => {
     const addedItems = [];
 
     for (const ing of ingredientsResult.rows) {
+      if (onlyNames && !onlyNames.has(String(ing.name).toLowerCase())) continue;
       const scaledQuantity = (ing.quantity || 0) * scaleFactor;
 
       // Get price from grocery_prices

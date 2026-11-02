@@ -66,7 +66,7 @@ const CookHistory: React.FC = () => {
       {history.length === 0 ? (
         <div className={styles.empty}>
           <p>No cook history yet.</p>
-          <p>Use "Mark as Cooked" on a <Link to="/recipes" className={styles.link}>recipe page</Link> to start tracking.</p>
+          <p>Use "Mark as Cooked" on a <Link to="/" className={styles.link}>recipe page</Link> to start tracking.</p>
         </div>
       ) : (
         <div className={styles.historyList}>

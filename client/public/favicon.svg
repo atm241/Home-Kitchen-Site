@@ -1,19 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- Carrot leaves (green) -->
-  <path d="M 45 15 Q 40 5 35 10 Q 30 15 35 20 Z" fill="#628141"/>
-  <path d="M 50 10 Q 48 2 52 5 Q 56 8 52 15 Z" fill="#8BAE66"/>
-  <path d="M 55 15 Q 60 5 65 10 Q 70 15 65 20 Z" fill="#628141"/>
-
-  <!-- Carrot body (orange) -->
-  <path d="M 50 25 Q 60 30 62 45 Q 63 60 58 75 Q 53 88 50 92 Q 47 88 42 75 Q 37 60 38 45 Q 40 30 50 25 Z" fill="#E67E22"/>
-
-  <!-- Carrot highlights -->
-  <ellipse cx="46" cy="40" rx="3" ry="6" fill="#F39C12" opacity="0.5"/>
-  <ellipse cx="52" cy="55" rx="2" ry="5" fill="#F39C12" opacity="0.5"/>
-
-  <!-- Carrot lines/texture -->
-  <path d="M 44 35 Q 45 38 44 41" stroke="#D35400" stroke-width="1" fill="none"/>
-  <path d="M 48 50 Q 49 53 48 56" stroke="#D35400" stroke-width="1" fill="none"/>
-  <path d="M 54 45 Q 55 48 54 51" stroke="#D35400" stroke-width="1" fill="none"/>
-  <path d="M 46 65 Q 47 68 46 71" stroke="#D35400" stroke-width="1" fill="none"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <rect width="48" height="48" rx="14" fill="#E67E22"/>
+  <g fill="none" stroke="#FFF7EC" stroke-width="3" stroke-linecap="round">
+    <path d="M17 9c-2 2.5 2 4.5 0 7"/>
+    <path d="M24 7c-2 2.5 2 4.5 0 7"/>
+    <path d="M31 9c-2 2.5 2 4.5 0 7"/>
+  </g>
+  <path d="M10 22h28v5a11 11 0 0 1-11 11h-6a11 11 0 0 1-11-11v-5z" fill="#FFF7EC"/>
+  <rect x="7" y="20" width="34" height="4" rx="2" fill="#FFF7EC"/>
 </svg>

@@ -13,7 +13,8 @@ import type {
   CookHistoryEntry,
 } from '../types';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
+export const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
+// Kept from the Home Kitchen days so existing sessions stay signed in.
 const TOKEN_STORAGE_KEY = 'home_kitchen_token';
 
 const api = axios.create({
@@ -85,7 +86,9 @@ export const recipesApi = {
   update: (id: number, recipe: Partial<Recipe>) => api.put<Recipe>(`/recipes/${id}`, recipe),
   delete: (id: number) => api.delete(`/recipes/${id}`),
   toggleFavorite: (id: number) => api.patch<{ is_favorite: boolean }>(`/recipes/${id}/favorite`),
-  importFromUrl: (url: string) => api.post<Recipe>('/recipes/import', { url }),
+  // Any link: TikTok / YouTube / Instagram video or a recipe website.
+  importFromUrl: (url: string) => api.post<Recipe & { duplicate?: boolean }>('/recipes/import', { url }),
+  pantryMatch: () => api.get<Record<number, PantryCoverage>>('/recipes/pantry-match'),
   importBulk: (urls: string[]) => api.post<BulkImportResult>('/recipes/import-bulk', { urls }),
   importFromSpoonacular: (id: number) => api.post<Recipe>(`/recipes/import-spoonacular/${id}`),
   filterByNutrition: (params: { maxCarbs?: number; minProtein?: number; dietaryTag?: string }) =>
@@ -95,6 +98,23 @@ export const recipesApi = {
   parsePhoto: (data: { image: string; mediaType: string }) =>
     api.post<ParsedRecipePhoto>('/recipes/parse-photo', data),
 };
+
+export interface PantryCoverage {
+  have: number;
+  total: number;
+  missing: string[];
+}
+
+// Share key for the iPhone Shortcut
+export const shareApi = {
+  status: () => api.get<{ hasKey: boolean }>('/share/key'),
+  createKey: () => api.post<{ key: string }>('/share/key'),
+  revokeKey: () => api.delete('/share/key'),
+};
+
+/** Server error message, if the server sent one. */
+export const errorMessage = (error: any, fallback: string): string =>
+  error?.response?.data?.error || fallback;
 
 export interface ParsedRecipePhoto {
   name: string;
@@ -219,7 +239,7 @@ export const groceryApi = {
     api.post<GroceryItem[]>('/grocery/generate', data),
   addManual: (data: { ingredient_name: string; quantity?: number; unit?: string; week_start_date: string }) =>
     api.post<GroceryItem>('/grocery', data),
-  addFromRecipe: (data: { recipe_id: number; week_start_date: string; servings?: number }) =>
+  addFromRecipe: (data: { recipe_id: number; week_start_date: string; servings?: number; ingredient_names?: string[] }) =>
     api.post<GroceryItem[]>('/grocery/from-recipe', data),
   markPurchased: (id: number, isPurchased: boolean) =>
     api.patch<GroceryItem>(`/grocery/${id}/purchase`, { is_purchased: isPurchased }),

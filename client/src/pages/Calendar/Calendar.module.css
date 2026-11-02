@@ -15,16 +15,16 @@
 
 .navButton {
   padding: 10px 20px;
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
   border-radius: 8px;
   font-weight: 500;
   transition: all 0.2s ease;
 }
 
 .navButton:hover {
-  background-color: #8BAE66;
-  color: #2C3E50;
+  background-color: var(--sage);
+  color: var(--ink);
 }
 
 .budgetCard {
@@ -45,12 +45,12 @@
 .budgetCardHeader h2 {
   margin: 0;
   font-size: 20px;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .editBudgetButton {
   padding: 8px 16px;
-  background-color: #E67E22;
+  background-color: var(--primary);
   color: #FFFFFF;
   border-radius: 8px;
   font-size: 14px;
@@ -59,7 +59,7 @@
 }
 
 .editBudgetButton:hover {
-  background-color: #D35400;
+  background-color: var(--primary-strong);
 }
 
 .budgetForm {
@@ -80,12 +80,12 @@
   gap: 6px;
   font-size: 14px;
   font-weight: 600;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .budgetInput {
   padding: 8px 12px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 8px;
   font-size: 15px;
   width: 160px;
@@ -94,7 +94,7 @@
 
 .budgetInput:focus {
   outline: none;
-  border-color: #8BAE66;
+  border-color: var(--sage);
 }
 
 .budgetFormActions {
@@ -104,8 +104,8 @@
 
 .saveBudgetButton {
   padding: 8px 20px;
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
   border-radius: 8px;
   font-weight: 600;
   font-size: 14px;
@@ -113,14 +113,14 @@
 }
 
 .saveBudgetButton:hover {
-  background-color: #8BAE66;
-  color: #2C3E50;
+  background-color: var(--sage);
+  color: var(--ink);
 }
 
 .cancelBudgetButton {
   padding: 8px 20px;
-  background-color: #E0E0E0;
-  color: #2C3E50;
+  background-color: var(--line);
+  color: var(--ink);
   border-radius: 8px;
   font-size: 14px;
   transition: background-color 0.2s ease;
@@ -145,22 +145,22 @@
 
 .budgetStatLabel {
   font-size: 13px;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
 .budgetStatValue {
   font-size: 20px;
   font-weight: 600;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .budgetStatValue.overBudget {
-  color: #E74C3C;
+  color: var(--danger);
 }
 
 .budgetBarWrap {
   height: 8px;
-  background-color: #E0E0E0;
+  background-color: var(--line);
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 10px;
@@ -174,11 +174,11 @@
 
 .calorieGoal {
   font-size: 13px;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
 .noBudget {
-  color: #95A5A6;
+  color: var(--muted);
   font-size: 14px;
   margin: 0;
 }
@@ -200,7 +200,7 @@
 .weekDay {
   text-align: center;
   font-weight: 600;
-  color: #628141;
+  color: var(--olive);
   padding: 8px;
 }
 
@@ -213,7 +213,7 @@
 .dayCell {
   min-height: 100px;
   padding: 8px;
-  border: 1px solid #E0E0E0;
+  border: 1px solid var(--line);
   border-radius: 8px;
   background-color: #FFFFFF;
   transition: all 0.2s ease;
@@ -221,8 +221,8 @@
 }
 
 .dayCell:hover {
-  background-color: #F8F9FA;
-  border-color: #8BAE66;
+  background-color: var(--bg-subtle);
+  border-color: var(--sage);
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
@@ -232,18 +232,18 @@
 }
 
 .dayCell.today {
-  border: 2px solid #E67E22;
+  border: 2px solid var(--primary);
   background-color: #FFF5EB;
 }
 
 .dayCell.selected {
-  border: 2px solid #628141;
+  border: 2px solid var(--olive);
   background-color: #F0F7E8;
 }
 
 .dayNumber {
   font-weight: 600;
-  color: #2C3E50;
+  color: var(--ink);
   margin-bottom: 8px;
 }
 
@@ -256,7 +256,7 @@
 .item {
   font-size: 12px;
   padding: 4px 6px;
-  background-color: #8BAE66;
+  background-color: var(--sage);
   color: #FFFFFF;
   border-radius: 4px;
   overflow: hidden;
@@ -266,7 +266,7 @@
 
 .moreItems {
   font-size: 11px;
-  color: #7F8C8D;
+  color: var(--muted);
   padding: 4px 6px;
 }
 
@@ -303,15 +303,15 @@
 
 .modalHeader h2 {
   margin: 0;
-  color: #628141;
+  color: var(--olive);
 }
 
 .closeButton {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background-color: #E0E0E0;
-  color: #2C3E50;
+  background-color: var(--line);
+  color: var(--ink);
   font-size: 24px;
   line-height: 1;
   transition: all 0.2s ease;
@@ -322,18 +322,18 @@
 }
 
 .closeButton:hover {
-  background-color: #E74C3C;
+  background-color: var(--danger);
   color: #FFFFFF;
 }
 
 .selectedDateText {
   font-size: 16px;
-  color: #7F8C8D;
+  color: var(--muted);
   margin-bottom: 16px;
 }
 
 .existingMeals {
-  background-color: #F8F9FA;
+  background-color: var(--bg-subtle);
   border-radius: 8px;
   padding: 12px 16px;
   margin-bottom: 20px;
@@ -343,7 +343,7 @@
   margin: 0 0 10px 0;
   font-size: 14px;
   font-weight: 600;
-  color: #7F8C8D;
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -353,7 +353,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid #E0E0E0;
+  border-bottom: 1px solid var(--line);
 }
 
 .existingMealRow:last-child {
@@ -371,7 +371,7 @@
 .existingMealType {
   font-size: 12px;
   font-weight: 600;
-  color: #7F8C8D;
+  color: var(--muted);
   text-transform: capitalize;
   flex-shrink: 0;
 }
@@ -379,7 +379,7 @@
 .existingMealTitle {
   font-size: 14px;
   font-weight: 500;
-  color: #2C3E50;
+  color: var(--ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -387,7 +387,7 @@
 
 .existingMealServings {
   font-size: 12px;
-  color: #95A5A6;
+  color: var(--muted);
   flex-shrink: 0;
 }
 
@@ -411,23 +411,23 @@
 }
 
 .inlineEditButton {
-  background-color: #E0E0E0;
-  color: #2C3E50;
+  background-color: var(--line);
+  color: var(--ink);
 }
 
 .inlineEditButton:hover {
-  background-color: #E67E22;
+  background-color: var(--primary);
   color: #FFFFFF;
 }
 
 .inlineDeleteButton {
-  background-color: #E0E0E0;
-  color: #2C3E50;
+  background-color: var(--line);
+  color: var(--ink);
   font-size: 20px;
 }
 
 .inlineDeleteButton:hover {
-  background-color: #E74C3C;
+  background-color: var(--danger);
   color: #FFFFFF;
 }
 
@@ -440,7 +440,7 @@
 
 .inlineSelect {
   padding: 5px 8px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 6px;
   font-size: 14px;
   flex: 1;
@@ -448,13 +448,13 @@
 
 .inlineSelect:focus {
   outline: none;
-  border-color: #628141;
+  border-color: var(--olive);
 }
 
 .inlineServingsInput {
   width: 52px;
   padding: 5px 8px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 6px;
   font-size: 14px;
   text-align: center;
@@ -462,12 +462,12 @@
 
 .inlineServingsInput:focus {
   outline: none;
-  border-color: #628141;
+  border-color: var(--olive);
 }
 
 .servingsLabel {
   font-size: 13px;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
 .inlineSaveButton,
@@ -484,17 +484,17 @@
 }
 
 .inlineSaveButton {
-  background-color: #628141;
+  background-color: var(--olive);
   color: #FFFFFF;
 }
 
 .inlineSaveButton:hover {
-  background-color: #8BAE66;
+  background-color: var(--sage);
 }
 
 .inlineCancelButton {
-  background-color: #E0E0E0;
-  color: #2C3E50;
+  background-color: var(--line);
+  color: var(--ink);
 }
 
 .inlineCancelButton:hover {
@@ -515,7 +515,7 @@
 
 .formGroup label {
   font-weight: 600;
-  color: #2C3E50;
+  color: var(--ink);
   font-size: 14px;
 }
 
@@ -531,7 +531,7 @@
   max-height: 260px;
   overflow-y: auto;
   background-color: #FFFFFF;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 8px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
   z-index: 1100;
@@ -560,13 +560,13 @@
 }
 
 .recipeDropdownName {
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .recipeDropdownCategory {
   flex-shrink: 0;
   font-size: 12px;
-  color: #7F8C8D;
+  color: var(--muted);
   background-color: #F2F2F2;
   border-radius: 6px;
   padding: 2px 8px;
@@ -574,14 +574,14 @@
 
 .recipeDropdownEmpty {
   padding: 12px;
-  color: #7F8C8D;
+  color: var(--muted);
   font-size: 14px;
 }
 
 .select,
 .input {
   padding: 12px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 8px;
   font-size: 16px;
   transition: border-color 0.2s ease;
@@ -590,7 +590,7 @@
 .select:focus,
 .input:focus {
   outline: none;
-  border-color: #628141;
+  border-color: var(--olive);
 }
 
 .modalActions {
@@ -610,8 +610,8 @@
 }
 
 .cancelButton {
-  background-color: #E0E0E0;
-  color: #2C3E50;
+  background-color: var(--line);
+  color: var(--ink);
 }
 
 .cancelButton:hover {
@@ -619,13 +619,13 @@
 }
 
 .submitButton {
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
 }
 
 .submitButton:hover {
-  background-color: #8BAE66;
-  color: #2C3E50;
+  background-color: var(--sage);
+  color: var(--ink);
 }
 
 @media (max-width: 768px) {
@@ -670,7 +670,7 @@
 }
 
 .error {
-  background-color: #e74c3c;
+  background-color: var(--danger);
   color: #fff;
 }
 
@@ -682,7 +682,7 @@
 .errorState {
   text-align: center;
   padding: 60px 24px;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
 .errorState p {
@@ -692,8 +692,8 @@
 
 .retryButton {
   padding: 10px 24px;
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
   border-radius: 8px;
   font-weight: 500;
   font-size: 15px;
@@ -703,8 +703,8 @@
 }
 
 .retryButton:hover {
-  background-color: #8BAE66;
-  color: #2C3E50;
+  background-color: var(--sage);
+  color: var(--ink);
 }
 
 .recurringLabel {
@@ -712,12 +712,12 @@
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  color: #2C3E50;
+  color: var(--ink);
   cursor: pointer;
 }
 .recurringCheckbox {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  accent-color: #628141;
+  accent-color: var(--olive);
 }

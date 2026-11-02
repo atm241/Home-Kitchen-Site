@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
+    import_key_hash VARCHAR(64), -- SHA-256 of the phone Shortcut key
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -43,6 +44,8 @@ CREATE TABLE IF NOT EXISTS recipes (
     dietary_tags TEXT[] DEFAULT '{}',
     difficulty TEXT DEFAULT 'medium',
     personal_notes TEXT,
+    source_platform VARCHAR(20), -- tiktok | youtube | instagram | web
+    source_author VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -245,3 +248,7 @@ INSERT INTO schema_migrations (filename) VALUES
   ('002_add_monthly_budgets.sql'),
   ('003_add_auth_and_households.sql')
 ON CONFLICT (filename) DO NOTHING;
+
+-- Video imports & phone share keys (mirrors migrations/008_video_imports.sql)
+CREATE INDEX IF NOT EXISTS idx_recipes_household_source_url ON recipes(household_id, source_url);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_import_key_hash ON users(import_key_hash) WHERE import_key_hash IS NOT NULL;

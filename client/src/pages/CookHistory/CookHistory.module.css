@@ -2,20 +2,20 @@
 
 .header { margin-bottom: 24px; }
 .header h1 { margin: 0 0 4px 0; }
-.subtitle { margin: 0; color: #7F8C8D; font-size: 15px; }
+.subtitle { margin: 0; color: var(--muted); font-size: 15px; }
 
-.loading { text-align: center; padding: 48px; color: #7F8C8D; font-size: 18px; }
+.loading { text-align: center; padding: 48px; color: var(--muted); font-size: 18px; }
 
 .empty {
   text-align: center;
   padding: 48px 24px;
-  color: #7F8C8D;
+  color: var(--muted);
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 .empty p { margin: 8px 0; }
-.link { color: #628141; font-weight: 500; }
+.link { color: var(--olive); font-weight: 500; }
 
 .historyList { display: flex; flex-direction: column; gap: 0; }
 
@@ -24,11 +24,11 @@
 .dateDivider {
   font-size: 13px;
   font-weight: 700;
-  color: #7F8C8D;
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding: 0 0 8px 0;
-  border-bottom: 1px solid #E0E0E0;
+  border-bottom: 1px solid var(--line);
   margin-bottom: 4px;
 }
 
@@ -55,8 +55,8 @@
 
 .entryBody { flex: 1; min-width: 0; }
 
-.entryName { font-size: 16px; font-weight: 600; color: #2C3E50; margin-bottom: 4px; }
-.recipeLink { color: #E67E22; text-decoration: none; }
+.entryName { font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+.recipeLink { color: var(--primary); text-decoration: none; }
 .recipeLink:hover { text-decoration: underline; }
 
 .entryMeta {
@@ -65,12 +65,12 @@
   gap: 12px;
   flex-wrap: wrap;
   font-size: 13px;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
 .entryCategory {
   background: #f0f7ea;
-  color: #628141;
+  color: var(--olive);
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 12px;
@@ -90,7 +90,7 @@
   flex-shrink: 0;
   transition: color 0.2s ease;
 }
-.deleteBtn:hover { color: #e74c3c; }
+.deleteBtn:hover { color: var(--danger); }
 
 .notification {
   position: fixed;
@@ -102,4 +102,4 @@
   z-index: 1000;
 }
 .success { background-color: #2ecc71; color: #fff; }
-.error { background-color: #e74c3c; color: #fff; }
+.error { background-color: var(--danger); color: #fff; }

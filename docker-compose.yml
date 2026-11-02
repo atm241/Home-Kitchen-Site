@@ -30,6 +30,7 @@ services:
       PORT: 5001
       DATABASE_URL: postgres://${POSTGRES_USER:-kitchen}:${POSTGRES_PASSWORD}@db:5432/home_kitchen
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set in .env}
+      INSTAGRAM_OEMBED_TOKEN: ${INSTAGRAM_OEMBED_TOKEN:-}
       # Quote any value whose text contains ": " — unquoted, YAML reads it as a
       # nested mapping and the whole file fails to parse.
       JWT_SECRET: "${JWT_SECRET:?set in .env — generate with openssl rand -base64 48}"

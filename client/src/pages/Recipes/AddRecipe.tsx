@@ -191,15 +191,15 @@ const AddRecipe: React.FC = () => {
   return (
     <div className={styles.container}>
       {error && (
-        <div className={styles.notification} style={{ backgroundColor: '#e74c3c', color: '#fff' }}>
+        <div className={styles.notification} style={{ backgroundColor: 'var(--danger)', color: '#fff' }}>
           {error}
         </div>
       )}
       <div className={styles.header}>
-        <button onClick={() => navigate('/recipes')} className={styles.backButton}>
-          ← Back to Recipes
+        <button onClick={() => navigate('/')} className={styles.backButton}>
+          ← Cookbook
         </button>
-        <h1>Add Custom Recipe</h1>
+        <h1>Add a recipe</h1>
       </div>
 
       <form onSubmit={handleSubmit} className={styles.form}>
@@ -222,7 +222,7 @@ const AddRecipe: React.FC = () => {
             onClick={() => importPhotoInputRef.current?.click()}
             disabled={parsingPhoto}
           >
-            {parsingPhoto ? 'Reading photo...' : '📷 Import from Photo'}
+            {parsingPhoto ? 'Reading photo...' : 'Import from photo'}
           </button>
         </div>
 
@@ -259,7 +259,7 @@ const AddRecipe: React.FC = () => {
                 onClick={() => coverPhotoInputRef.current?.click()}
                 disabled={uploadingImage}
               >
-                {uploadingImage ? 'Uploading...' : '⬆ Upload Photo'}
+                {uploadingImage ? 'Uploading...' : 'Upload photo'}
               </button>
               <input type="url" id="image_url" value={formData.image_url}
                 onChange={(e) => { setFormData({ ...formData, image_url: e.target.value }); setImagePreview(null); }}
@@ -437,7 +437,7 @@ const AddRecipe: React.FC = () => {
         </div>
 
         <div className={styles.formActions}>
-          <button type="button" onClick={() => navigate('/recipes')} className={styles.cancelButton}>
+          <button type="button" onClick={() => navigate('/')} className={styles.cancelButton}>
             Cancel
           </button>
           <button type="submit" className={styles.submitButton} disabled={submitting}>

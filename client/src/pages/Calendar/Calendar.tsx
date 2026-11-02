@@ -340,7 +340,7 @@ const Calendar: React.FC = () => {
                 className={styles.budgetBarFill}
                 style={{
                   width: `${Math.min((monthlyBudget.actual_cost / monthlyBudget.budget_amount) * 100, 100)}%`,
-                  backgroundColor: monthlyBudget.actual_cost > monthlyBudget.budget_amount ? '#E74C3C' : '#8BAE66',
+                  backgroundColor: monthlyBudget.actual_cost > monthlyBudget.budget_amount ? 'var(--danger)' : 'var(--sage)',
                 }}
               />
             </div>

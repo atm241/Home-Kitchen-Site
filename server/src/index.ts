@@ -17,6 +17,7 @@ import calendarRoutes from './routes/calendar';
 import budgetRoutes from './routes/budget';
 import recommendationRoutes from './routes/recommendations';
 import cookHistoryRoutes from './routes/cookHistory';
+import shareRoutes from './routes/share';
 
 dotenv.config();
 
@@ -91,6 +92,8 @@ app.use('/api/calendar', requireAuth, calendarRoutes);
 app.use('/api/budget', requireAuth, budgetRoutes);
 app.use('/api/recommendations', requireAuth, recommendationRoutes);
 app.use('/api/cook-history', requireAuth, cookHistoryRoutes);
+// Auth is per-route here: the Shortcut endpoint uses a share key, not a login.
+app.use('/api/share', shareRoutes);
 
 // Health check
 app.get('/api/health', async (req: Request, res: Response) => {
@@ -104,7 +107,7 @@ app.get('/api/health', async (req: Request, res: Response) => {
 
 // Root endpoint
 app.get('/', (req: Request, res: Response) => {
-  res.json({ message: 'Home Kitchen API' });
+  res.json({ message: 'Simmer API' });
 });
 
 // Global error handler.

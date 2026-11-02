@@ -97,10 +97,10 @@ const Home: React.FC = () => {
 
   const getMealTypeColor = (mealType?: string) => {
     switch (mealType?.toLowerCase()) {
-      case 'breakfast': return '#E67E22';
-      case 'lunch':     return '#8BAE66';
-      case 'dinner':    return '#628141';
-      default:          return '#7F8C8D';
+      case 'breakfast': return 'var(--primary)';
+      case 'lunch':     return 'var(--sage)';
+      case 'dinner':    return 'var(--olive)';
+      default:          return 'var(--muted)';
     }
   };
 
@@ -141,10 +141,10 @@ const Home: React.FC = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1>This Week</h1>
+        <h1>This week</h1>
         <div className={styles.headerActions}>
-          <Link to="/history" className={styles.link}>Cook History</Link>
-          <Link to="/calendar" className={styles.link}>Full Calendar</Link>
+          <Link to="/history" className="btn btn-ghost">Cook history</Link>
+          <Link to="/calendar" className="btn btn-secondary">Full calendar</Link>
         </div>
       </div>
 
@@ -165,7 +165,7 @@ const Home: React.FC = () => {
             )}
             {weeklyCalorieGoal && (
               <div className={styles.nutritionStat}>
-                <span className={styles.nutritionStatValue} style={{ color: weekTotals.calories > weeklyCalorieGoal ? '#e74c3c' : '#628141' }}>
+                <span className={styles.nutritionStatValue} style={{ color: weekTotals.calories > weeklyCalorieGoal ? 'var(--danger)' : 'var(--olive)' }}>
                   {weeklyCalorieGoal - weekTotals.calories > 0 ? `${weeklyCalorieGoal - weekTotals.calories} left` : `${weekTotals.calories - weeklyCalorieGoal} over`}
                 </span>
                 <span className={styles.nutritionStatLabel}>Remaining</span>
@@ -178,7 +178,7 @@ const Home: React.FC = () => {
                 className={styles.nutritionBarFill}
                 style={{
                   width: `${caloriePct}%`,
-                  backgroundColor: weekTotals.calories > weeklyCalorieGoal! ? '#e74c3c' : '#628141',
+                  backgroundColor: weekTotals.calories > weeklyCalorieGoal! ? 'var(--danger)' : 'var(--olive)',
                 }}
               />
             </div>
@@ -257,7 +257,7 @@ const Home: React.FC = () => {
                       <td>{row.budget_amount > 0 ? `$${row.budget_amount.toFixed(2)}` : '—'}</td>
                       <td>${row.estimated_cost.toFixed(2)}</td>
                       <td>${row.actual_cost.toFixed(2)}</td>
-                      <td style={{ color: diff >= 0 ? '#628141' : '#e74c3c', fontWeight: 600 }}>
+                      <td style={{ color: diff >= 0 ? 'var(--olive)' : 'var(--danger)', fontWeight: 600 }}>
                         {diff >= 0 ? `$${diff.toFixed(2)} under` : `$${Math.abs(diff).toFixed(2)} over`}
                       </td>
                     </tr>
@@ -313,7 +313,7 @@ const Home: React.FC = () => {
                         <span className={styles.calorieLabel}>Total:</span>
                         <span
                           className={styles.calorieValue}
-                          style={{ color: dailyGoal && dayCalories > dailyGoal ? '#e74c3c' : undefined }}
+                          style={{ color: dailyGoal && dayCalories > dailyGoal ? 'var(--danger)' : undefined }}
                         >
                           {dayCalories} cal{dailyGoal ? ` / ${dailyGoal}` : ''}
                         </span>
@@ -327,27 +327,6 @@ const Home: React.FC = () => {
         })}
       </div>
 
-      <div className={styles.quickActions}>
-        <h2>Quick Actions</h2>
-        <div className={styles.actionGrid}>
-          <Link to="/recipes" className={styles.actionCard}>
-            <h3>Browse Recipes</h3>
-            <p>Find new meals to add to your calendar</p>
-          </Link>
-          <Link to="/grocery" className={styles.actionCard}>
-            <h3>Grocery List</h3>
-            <p>View and manage your shopping list</p>
-          </Link>
-          <Link to="/pantry" className={styles.actionCard}>
-            <h3>Pantry</h3>
-            <p>Check what ingredients you have</p>
-          </Link>
-          <Link to="/history" className={styles.actionCard}>
-            <h3>Cook History</h3>
-            <p>See what you've been cooking</p>
-          </Link>
-        </div>
-      </div>
     </div>
   );
 };

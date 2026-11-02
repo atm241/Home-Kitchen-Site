@@ -47,6 +47,10 @@ export interface Recipe {
   dietary_tags?: string[];
   difficulty?: DifficultyLevel;
   personal_notes?: string;
+  /** tiktok | youtube | instagram | web */
+  source_platform?: string;
+  /** Creator handle or website name */
+  source_author?: string;
   ingredients?: RecipeIngredient[];
   created_at?: string;
   updated_at?: string;
