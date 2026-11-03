@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { recipesApi, PantryCoverage } from '../../services/api';
 import { Recipe } from '../../types';
 import { useAuth } from '../../context/AuthContext';
@@ -30,7 +30,11 @@ const Cookbook: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [query, setQuery] = useState('');
-  const [quick, setQuick] = useState<QuickFilter>('all');
+  // ?filter=pantry (linked from the Pantry page) opens with that filter on.
+  const [params] = useSearchParams();
+  const [quick, setQuick] = useState<QuickFilter>(
+    QUICK_FILTERS.some(f => f.id === params.get('filter')) ? (params.get('filter') as QuickFilter) : 'all'
+  );
   const [category, setCategory] = useState<string | null>(null);
 
   const load = async () => {
