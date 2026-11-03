@@ -236,6 +236,22 @@ function recipeLinksIn(text: string): string[] {
     .slice(0, 2);
 }
 
+// Billing and key problems are the household's to fix, so say so plainly
+// instead of a generic "import failed".
+async function callClaude(params: Anthropic.MessageCreateParamsNonStreaming): Promise<Anthropic.Message> {
+  try {
+    return await anthropic.messages.create(params);
+  } catch (error) {
+    if (error instanceof Anthropic.AuthenticationError || error instanceof Anthropic.PermissionDeniedError) {
+      throw new ImportError('The Anthropic API key on the server is missing or invalid. Check ANTHROPIC_API_KEY.', 503);
+    }
+    if (error instanceof Anthropic.BadRequestError && /credit balance/i.test(error.message)) {
+      throw new ImportError('The Anthropic account is out of credits. Add credits in the Anthropic Console, then try again.', 503);
+    }
+    throw error;
+  }
+}
+
 async function recipeFromVideoText(video: VideoText, platform: Platform): Promise<ParsedRecipe | null> {
   const parts = [
     video.title && `Video title: ${video.title}`,
@@ -245,7 +261,7 @@ async function recipeFromVideoText(video: VideoText, platform: Platform): Promis
   ].filter(Boolean);
   if (parts.length === 0) return null;
 
-  const message = await anthropic.messages.create({
+  const message = await callClaude({
     model: 'claude-opus-5-5',
     max_tokens: 8000,
     messages: [
