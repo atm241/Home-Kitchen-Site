@@ -1113,3 +1113,63 @@
     bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 12px);
   }
 }
+
+/* Receipt total, read from the same scan */
+.receiptTotalRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--sand-soft);
+}
+
+.receiptTotalField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.receiptTotalInput {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--muted);
+}
+
+.receiptTotalInput input {
+  width: 110px;
+  border: none;
+  border-bottom: 2px solid var(--line);
+  background: transparent;
+  font: inherit;
+  color: var(--ink);
+  outline: none;
+  padding: 2px 0;
+}
+
+.receiptTotalInput input:focus {
+  border-bottom-color: var(--orange);
+}
+
+.receiptCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.receiptCount input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--olive);
+}

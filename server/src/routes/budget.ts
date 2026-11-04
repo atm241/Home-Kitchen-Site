@@ -3,6 +3,18 @@ import pool from '../config/database';
 
 const router = express.Router();
 
+/** Sum of logged receipt totals between two dates (inclusive). */
+export async function receiptSpend(householdId: number, from: string, to: string): Promise<number> {
+  const r = await pool.query(
+    `SELECT COALESCE(SUM(total), 0) AS total FROM grocery_receipts
+     WHERE household_id = $1 AND purchased_on BETWEEN $2 AND $3`,
+    [householdId, from, to]
+  );
+  return parseFloat(r.rows[0].total);
+}
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 // Get budget for a specific week
 router.get('/', async (req: Request, res: Response) => {
   try {
@@ -152,20 +164,35 @@ router.get('/history', async (req: Request, res: Response) => {
   try {
     const months = Math.min(parseInt(req.query.months as string) || 6, 24);
 
+    // Spend = receipt totals plus any weekly actuals recorded the old way.
     const result = await pool.query(`
-      SELECT
-        to_char(b.week_start_date, 'YYYY-MM') AS month,
-        COALESCE(SUM(b.estimated_cost), 0) AS estimated_cost,
-        COALESCE(SUM(b.actual_cost), 0) AS actual_cost,
-        COALESCE(MAX(mb.budget_amount), 0) AS budget_amount
-      FROM budgets b
-      LEFT JOIN monthly_budgets mb
-        ON mb.household_id = b.household_id
-        AND mb.month = to_char(b.week_start_date, 'YYYY-MM')
-      WHERE b.household_id = $1
-        AND b.week_start_date >= date_trunc('month', CURRENT_DATE) - ($2 - 1) * INTERVAL '1 month'
-      GROUP BY to_char(b.week_start_date, 'YYYY-MM')
-      ORDER BY month DESC
+      WITH months AS (
+        SELECT to_char(m, 'YYYY-MM') AS month
+        FROM generate_series(
+          date_trunc('month', CURRENT_DATE) - ($2 - 1) * INTERVAL '1 month',
+          date_trunc('month', CURRENT_DATE),
+          INTERVAL '1 month'
+        ) m
+      ),
+      weekly AS (
+        SELECT to_char(week_start_date, 'YYYY-MM') AS month,
+               SUM(estimated_cost) AS estimated_cost, SUM(actual_cost) AS actual_cost
+        FROM budgets WHERE household_id = $1 GROUP BY 1
+      ),
+      receipts AS (
+        SELECT to_char(purchased_on, 'YYYY-MM') AS month, SUM(total) AS total
+        FROM grocery_receipts WHERE household_id = $1 GROUP BY 1
+      )
+      SELECT months.month,
+             COALESCE(weekly.estimated_cost, 0) AS estimated_cost,
+             COALESCE(weekly.actual_cost, 0) + COALESCE(receipts.total, 0) AS actual_cost,
+             COALESCE(mb.budget_amount, 0) AS budget_amount
+      FROM months
+      LEFT JOIN weekly ON weekly.month = months.month
+      LEFT JOIN receipts ON receipts.month = months.month
+      LEFT JOIN monthly_budgets mb ON mb.household_id = $1 AND mb.month = months.month
+      WHERE weekly.month IS NOT NULL OR receipts.month IS NOT NULL
+      ORDER BY months.month DESC
     `, [req.householdId, months]);
 
     res.json(result.rows.map(row => ({
@@ -177,6 +204,63 @@ router.get('/history', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error fetching budget history:', error);
     res.status(500).json({ error: 'Failed to fetch budget history' });
+  }
+});
+
+// ---------- Receipt totals ----------
+
+router.get('/receipts', async (req: Request, res: Response) => {
+  try {
+    const from = String(req.query.from || '');
+    const to = String(req.query.to || '');
+    const params: unknown[] = [req.householdId];
+    let where = 'household_id = $1';
+    if (DATE_RE.test(from)) { params.push(from); where += ` AND purchased_on >= $${params.length}`; }
+    if (DATE_RE.test(to)) { params.push(to); where += ` AND purchased_on <= $${params.length}`; }
+    const result = await pool.query(
+      `SELECT id, total, store_name, to_char(purchased_on, 'YYYY-MM-DD') AS purchased_on
+       FROM grocery_receipts WHERE ${where} ORDER BY purchased_on DESC, id DESC LIMIT 100`,
+      params
+    );
+    res.json(result.rows.map(r => ({ ...r, total: parseFloat(r.total) })));
+  } catch (error) {
+    console.error('Error fetching receipts:', error);
+    res.status(500).json({ error: 'Failed to fetch receipts' });
+  }
+});
+
+router.post('/receipts', async (req: Request, res: Response) => {
+  try {
+    const total = Number(req.body.total);
+    if (!Number.isFinite(total) || total < 0 || total > 100000) {
+      return res.status(400).json({ error: 'total must be a positive amount' });
+    }
+    const store = typeof req.body.store_name === 'string' ? req.body.store_name.trim().slice(0, 100) || null : null;
+    const purchasedOn = DATE_RE.test(String(req.body.purchased_on || '')) ? req.body.purchased_on : null;
+    const result = await pool.query(
+      `INSERT INTO grocery_receipts (household_id, total, store_name, purchased_on)
+       VALUES ($1, $2, $3, COALESCE($4::date, CURRENT_DATE))
+       RETURNING id, total, store_name, to_char(purchased_on, 'YYYY-MM-DD') AS purchased_on`,
+      [req.householdId, Math.round(total * 100) / 100, store, purchasedOn]
+    );
+    const row = result.rows[0];
+    res.status(201).json({ ...row, total: parseFloat(row.total) });
+  } catch (error) {
+    console.error('Error saving receipt:', error);
+    res.status(500).json({ error: 'Failed to save receipt' });
+  }
+});
+
+router.delete('/receipts/:id', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
+    const result = await pool.query('DELETE FROM grocery_receipts WHERE id = $1 AND household_id = $2', [id, req.householdId]);
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Receipt not found' });
+    res.status(204).end();
+  } catch (error) {
+    console.error('Error deleting receipt:', error);
+    res.status(500).json({ error: 'Failed to delete receipt' });
   }
 });
 
@@ -214,6 +298,7 @@ router.get('/monthly', async (req: Request, res: Response) => {
 
     const monthly = monthlyResult.rows[0];
     const agg = weeklyResult.rows[0];
+    const receipts = await receiptSpend(req.householdId!, firstDay, lastDayStr);
 
     res.json({
       month,
@@ -224,7 +309,7 @@ router.get('/monthly', async (req: Request, res: Response) => {
       carbs_goal: monthly?.carbs_goal ?? null,
       fat_goal: monthly?.fat_goal ?? null,
       estimated_cost: parseFloat(agg.estimated_cost),
-      actual_cost: parseFloat(agg.actual_cost),
+      actual_cost: parseFloat(agg.actual_cost) + receipts,
     });
   } catch (error) {
     console.error('Error fetching monthly budget:', error);
@@ -269,6 +354,7 @@ router.post('/monthly', async (req: Request, res: Response) => {
     `, [lastDay, firstDay, req.householdId]);
 
     const agg = weeklyResult.rows[0];
+    const receipts = await receiptSpend(req.householdId!, firstDay, lastDay);
     res.status(201).json({
       month,
       budget_amount: parseFloat(budget_amount),
@@ -277,7 +363,7 @@ router.post('/monthly', async (req: Request, res: Response) => {
       carbs_goal: carbs_goal ?? null,
       fat_goal: fat_goal ?? null,
       estimated_cost: parseFloat(agg.estimated_cost),
-      actual_cost: parseFloat(agg.actual_cost),
+      actual_cost: parseFloat(agg.actual_cost) + receipts,
     });
   } catch (error) {
     console.error('Error creating/updating monthly budget:', error);

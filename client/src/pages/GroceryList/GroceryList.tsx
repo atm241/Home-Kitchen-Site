@@ -1,8 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { groceryApi, budgetApi, recommendationsApi, IngredientCombo } from '../../services/api';
+import React, { useState, useEffect, useMemo } from 'react';
+import { groceryApi, recommendationsApi, plannerApi, IngredientCombo, BudgetStatus } from '../../services/api';
 import { GroceryItem } from '../../types';
-import { getWeekStartDate, getWeekEndDate } from '../../utils/dateUtils';
+import { getWeekStartDate, getWeekEndDate, formatDate } from '../../utils/dateUtils';
+import Icon from '../../components/Icon/Icon';
+import LogReceiptDialog from '../../components/LogReceipt/LogReceiptDialog';
 import styles from './GroceryList.module.css';
+
+const UNITS = ['unit', 'cup', 'tablespoon', 'teaspoon', 'ounce', 'pound', 'gram', 'kilogram', 'liter', 'milliliter'];
+
+const groupByCategory = (items: GroceryItem[]) =>
+  items.reduce((acc, item) => {
+    const category = item.category || 'Other';
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(item);
+    return acc;
+  }, {} as Record<string, GroceryItem[]>);
+
+const formatQty = (item: GroceryItem) =>
+  [item.quantity, item.unit && item.unit !== 'unit' ? item.unit : ''].filter(Boolean).join(' ');
 
 const GroceryList: React.FC = () => {
   const [groceryItems, setGroceryItems] = useState<GroceryItem[]>([]);
@@ -11,8 +26,8 @@ const GroceryList: React.FC = () => {
   const [ingredientCombos, setIngredientCombos] = useState<IngredientCombo[]>([]);
   const [loadingCombos, setLoadingCombos] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [actualPrices, setActualPrices] = useState<Record<number, string>>({});
-  const [savingActual, setSavingActual] = useState(false);
+  const [budget, setBudget] = useState<BudgetStatus | null>(null);
+  const [showReceipt, setShowReceipt] = useState(false);
   const [shoppingMode, setShoppingMode] = useState(false);
   const weekStartDate = getWeekStartDate();
   const [manualItem, setManualItem] = useState({ name: '', quantity: '1', unit: 'unit' });
@@ -20,8 +35,13 @@ const GroceryList: React.FC = () => {
   useEffect(() => {
     loadGroceryList();
     loadIngredientCombos(false); // Only load cached combos
+    loadBudget();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const loadBudget = () => {
+    plannerApi.status().then((r) => setBudget(r.data.budget)).catch(() => {});
+  };
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
@@ -42,12 +62,11 @@ const GroceryList: React.FC = () => {
 
   const handleRefreshCombos = async () => {
     await loadIngredientCombos(true);
-    showNotification('success', 'Ingredient combos refreshed!');
+    showNotification('success', 'Ingredient ideas refreshed');
   };
 
   const handleAddComboToList = async (combo: IngredientCombo) => {
     try {
-      // Add each ingredient in the combo to the grocery list
       for (const ingredient of combo.ingredients) {
         await groceryApi.addManual({
           ingredient_name: ingredient.name,
@@ -56,9 +75,8 @@ const GroceryList: React.FC = () => {
           week_start_date: weekStartDate,
         });
       }
-
-      showNotification('success', `Added ${combo.ingredients.length} ingredients to your grocery list!`);
-      await loadGroceryList(); // Reload the list
+      showNotification('success', `Added ${combo.ingredients.length} items to your list`);
+      await loadGroceryList();
     } catch (error) {
       console.error('Error adding combo to list:', error);
       showNotification('error', 'Failed to add ingredients to list');
@@ -80,40 +98,34 @@ const GroceryList: React.FC = () => {
   const handleGenerate = async () => {
     try {
       setGenerating(true);
-      const weekEndDate = getWeekEndDate();
       const response = await groceryApi.generate({
         week_start_date: weekStartDate,
-        week_end_date: weekEndDate,
+        week_end_date: getWeekEndDate(),
       });
       setGroceryItems(response.data);
     } catch (error) {
       console.error('Error generating grocery list:', error);
-      showNotification('error', 'Failed to generate grocery list');
+      showNotification('error', 'Failed to build the list from your meal plan');
     } finally {
       setGenerating(false);
     }
   };
 
   const handleTogglePurchased = async (id: number, isPurchased: boolean) => {
+    // Update right away so checking things off in the store feels instant.
+    setGroceryItems((items) => items.map((item) => (item.id === id ? { ...item, is_purchased: isPurchased } : item)));
     try {
       await groceryApi.markPurchased(id, isPurchased);
-      setGroceryItems(
-        groceryItems.map((item) =>
-          item.id === id ? { ...item, is_purchased: isPurchased } : item
-        )
-      );
     } catch (error) {
       console.error('Error updating grocery item:', error);
+      setGroceryItems((items) => items.map((item) => (item.id === id ? { ...item, is_purchased: !isPurchased } : item)));
+      showNotification('error', 'Could not update that item');
     }
   };
 
   const handleAddManualItem = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!manualItem.name.trim()) {
-      showNotification('error', 'Please enter an item name');
-      return;
-    }
+    if (!manualItem.name.trim()) return;
 
     try {
       const response = await groceryApi.addManual({
@@ -122,8 +134,7 @@ const GroceryList: React.FC = () => {
         unit: manualItem.unit,
         week_start_date: weekStartDate,
       });
-
-      setGroceryItems([...groceryItems, response.data]);
+      setGroceryItems((items) => [...items, response.data]);
       setManualItem({ name: '', quantity: '1', unit: 'unit' });
     } catch (error) {
       console.error('Error adding manual item:', error);
@@ -134,7 +145,7 @@ const GroceryList: React.FC = () => {
   const handleDeleteItem = async (id: number) => {
     try {
       await groceryApi.delete(id);
-      setGroceryItems(groceryItems.filter((item) => item.id !== id));
+      setGroceryItems((items) => items.filter((item) => item.id !== id));
     } catch (error) {
       console.error('Error deleting grocery item:', error);
       showNotification('error', 'Failed to delete item');
@@ -142,10 +153,7 @@ const GroceryList: React.FC = () => {
   };
 
   const handleClearList = async () => {
-    if (!window.confirm('Are you sure you want to clear the entire grocery list?')) {
-      return;
-    }
-
+    if (!window.confirm('Clear the whole grocery list?')) return;
     try {
       await groceryApi.clearList(weekStartDate);
       setGroceryItems([]);
@@ -155,55 +163,15 @@ const GroceryList: React.FC = () => {
     }
   };
 
-  const handleActualPriceChange = (id: number, value: string) => {
-    setActualPrices(prev => ({ ...prev, [id]: value }));
-  };
-
-  const handleRecordActualSpend = async () => {
-    try {
-      setSavingActual(true);
-      // Save each entered price to the item's store_price
-      for (const [idStr, priceStr] of Object.entries(actualPrices)) {
-        const price = parseFloat(priceStr);
-        if (!isNaN(price) && price >= 0) {
-          await groceryApi.update(parseInt(idStr), { store_price: price });
-        }
-      }
-      // Sum all actual costs (store_price * quantity for each item)
-      const updatedList = await groceryApi.getList(weekStartDate);
-      const actualTotal = updatedList.data.reduce((sum, item) => {
-        const price = item.store_price ?? item.estimated_price ?? 0;
-        return sum + price * (item.quantity || 1);
-      }, 0);
-      await budgetApi.updateActual(weekStartDate, actualTotal);
-      showNotification('success', `Actual spend recorded: $${actualTotal.toFixed(2)}`);
-      setActualPrices({});
-      await loadGroceryList();
-    } catch (error) {
-      console.error('Error recording actual spend:', error);
-      showNotification('error', 'Failed to record actual spend');
-    } finally {
-      setSavingActual(false);
-    }
-  };
+  const purchasedCount = groceryItems.filter((item) => item.is_purchased).length;
 
   const handleAddToPantry = async () => {
-    const purchasedItems = groceryItems.filter(item => item.is_purchased);
-
-    if (purchasedItems.length === 0) {
-      showNotification('error', 'No purchased items to add to pantry. Please check off items first.');
-      return;
-    }
-
-    if (!window.confirm(`Add ${purchasedItems.length} purchased items to pantry?`)) {
-      return;
-    }
+    if (purchasedCount === 0) return;
+    if (!window.confirm(`Add ${purchasedCount} checked item${purchasedCount === 1 ? '' : 's'} to your pantry?`)) return;
 
     try {
       const response = await groceryApi.addPurchasedToPantry(weekStartDate);
-      showNotification('success', `Successfully added ${response.data.count} items to pantry!`);
-
-      // Reload ingredient combos to show updated recommendations
+      showNotification('success', `Added ${response.data.count} items to your pantry`);
       await loadIngredientCombos(false);
     } catch (error) {
       console.error('Error adding items to pantry:', error);
@@ -211,47 +179,28 @@ const GroceryList: React.FC = () => {
     }
   };
 
-  const groupedItems = groceryItems.reduce((acc, item) => {
-    const category = item.category || 'Other';
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(item);
-    return acc;
-  }, {} as Record<string, GroceryItem[]>);
+  const groupedItems = useMemo(() => groupByCategory(groceryItems), [groceryItems]);
 
   const totalEstimatedCost = groceryItems.reduce(
     (sum, item) => sum + (item.estimated_price || 0) * (item.quantity || 1),
     0
   );
 
-  const purchasedCount = groceryItems.filter((item) => item.is_purchased).length;
-
   const handleShareList = async () => {
-    const lines: string[] = [`🛒 Grocery List\n`];
-    const grouped = groceryItems.reduce((acc, item) => {
-      const cat = item.category || 'Other';
-      if (!acc[cat]) acc[cat] = [];
-      acc[cat].push(item);
-      return acc;
-    }, {} as Record<string, GroceryItem[]>);
-
-    for (const [category, items] of Object.entries(grouped)) {
-      lines.push(`\n${category}:`);
+    const lines: string[] = ['Grocery list'];
+    for (const [category, items] of Object.entries(groupedItems)) {
+      lines.push('', `${category}:`);
       for (const item of items) {
         const check = item.is_purchased ? '✓' : '○';
-        const price = item.estimated_price ? ` (~$${(item.estimated_price * (item.quantity || 1)).toFixed(2)})` : '';
-        lines.push(`  ${check} ${item.quantity ?? ''} ${item.unit ?? ''} ${item.ingredient_name}${price}`.trim());
+        lines.push(`  ${check} ${[formatQty(item), item.ingredient_name].filter(Boolean).join(' ')}`);
       }
     }
-
     const text = lines.join('\n');
 
     try {
       await navigator.clipboard.writeText(text);
-      showNotification('success', 'Grocery list copied to clipboard!');
+      showNotification('success', 'List copied, ready to paste');
     } catch {
-      // Fallback: open in new tab
       const blob = new Blob([text], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -263,69 +212,54 @@ const GroceryList: React.FC = () => {
   };
 
   if (loading) {
-    return <div className={styles.loading}>Loading grocery list...</div>;
+    return <div className={styles.loading}>Loading grocery list…</div>;
   }
 
-  if (shoppingMode) {
-    const remaining = groceryItems.filter(i => !i.is_purchased).length;
-    const shoppingGrouped = groceryItems.reduce((acc, item) => {
-      const cat = item.category || 'Other';
-      if (!acc[cat]) acc[cat] = [];
-      acc[cat].push(item);
-      return acc;
-    }, {} as Record<string, GroceryItem[]>);
+  const total = groceryItems.length;
+  const progress = total > 0 ? (purchasedCount / total) * 100 : 0;
 
+  if (shoppingMode) {
+    const remaining = total - purchasedCount;
     return (
       <div className={styles.shoppingOverlay}>
         <div className={styles.shoppingTopBar}>
-          <div className={styles.shoppingProgress}>
-            <span className={styles.shoppingProgressCount}>
-              {purchasedCount} / {groceryItems.length}
-            </span>
-            <span className={styles.shoppingProgressLabel}>items checked</span>
+          <div className={styles.shoppingTopRow}>
+            <div>
+              <div className={styles.shoppingTitle}>Shopping</div>
+              <div className={styles.shoppingProgressLabel}>
+                {remaining === 0 ? 'All done' : `${remaining} left of ${total}`}
+              </div>
+            </div>
+            <button className="btn btn-primary" onClick={() => setShoppingMode(false)}>
+              {remaining === 0 ? <><Icon name="check" size={16} strokeWidth={2.5} /> Done</> : 'Exit'}
+            </button>
           </div>
-          <div className={styles.shoppingProgressBarWrap}>
-            <div
-              className={styles.shoppingProgressBarFill}
-              style={{ width: `${groceryItems.length > 0 ? (purchasedCount / groceryItems.length) * 100 : 0}%` }}
-            />
+          <div className={styles.progressBar}>
+            <div className={styles.progressFill} style={{ width: `${progress}%` }} />
           </div>
-          <button
-            className={styles.shoppingExitBtn}
-            onClick={() => setShoppingMode(false)}
-          >
-            {remaining === 0 ? '✓ Done' : 'Exit'}
-          </button>
         </div>
 
         <div className={styles.shoppingList}>
-          {Object.entries(shoppingGrouped).map(([category, items]) => {
-            const unchecked = items.filter(i => !i.is_purchased);
-            const checked = items.filter(i => i.is_purchased);
-            const sorted = [...unchecked, ...checked];
+          {Object.entries(groupedItems).map(([category, items]) => {
+            const sorted = [...items.filter((i) => !i.is_purchased), ...items.filter((i) => i.is_purchased)];
             return (
-              <div key={category} className={styles.shoppingCategory}>
-                <div className={styles.shoppingCategoryTitle}>{category}</div>
-                {sorted.map(item => (
+              <section key={category} className={styles.shoppingCategory}>
+                <h2 className={styles.categoryTitle}>{category}</h2>
+                {sorted.map((item) => (
                   <button
                     key={item.id}
-                    className={`${styles.shoppingItem} ${item.is_purchased ? styles.shoppingItemChecked : ''}`}
+                    className={`${styles.shoppingItem} ${item.is_purchased ? styles.checked : ''}`}
                     onClick={() => handleTogglePurchased(item.id, !item.is_purchased)}
+                    aria-pressed={item.is_purchased}
                   >
-                    <span className={styles.shoppingCheckbox}>
-                      {item.is_purchased ? '✓' : ''}
+                    <span className={styles.checkCircle}>
+                      {item.is_purchased && <Icon name="check" size={16} strokeWidth={3} />}
                     </span>
-                    <span className={styles.shoppingItemText}>
-                      <span className={styles.shoppingItemName}>{item.ingredient_name}</span>
-                      {(item.quantity || item.unit) && (
-                        <span className={styles.shoppingItemQty}>
-                          {item.quantity} {item.unit}
-                        </span>
-                      )}
-                    </span>
+                    <span className={styles.shoppingItemName}>{item.ingredient_name}</span>
+                    {formatQty(item) && <span className={styles.shoppingItemQty}>{formatQty(item)}</span>}
                   </button>
                 ))}
-              </div>
+              </section>
             );
           })}
         </div>
@@ -336,237 +270,211 @@ const GroceryList: React.FC = () => {
   return (
     <div className={styles.container}>
       {notification && (
-        <div className={`${styles.notification} ${styles[notification.type]}`}>
+        <div className={`${styles.notification} ${styles[notification.type]}`} role="status">
           {notification.message}
         </div>
       )}
-      <div className={styles.header}>
-        <h1>Grocery List</h1>
-        <div className={styles.buttonGroup}>
-          <button
-            onClick={handleGenerate}
-            className={styles.generateButton}
-            disabled={generating}
-          >
-            {generating ? 'Generating...' : 'Generate from Meals'}
+
+      <header className={styles.pageHeader}>
+        <div className={styles.titleBlock}>
+          <h1>Grocery list</h1>
+          <p className={styles.subtitle}>
+            Week of {formatDate(weekStartDate, 'MMM d')}
+            {total > 0 && <> · {total} item{total === 1 ? '' : 's'}</>}
+            {totalEstimatedCost > 0 && <> · about ${totalEstimatedCost.toFixed(2)}</>}
+          </p>
+          {budget && (
+            <p className={`${styles.budgetLine} ${budget.remaining < 0 ? styles.budgetOver : ''}`}>
+              ${Math.abs(budget.remaining).toFixed(0)} {budget.remaining < 0 ? 'over' : 'left'} of your ${budget.amount.toFixed(0)} budget
+              <span> · through {formatDate(budget.end_date, 'MMM d')}</span>
+            </p>
+          )}
+        </div>
+        <div className={styles.toolbar}>
+          <button onClick={handleGenerate} className="btn btn-secondary" disabled={generating} title="Add ingredients for this week's planned meals">
+            <Icon name="calendar" size={17} />
+            <span className={styles.toolLabel}>{generating ? 'Building…' : 'From meal plan'}</span>
           </button>
-          {groceryItems.length > 0 && (
+          {total > 0 && (
             <>
-              <button
-                onClick={() => setShoppingMode(true)}
-                className={styles.shopButton}
-              >
-                Shop
+              <button onClick={handleShareList} className="btn btn-secondary" title="Copy list as text">
+                <Icon name="copy" size={17} />
+                <span className={styles.toolLabel}>Copy</span>
               </button>
-              <button
-                onClick={handleShareList}
-                className={styles.shareButton}
-              >
-                Copy List
-              </button>
-              <button
-                onClick={handleAddToPantry}
-                className={styles.addToPantryButton}
-                disabled={purchasedCount === 0}
-              >
-                Add to Pantry ({purchasedCount})
-              </button>
-              <button
-                onClick={handleClearList}
-                className={styles.clearButton}
-              >
-                Clear List
+              <button onClick={() => setShoppingMode(true)} className="btn btn-primary">
+                <Icon name="cart" size={17} /> Start shopping
               </button>
             </>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* Ingredient Combo Recommendations */}
-      <div className={styles.recommendationsSection}>
-        <div className={styles.recommendationsHeader}>
-          <div className={styles.headerContent}>
-            <h2>Recommended Ingredient Combos</h2>
-            <p>Buy these ingredients to unlock popular recipes</p>
-          </div>
-          <button
-            onClick={handleRefreshCombos}
-            className={styles.refreshButton}
-            disabled={loadingCombos}
-            title="Get fresh ingredient combos"
-          >
-            🔄
-          </button>
-        </div>
-        {loadingCombos ? (
-          <div className={styles.loadingRecommendations}>Loading recommendations...</div>
-        ) : ingredientCombos.length === 0 ? (
-          <div className={styles.noRecommendations}>
-            No ingredient combo recommendations found. Add more ingredients to your pantry!
-          </div>
-        ) : (
-          <div className={styles.combosGrid}>
-              {ingredientCombos.map((combo) => (
-                <div key={combo.id} className={styles.comboCard}>
-                  <div className={styles.comboHeader}>
-                    <h3>Unlock {combo.recipeCount} Recipe{combo.recipeCount > 1 ? 's' : ''}</h3>
-                  </div>
+      <form onSubmit={handleAddManualItem} className={styles.quickAdd}>
+        <Icon name="plus" size={18} className={styles.quickAddIcon} />
+        <input
+          type="text"
+          placeholder="Add an item…"
+          value={manualItem.name}
+          onChange={(e) => setManualItem({ ...manualItem, name: e.target.value })}
+          className={styles.quickAddName}
+          aria-label="Item name"
+        />
+        <input
+          type="number"
+          step="0.1"
+          min="0"
+          value={manualItem.quantity}
+          onChange={(e) => setManualItem({ ...manualItem, quantity: e.target.value })}
+          className={styles.quickAddQty}
+          aria-label="Quantity"
+        />
+        <select
+          value={manualItem.unit}
+          onChange={(e) => setManualItem({ ...manualItem, unit: e.target.value })}
+          className={styles.quickAddUnit}
+          aria-label="Unit"
+        >
+          {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+        </select>
+        <button type="submit" className={`btn btn-primary ${styles.quickAddButton}`} disabled={!manualItem.name.trim()}>
+          Add
+        </button>
+      </form>
 
-                  <div className={styles.ingredientsList}>
-                    {combo.ingredients.map((ingredient, idx) => (
-                      <div key={idx} className={styles.ingredientItem}>
-                        <span className={styles.ingredientName}>{ingredient.name}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className={styles.recipesPreview}>
-                    <strong>You'll be able to make:</strong>
-                    <ul className={styles.recipesList}>
-                      {combo.unlockedRecipes.map((recipe) => (
-                        <li key={recipe.id}>{recipe.title}</li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <button
-                    onClick={() => handleAddComboToList(combo)}
-                    className={styles.addComboButton}
-                  >
-                    Add All to List
-                  </button>
-                </div>
-              ))}
+      {total > 0 && (
+        <div className={styles.progressStrip}>
+          <div className={styles.progressInfo}>
+            <span className={styles.progressText}>
+              <strong>{purchasedCount}</strong> of {total} checked off
+            </span>
+            <div className={styles.progressBar}>
+              <div className={styles.progressFill} style={{ width: `${progress}%` }} />
+            </div>
           </div>
-        )}
-      </div>
-
-      {groceryItems.length > 0 && (
-        <div className={styles.summary}>
-          <div className={styles.summaryItem}>
-            <span className={styles.summaryLabel}>Total Items:</span>
-            <span className={styles.summaryValue}>{groceryItems.length}</span>
-          </div>
-          <div className={styles.summaryItem}>
-            <span className={styles.summaryLabel}>Purchased:</span>
-            <span className={styles.summaryValue}>{purchasedCount} / {groceryItems.length}</span>
-          </div>
-          <div className={styles.summaryItem}>
-            <span className={styles.summaryLabel}>Estimated Cost:</span>
-            <span className={styles.summaryValue}>${totalEstimatedCost.toFixed(2)}</span>
-          </div>
-          <div className={styles.summaryItem}>
-            <button
-              onClick={handleRecordActualSpend}
-              className={styles.recordSpendButton}
-              disabled={savingActual}
-            >
-              {savingActual ? 'Saving...' : 'Record Actual Spend'}
+          <div className={styles.progressActions}>
+            {purchasedCount > 0 && (
+              <button onClick={handleAddToPantry} className={`btn btn-secondary ${styles.smallBtn}`}>
+                <Icon name="pantry" size={15} /> Move {purchasedCount} to pantry
+              </button>
+            )}
+            <button onClick={() => setShowReceipt(true)} className={`btn btn-ghost ${styles.smallBtn}`} title="Log what you paid at the store">
+              <Icon name="receipt" size={15} /> Log receipt
+            </button>
+            <button onClick={handleClearList} className={`btn btn-ghost ${styles.smallBtn} ${styles.dangerGhost}`} title="Clear list">
+              <Icon name="trash" size={15} />
+              <span className={styles.toolLabel}>Clear</span>
             </button>
           </div>
         </div>
       )}
 
-      <div className={styles.manualEntrySection}>
-        <h2>Add Item Manually</h2>
-        <form onSubmit={handleAddManualItem} className={styles.manualEntryForm}>
-          <input
-            type="text"
-            placeholder="Item name"
-            value={manualItem.name}
-            onChange={(e) => setManualItem({ ...manualItem, name: e.target.value })}
-            className={styles.input}
-          />
-          <input
-            type="number"
-            step="0.1"
-            placeholder="Quantity"
-            value={manualItem.quantity}
-            onChange={(e) => setManualItem({ ...manualItem, quantity: e.target.value })}
-            className={styles.inputSmall}
-          />
-          <select
-            value={manualItem.unit}
-            onChange={(e) => setManualItem({ ...manualItem, unit: e.target.value })}
-            className={styles.select}
-          >
-            <option value="unit">unit</option>
-            <option value="cup">cup</option>
-            <option value="tablespoon">tablespoon</option>
-            <option value="teaspoon">teaspoon</option>
-            <option value="ounce">ounce</option>
-            <option value="pound">pound</option>
-            <option value="gram">gram</option>
-            <option value="kilogram">kilogram</option>
-            <option value="liter">liter</option>
-            <option value="milliliter">milliliter</option>
-          </select>
-          <button type="submit" className={styles.addButton}>
-            Add Item
-          </button>
-        </form>
-      </div>
-
-      {groceryItems.length === 0 ? (
+      {total === 0 ? (
         <div className={styles.empty}>
-          <p>No items in your grocery list</p>
-          <p>Click "Generate from Meals" to create a list based on your scheduled meals or add items manually above</p>
+          <Icon name="cart" size={28} className={styles.emptyIcon} />
+          <p>Your list is empty.</p>
+          <p className={styles.emptyHint}>
+            Add items above, use "From meal plan" to pull in this week's recipes, or add missing ingredients from any recipe page.
+          </p>
         </div>
       ) : (
         <div className={styles.categoriesGrid}>
           {Object.entries(groupedItems).map(([category, items]) => (
-            <div key={category} className={styles.categoryCard}>
-              <h2>{category}</h2>
-              <div className={styles.itemsList}>
+            <section key={category} className={styles.categoryCard}>
+              <h2 className={styles.categoryTitle}>
+                {category}
+                <span className={styles.categoryCount}>{items.length}</span>
+              </h2>
+              <ul className={styles.itemsList}>
                 {items.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`${styles.item} ${item.is_purchased ? styles.purchased : ''}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={item.is_purchased}
-                      onChange={(e) => handleTogglePurchased(item.id, e.target.checked)}
-                      className={styles.checkbox}
-                    />
-                    <div className={styles.itemInfo}>
+                  <li key={item.id} className={`${styles.item} ${item.is_purchased ? styles.checked : ''}`}>
+                    <button
+                      className={styles.checkCircle}
+                      onClick={() => handleTogglePurchased(item.id, !item.is_purchased)}
+                      aria-pressed={item.is_purchased}
+                      aria-label={`${item.is_purchased ? 'Uncheck' : 'Check off'} ${item.ingredient_name}`}
+                    >
+                      {item.is_purchased && <Icon name="check" size={14} strokeWidth={3} />}
+                    </button>
+                    <div className={styles.itemMain}>
                       <div className={styles.itemName}>{item.ingredient_name}</div>
-                      <div className={styles.itemDetails}>
-                        {item.quantity} {item.unit}
-                        {item.estimated_price && (
-                          <span className={styles.price}>
-                            est. ${(item.estimated_price * (item.quantity || 1)).toFixed(2)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className={styles.actualPriceField}>
-                      <span className={styles.dollarSign}>$</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder={item.store_price?.toFixed(2) ?? '0.00'}
-                        value={actualPrices[item.id] ?? ''}
-                        onChange={(e) => handleActualPriceChange(item.id, e.target.value)}
-                        className={styles.actualPriceInput}
-                        title="Actual price paid"
-                      />
+                      {(formatQty(item) || item.estimated_price) && (
+                        <div className={styles.itemMeta}>
+                          {formatQty(item) && <span>{formatQty(item)}</span>}
+                          {item.estimated_price ? (
+                            <span>~${(item.estimated_price * (item.quantity || 1)).toFixed(2)}</span>
+                          ) : null}
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={() => handleDeleteItem(item.id)}
-                      className={styles.deleteButton}
-                      title="Remove from list"
+                      className={styles.iconAction}
+                      aria-label={`Remove ${item.ingredient_name}`}
+                      title="Remove"
                     >
-                      ×
+                      <Icon name="x" size={16} />
                     </button>
-                  </div>
+                  </li>
                 ))}
-              </div>
-            </div>
+              </ul>
+            </section>
           ))}
         </div>
       )}
+
+      {showReceipt && (
+        <LogReceiptDialog
+          onClose={() => setShowReceipt(false)}
+          onSaved={(r) => {
+            setShowReceipt(false);
+            loadBudget();
+            showNotification('success', `Logged $${r.total.toFixed(2)}`);
+          }}
+        />
+      )}
+
+      <section className={styles.ideas}>
+        <div className={styles.ideasHeader}>
+          <div>
+            <h2>Buy a little, cook a lot</h2>
+            <p className={styles.subtitle}>A few ingredients that unlock more recipes with what you already have.</p>
+          </div>
+          <button
+            onClick={handleRefreshCombos}
+            className="btn btn-ghost"
+            disabled={loadingCombos}
+            title="Get fresh ideas"
+          >
+            <Icon name="refresh" size={16} /> <span className={styles.toolLabel}>Refresh</span>
+          </button>
+        </div>
+        {loadingCombos ? (
+          <p className={styles.subtitle}>Finding ideas…</p>
+        ) : ingredientCombos.length === 0 ? (
+          <p className={styles.subtitle}>No ideas yet. Add more to your pantry and refresh.</p>
+        ) : (
+          <div className={styles.combosGrid}>
+            {ingredientCombos.map((combo) => (
+              <div key={combo.id} className={styles.comboCard}>
+                <div className={styles.comboUnlock}>
+                  Unlocks {combo.recipeCount} recipe{combo.recipeCount === 1 ? '' : 's'}
+                </div>
+                <div className={styles.comboIngredients}>
+                  {combo.ingredients.map((ingredient, idx) => (
+                    <span key={idx} className={styles.comboChip}>{ingredient.name}</span>
+                  ))}
+                </div>
+                <p className={styles.comboRecipes}>
+                  {combo.unlockedRecipes.map((r) => r.title).join(' · ')}
+                </p>
+                <button onClick={() => handleAddComboToList(combo)} className={styles.comboAdd}>
+                  <Icon name="plus" size={14} strokeWidth={2.5} /> Add to list
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 };

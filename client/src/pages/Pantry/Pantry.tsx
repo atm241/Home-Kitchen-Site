@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { pantryApi, ingredientsApi, groceryApi, recipesApi, recommendationsApi, RecipeRecommendation, ParsedReceiptItem, UseItUpResult } from '../../services/api';
+import { pantryApi, ingredientsApi, groceryApi, recipesApi, recommendationsApi, receiptsApi, RecipeRecommendation, ParsedReceiptItem, UseItUpResult } from '../../services/api';
 import { PantryItem, Ingredient } from '../../types';
 import { getWeekStartDate } from '../../utils/dateUtils';
 import BarcodeScanner from '../../components/BarcodeScanner/BarcodeScanner';
@@ -75,6 +75,8 @@ const Pantry: React.FC = () => {
   const [receiptMediaType, setReceiptMediaType] = useState('image/jpeg');
   const [parsingReceipt, setParsingReceipt] = useState(false);
   const [parsedItems, setParsedItems] = useState<ParsedReceiptItem[] | null>(null);
+  // Receipt total, read in the same scan. Counted against the grocery budget.
+  const [receiptTotal, setReceiptTotal] = useState({ total: '', store: '', date: '', count: true });
   const [addingReceiptItems, setAddingReceiptItems] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [lookingUpBarcode, setLookingUpBarcode] = useState(false);
@@ -349,7 +351,13 @@ const Pantry: React.FC = () => {
     setParsingReceipt(true);
     try {
       const response = await pantryApi.parseReceipt({ image: receiptBase64, mediaType: receiptMediaType });
-      setParsedItems(response.data);
+      setParsedItems(response.data.items);
+      setReceiptTotal({
+        total: response.data.total !== null ? response.data.total.toFixed(2) : '',
+        store: response.data.store ?? '',
+        date: response.data.purchased_on ?? '',
+        count: true,
+      });
     } catch {
       showNotification('error', 'Failed to parse receipt. Please try a clearer photo.');
     } finally {
@@ -374,7 +382,13 @@ const Pantry: React.FC = () => {
           expiration_date: item.expiration_date || undefined,
         });
       }
-      showNotification('success', `Added ${parsedItems.length} items to your pantry!`);
+      const total = parseFloat(receiptTotal.total);
+      let logged = false;
+      if (receiptTotal.count && Number.isFinite(total) && total > 0) {
+        await receiptsApi.add({ total, store_name: receiptTotal.store || null, purchased_on: receiptTotal.date || null });
+        logged = true;
+      }
+      showNotification('success', `Added ${parsedItems.length} items to your pantry${logged ? ` and logged $${total.toFixed(2)}` : ''}`);
       setShowReceiptModal(false);
       setReceiptPreview(null);
       setReceiptBase64(null);
@@ -1027,6 +1041,31 @@ const Pantry: React.FC = () => {
               </div>
             ) : (
               <div className={styles.parsedItemsSection}>
+                <div className={styles.receiptTotalRow}>
+                  <label className={styles.receiptTotalField}>
+                    <span>Receipt total{receiptTotal.store ? ` · ${receiptTotal.store}` : ''}</span>
+                    <span className={styles.receiptTotalInput}>
+                      $
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="0.01"
+                        value={receiptTotal.total}
+                        placeholder="0.00"
+                        onChange={(e) => setReceiptTotal({ ...receiptTotal, total: e.target.value })}
+                      />
+                    </span>
+                  </label>
+                  <label className={styles.receiptCount}>
+                    <input
+                      type="checkbox"
+                      checked={receiptTotal.count}
+                      onChange={(e) => setReceiptTotal({ ...receiptTotal, count: e.target.checked })}
+                    />
+                    Count toward my grocery budget
+                  </label>
+                </div>
                 <p className={styles.parsedCount}>
                   Found <strong>{parsedItems.length}</strong> items. Remove any you don't want.
                 </p>

@@ -1,264 +1,301 @@
 .container {
-  padding: 24px 0;
-}
-
-.header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.header h1 {
+/* ---------- Header ---------- */
+
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+
+.pageHeader h1 {
   margin: 0;
 }
 
-.navButton {
-  padding: 10px 20px;
-  background-color: var(--olive);
-  color: var(--sand);
-  border-radius: 8px;
-  font-weight: 500;
-  transition: all 0.2s ease;
+.headerTools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
-.navButton:hover {
-  background-color: var(--sage);
+.monthNav {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 3px;
+}
+
+.navArrow {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-2);
+}
+
+.navArrow:hover {
+  background: var(--bg-subtle);
   color: var(--ink);
 }
+
+.todayBtn {
+  padding: 0 12px;
+  height: 38px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.todayBtn:hover:not(:disabled) {
+  background: var(--bg-subtle);
+}
+
+.todayBtn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.errorState {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  color: var(--danger-strong);
+  font-size: 14px;
+}
+
+/* ---------- Budget strip ---------- */
 
 .budgetCard {
-  background-color: #FFFFFF;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 14px 16px;
 }
 
-.budgetCardHeader {
+.budgetSummary {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
   align-items: center;
-  margin-bottom: 16px;
+  gap: 12px 20px;
 }
 
-.budgetCardHeader h2 {
-  margin: 0;
-  font-size: 20px;
-  color: var(--ink);
+.budgetMain {
+  flex: 1 1 280px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.editBudgetButton {
-  padding: 8px 16px;
-  background-color: var(--primary);
-  color: #FFFFFF;
-  border-radius: 8px;
+.budgetLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+
+.budgetSpent {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.budgetOf {
+  color: var(--muted);
   font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
 }
 
-.editBudgetButton:hover {
-  background-color: var(--primary-strong);
+.budgetLeft {
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--olive);
+}
+
+.over {
+  color: var(--danger);
+}
+
+.bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--sage);
+}
+
+.barOver {
+  background: var(--danger);
+}
+
+.budgetMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.noBudget {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.smallBtn {
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 14px;
 }
 
 .budgetForm {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
-.budgetFormRow {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
+.budgetFormGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 12px;
 }
 
 .budgetFormLabel {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.budgetInput {
-  padding: 8px 12px;
-  border: 2px solid var(--line);
-  border-radius: 8px;
-  font-size: 15px;
-  width: 160px;
-  transition: border-color 0.2s ease;
-}
-
-.budgetInput:focus {
-  outline: none;
-  border-color: var(--sage);
-}
-
-.budgetFormActions {
-  display: flex;
-  gap: 10px;
-}
-
-.saveBudgetButton {
-  padding: 8px 20px;
-  background-color: var(--olive);
-  color: var(--sand);
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  transition: background-color 0.2s ease;
-}
-
-.saveBudgetButton:hover {
-  background-color: var(--sage);
-  color: var(--ink);
-}
-
-.cancelBudgetButton {
-  padding: 8px 20px;
-  background-color: var(--line);
-  color: var(--ink);
-  border-radius: 8px;
-  font-size: 14px;
-  transition: background-color 0.2s ease;
-}
-
-.cancelBudgetButton:hover {
-  background-color: #BDBDBD;
-}
-
-.budgetStats {
-  display: flex;
-  gap: 32px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-}
-
-.budgetStat {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.budgetStatLabel {
   font-size: 13px;
-  color: var(--muted);
-}
-
-.budgetStatValue {
-  font-size: 20px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--ink-2);
 }
 
-.budgetStatValue.overBudget {
-  color: var(--danger);
-}
-
-.budgetBarWrap {
-  height: 8px;
-  background-color: var(--line);
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 10px;
-}
-
-.budgetBarFill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.calorieGoal {
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.noBudget {
-  color: var(--muted);
-  font-size: 14px;
-  margin: 0;
-}
+/* ---------- Month grid ---------- */
 
 .calendar {
-  background-color: #FFFFFF;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  overflow: hidden;
 }
 
 .weekDays {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
-  margin-bottom: 16px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-bottom: 1px solid var(--line);
 }
 
 .weekDay {
+  padding: 10px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
   text-align: center;
-  font-weight: 600;
-  color: var(--olive);
-  padding: 8px;
 }
 
 .daysGrid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
 .dayCell {
-  min-height: 100px;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background-color: #FFFFFF;
-  transition: all 0.2s ease;
-  cursor: pointer;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  min-height: 112px;
+  padding: 6px;
+  text-align: left;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  transition: background-color 0.12s ease;
+  min-width: 0;
+}
+
+.dayCell:nth-child(7n) {
+  border-right: none;
+}
+
+.dayCell:nth-last-child(-n + 7) {
+  border-bottom: none;
 }
 
 .dayCell:hover {
-  background-color: var(--bg-subtle);
-  border-color: var(--sage);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background: var(--bg);
 }
 
-.dayCell.otherMonth {
+.otherMonth {
+  background: var(--bg);
+}
+
+.otherMonth .dayNumber,
+.otherMonth .item {
   opacity: 0.5;
 }
 
-.dayCell.today {
-  border: 2px solid var(--primary);
-  background-color: #FFF5EB;
-}
-
-.dayCell.selected {
-  border: 2px solid var(--olive);
-  background-color: #F0F7E8;
+.selected {
+  background: var(--sand-soft);
 }
 
 .dayNumber {
+  align-self: flex-start;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
   font-weight: 600;
   color: var(--ink);
-  margin-bottom: 8px;
+}
+
+.today .dayNumber {
+  background: var(--primary);
+  color: #FFFFFF;
 }
 
 .dayItems {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+  min-width: 0;
 }
 
 .item {
+  display: block;
   font-size: 12px;
-  padding: 4px 6px;
-  background-color: var(--sage);
-  color: #FFFFFF;
-  border-radius: 4px;
+  font-weight: 500;
+  line-height: 1.3;
+  padding: 3px 6px;
+  border-radius: 6px;
+  background: var(--bg-subtle);
+  box-shadow: inset 2px 0 0 var(--tone, var(--muted));
+  color: var(--ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -266,120 +303,174 @@
 
 .moreItems {
   font-size: 11px;
+  font-weight: 600;
   color: var(--muted);
-  padding: 4px 6px;
+  padding-left: 6px;
 }
+
+.toneBreakfast { --tone: var(--orange); }
+.toneLunch { --tone: var(--sage); }
+.toneDinner { --tone: var(--olive); }
+.toneOther { --tone: var(--sand); }
+
+.dots {
+  display: none;
+  gap: 3px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tone, var(--muted));
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendHint {
+  margin-left: auto;
+}
+
+/* Narrow windows and phones: titles don't fit in a 1/7 column, so switch to dots. */
+@media (max-width: 720px) {
+  .dayCell {
+    min-height: 64px;
+    align-items: center;
+    padding: 6px 2px;
+  }
+
+  .dayNumber {
+    align-self: center;
+  }
+
+  .dayItems {
+    display: none;
+  }
+
+  .dots {
+    display: flex;
+  }
+
+  .weekDay {
+    padding: 8px 2px;
+    font-size: 11px;
+  }
+
+  .legendHint {
+    margin-left: 0;
+  }
+}
+
+/* ---------- Modal ---------- */
 
 .modalOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(34, 40, 30, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 16px;
 }
 
 .modal {
-  background-color: #FFFFFF;
-  border-radius: 12px;
-  padding: 32px;
-  max-width: 500px;
-  width: 90%;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  max-width: 480px;
+  width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .modalHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .modalHeader h2 {
   margin: 0;
-  color: var(--olive);
-}
-
-.closeButton {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: var(--line);
-  color: var(--ink);
-  font-size: 24px;
-  line-height: 1;
-  transition: all 0.2s ease;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.closeButton:hover {
-  background-color: var(--danger);
-  color: #FFFFFF;
+  font-size: 26px;
 }
 
 .selectedDateText {
-  font-size: 16px;
   color: var(--muted);
-  margin-bottom: 16px;
+  font-size: 14px;
+  margin: 0;
+}
+
+.closeButton {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-2);
+  background: var(--bg-subtle);
+  flex-shrink: 0;
+}
+
+.closeButton:hover {
+  background: var(--line);
 }
 
 .existingMeals {
-  background-color: var(--bg-subtle);
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 20px;
-}
-
-.existingMealsTitle {
-  margin: 0 0 10px 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .existingMealRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.existingMealRow:last-child {
-  border-bottom: none;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  box-shadow: inset 3px 0 0 var(--tone, var(--muted));
 }
 
 .existingMealInfo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .existingMealType {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--muted);
-  text-transform: capitalize;
-  flex-shrink: 0;
 }
 
 .existingMealTitle {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--ink);
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -388,139 +479,143 @@
 .existingMealServings {
   font-size: 12px;
   color: var(--muted);
-  flex-shrink: 0;
 }
 
 .existingMealActions {
   display: flex;
-  gap: 6px;
+  gap: 2px;
   flex-shrink: 0;
-  margin-left: 8px;
 }
 
-.inlineEditButton,
-.inlineDeleteButton {
-  width: 28px;
-  height: 28px;
+.iconBtn {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  font-size: 16px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  color: var(--muted);
+  flex-shrink: 0;
 }
 
-.inlineEditButton {
-  background-color: var(--line);
+.iconBtn:hover {
+  background: var(--surface);
   color: var(--ink);
 }
 
-.inlineEditButton:hover {
-  background-color: var(--primary);
+.iconBtnDanger:hover {
+  color: var(--danger);
+}
+
+.iconBtnPrimary {
+  background: var(--olive);
   color: #FFFFFF;
 }
 
-.inlineDeleteButton {
-  background-color: var(--line);
-  color: var(--ink);
-  font-size: 20px;
-}
-
-.inlineDeleteButton:hover {
-  background-color: var(--danger);
+.iconBtnPrimary:hover {
+  background: var(--olive-deep);
   color: #FFFFFF;
 }
 
 .inlineMealEdit {
+  flex: 1;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  flex: 1;
 }
 
-.inlineSelect {
-  padding: 5px 8px;
-  border: 2px solid var(--line);
-  border-radius: 6px;
-  font-size: 14px;
-  flex: 1;
-}
-
-.inlineSelect:focus {
-  outline: none;
-  border-color: var(--olive);
+.inlineSelect,
+.inlineServingsInput {
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 16px;
 }
 
 .inlineServingsInput {
-  width: 52px;
-  padding: 5px 8px;
-  border: 2px solid var(--line);
-  border-radius: 6px;
-  font-size: 14px;
-  text-align: center;
-}
-
-.inlineServingsInput:focus {
-  outline: none;
-  border-color: var(--olive);
+  width: 64px;
 }
 
 .servingsLabel {
   font-size: 13px;
   color: var(--muted);
-}
-
-.inlineSaveButton,
-.inlineCancelButton {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-}
-
-.inlineSaveButton {
-  background-color: var(--olive);
-  color: #FFFFFF;
-}
-
-.inlineSaveButton:hover {
-  background-color: var(--sage);
-}
-
-.inlineCancelButton {
-  background-color: var(--line);
-  color: var(--ink);
-}
-
-.inlineCancelButton:hover {
-  background-color: #BDBDBD;
+  margin-right: auto;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
+}
+
+.existingMeals + .form {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.formTitle {
+  font-size: 15px;
+  margin: 0;
+}
+
+.formRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.formRow > .formGroup {
+  flex: 1 1 160px;
 }
 
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
-.formGroup label {
+.formGroup label,
+.groupLabel {
+  font-size: 13px;
   font-weight: 600;
-  color: var(--ink);
-  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 16px;
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.servingsInput {
+  max-width: 120px;
 }
 
 .recipeSearchWrap {
   position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 13px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.searchInput {
+  padding-left: 36px;
 }
 
 .recipeDropdown {
@@ -528,196 +623,131 @@
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  max-height: 260px;
+  z-index: 10;
+  max-height: 240px;
   overflow-y: auto;
-  background-color: #FFFFFF;
-  border: 2px solid var(--line);
-  border-radius: 8px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-  z-index: 1100;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  padding: 4px;
 }
 
 .recipeDropdownItem {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 9px 10px;
+  border-radius: 8px;
   text-align: left;
-  background-color: transparent;
-  border-bottom: 1px solid #F2F2F2;
   font-size: 15px;
-  cursor: pointer;
-}
-
-.recipeDropdownItem:last-child {
-  border-bottom: none;
 }
 
 .recipeDropdownItem:hover {
-  background-color: #F3F7EE;
+  background: var(--bg-subtle);
 }
 
 .recipeDropdownName {
-  color: var(--ink);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .recipeDropdownCategory {
   flex-shrink: 0;
   font-size: 12px;
   color: var(--muted);
-  background-color: #F2F2F2;
-  border-radius: 6px;
-  padding: 2px 8px;
+  text-transform: capitalize;
 }
 
 .recipeDropdownEmpty {
-  padding: 12px;
-  color: var(--muted);
+  padding: 10px;
   font-size: 14px;
-}
-
-.select,
-.input {
-  padding: 12px;
-  border: 2px solid var(--line);
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 0.2s ease;
-}
-
-.select:focus,
-.input:focus {
-  outline: none;
-  border-color: var(--olive);
-}
-
-.modalActions {
-  display: flex;
-  gap: 12px;
-  margin-top: 8px;
-}
-
-.cancelButton,
-.submitButton {
-  flex: 1;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 16px;
-  transition: all 0.2s ease;
-}
-
-.cancelButton {
-  background-color: var(--line);
-  color: var(--ink);
-}
-
-.cancelButton:hover {
-  background-color: #BDBDBD;
-}
-
-.submitButton {
-  background-color: var(--olive);
-  color: var(--sand);
-}
-
-.submitButton:hover {
-  background-color: var(--sage);
-  color: var(--ink);
-}
-
-@media (max-width: 768px) {
-  .dayCell {
-    min-height: 80px;
-    padding: 4px;
-  }
-
-  .item {
-    font-size: 10px;
-    padding: 2px 4px;
-  }
-
-  .dayNumber {
-    font-size: 14px;
-  }
-
-  .modal {
-    padding: 24px;
-    width: 95%;
-  }
-
-  .modalActions {
-    flex-direction: column;
-  }
-}
-
-.notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 14px 20px;
-  border-radius: 8px;
-  font-weight: 500;
-  z-index: 1000;
-  animation: notifyFadeIn 0.2s ease;
-}
-
-.success {
-  background-color: #2ecc71;
-  color: #fff;
-}
-
-.error {
-  background-color: var(--danger);
-  color: #fff;
-}
-
-@keyframes notifyFadeIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.errorState {
-  text-align: center;
-  padding: 60px 24px;
   color: var(--muted);
 }
 
-.errorState p {
-  margin-bottom: 16px;
-  font-size: 16px;
+.segmented {
+  display: flex;
+  background: var(--bg-subtle);
+  border-radius: 999px;
+  padding: 3px;
 }
 
-.retryButton {
-  padding: 10px 24px;
-  background-color: var(--olive);
-  color: var(--sand);
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 15px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.segment {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-transform: capitalize;
 }
 
-.retryButton:hover {
-  background-color: var(--sage);
+.segmentActive {
+  background: var(--surface);
   color: var(--ink);
+  box-shadow: var(--shadow-sm);
 }
 
 .recurringLabel {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-weight: 600;
-  color: var(--ink);
+  font-size: 14px;
   cursor: pointer;
 }
-.recurringCheckbox {
+
+.recurringLabel input {
   width: 18px;
   height: 18px;
-  cursor: pointer;
   accent-color: var(--olive);
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ---------- Toast ---------- */
+
+.notification {
+  position: fixed;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 14px;
+  z-index: 1100;
+  box-shadow: var(--shadow-lg);
+  max-width: calc(100vw - 32px);
+}
+
+.success {
+  background: var(--ink);
+  color: #FFFFFF;
+}
+
+.error {
+  background: var(--danger);
+  color: #FFFFFF;
+}
+
+/* Phones: the meal dialog becomes a bottom sheet. */
+@media (max-width: 560px) {
+  .modalOverlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 20px 18px calc(20px + var(--safe-bottom));
+    max-height: 88vh;
+  }
 }

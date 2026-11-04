@@ -1,4 +1,4 @@
-.container { padding: 24px 0; max-width: 700px; margin: 0 auto; }
+.container { max-width: 720px; width: 100%; margin: 0 auto; }
 
 .header { margin-bottom: 24px; }
 .header h1 { margin: 0 0 4px 0; }
@@ -10,9 +10,9 @@
   text-align: center;
   padding: 48px 24px;
   color: var(--muted);
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 .empty p { margin: 8px 0; }
 .link { color: var(--olive); font-weight: 500; }
@@ -37,18 +37,18 @@
   align-items: center;
   gap: 14px;
   padding: 14px 16px;
-  background: #fff;
-  border-radius: 10px;
+  background: var(--surface);
+  border-radius: var(--radius);
   margin-top: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  box-shadow: inset 0 0 0 1px var(--line);
   transition: box-shadow 0.2s ease;
 }
-.historyEntry:hover { box-shadow: 0 3px 8px rgba(0,0,0,0.12); }
+.historyEntry:hover { box-shadow: inset 0 0 0 1px var(--sand), var(--shadow-sm); }
 
 .entryImage {
   width: 52px;
   height: 52px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   object-fit: cover;
   flex-shrink: 0;
 }
@@ -56,8 +56,8 @@
 .entryBody { flex: 1; min-width: 0; }
 
 .entryName { font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
-.recipeLink { color: var(--primary); text-decoration: none; }
-.recipeLink:hover { text-decoration: underline; }
+.recipeLink { color: var(--ink); }
+.recipeLink:hover { color: var(--primary); }
 
 .entryMeta {
   display: flex;
@@ -69,37 +69,40 @@
 }
 
 .entryCategory {
-  background: #f0f7ea;
+  background: var(--sage-soft);
   color: var(--olive);
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: 999px;
+  text-transform: capitalize;
   font-size: 12px;
   font-weight: 500;
 }
 
-.entryTime { margin-left: auto; color: #bbb; font-size: 12px; }
+.entryTime { margin-left: auto; font-size: 12px; }
 
 .deleteBtn {
-  background: none;
-  border: none;
-  font-size: 20px;
-  color: #ccc;
-  cursor: pointer;
-  padding: 0 4px;
-  line-height: 1;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
   flex-shrink: 0;
-  transition: color 0.2s ease;
 }
-.deleteBtn:hover { color: var(--danger); }
+.deleteBtn:hover { color: var(--danger); background: var(--danger-soft); }
 
 .notification {
   position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 14px 20px;
-  border-radius: 8px;
-  font-weight: 500;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 14px;
   z-index: 1000;
+  box-shadow: var(--shadow-lg);
 }
-.success { background-color: #2ecc71; color: #fff; }
+.success { background: var(--ink); color: #fff; }
 .error { background-color: var(--danger); color: #fff; }

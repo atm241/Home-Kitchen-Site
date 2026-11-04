@@ -10,6 +10,8 @@ import {
   nextMonth,
   prevMonth,
 } from '../../utils/dateUtils';
+import Icon from '../../components/Icon/Icon';
+import ViewToggle from '../../components/ViewToggle/ViewToggle';
 import styles from './Calendar.module.css';
 
 const Calendar: React.FC = () => {
@@ -89,6 +91,22 @@ const Calendar: React.FC = () => {
 
   const getItemsForDay = (day: Date) => {
     return calendarItems.filter((item) => isSameDayUtil(item.date, day));
+  };
+
+  const closeModal = () => {
+    setShowMealModal(false);
+    setEditingMealId(null);
+  };
+
+  const startEditBudget = () => {
+    setBudgetForm({
+      budget_amount: monthlyBudget?.budget_amount?.toString() ?? '',
+      calorie_budget: monthlyBudget?.calorie_budget?.toString() ?? '',
+      protein_goal: monthlyBudget?.protein_goal?.toString() ?? '',
+      carbs_goal: monthlyBudget?.carbs_goal?.toString() ?? '',
+      fat_goal: monthlyBudget?.fat_goal?.toString() ?? '',
+    });
+    setEditingBudget(true);
   };
 
   const handlePrevMonth = () => {
@@ -195,171 +213,138 @@ const Calendar: React.FC = () => {
     }
   };
 
-  if (loadError) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.errorState}>
-          <p>{loadError}</p>
-          <button onClick={loadCalendarData} className={styles.retryButton}>Try Again</button>
-        </div>
-      </div>
-    );
-  }
+  const BUDGET_FIELDS: Array<{ key: keyof typeof budgetForm; label: string; placeholder: string; step?: string }> = [
+    { key: 'budget_amount', label: 'Grocery budget ($/month)', placeholder: '400', step: '0.01' },
+    { key: 'calorie_budget', label: 'Calories / day', placeholder: '2000' },
+    { key: 'protein_goal', label: 'Protein (g/day)', placeholder: '150' },
+    { key: 'carbs_goal', label: 'Carbs (g/day)', placeholder: '250' },
+    { key: 'fat_goal', label: 'Fat (g/day)', placeholder: '65' },
+  ];
+
+  const hasBudget = !!monthlyBudget && monthlyBudget.budget_amount > 0;
+  const spentPct = hasBudget ? Math.min((monthlyBudget!.actual_cost / monthlyBudget!.budget_amount) * 100, 100) : 0;
+  const overBudget = hasBudget && monthlyBudget!.actual_cost > monthlyBudget!.budget_amount;
+  const goals = monthlyBudget
+    ? [
+        monthlyBudget.calorie_budget ? `${monthlyBudget.calorie_budget} cal` : '',
+        monthlyBudget.protein_goal ? `${monthlyBudget.protein_goal}g protein` : '',
+        monthlyBudget.carbs_goal ? `${monthlyBudget.carbs_goal}g carbs` : '',
+        monthlyBudget.fat_goal ? `${monthlyBudget.fat_goal}g fat` : '',
+      ].filter(Boolean)
+    : [];
+
+  const matchingRecipes = recipes.filter((r) => r.name.toLowerCase().includes(recipeSearch.toLowerCase().trim()));
+  const selectedDayMeals = selectedDate ? getItemsForDay(selectedDate).filter((i) => i.type === 'meal') : [];
+
+  const mealTone = (mealType?: string) => {
+    switch (mealType?.toLowerCase()) {
+      case 'breakfast': return styles.toneBreakfast;
+      case 'lunch': return styles.toneLunch;
+      case 'dinner': return styles.toneDinner;
+      default: return styles.toneOther;
+    }
+  };
 
   return (
     <div className={styles.container}>
       {notification && (
-        <div className={`${styles.notification} ${styles[notification.type]}`}>
+        <div className={`${styles.notification} ${styles[notification.type]}`} role="status">
           {notification.message}
         </div>
       )}
-      <div className={styles.header}>
-        <button onClick={handlePrevMonth} className={styles.navButton}>
-          ← Previous
-        </button>
+
+      <header className={styles.pageHeader}>
         <h1>{formatDate(currentDate, 'MMMM yyyy')}</h1>
-        <button onClick={handleNextMonth} className={styles.navButton}>
-          Next →
-        </button>
-      </div>
-
-      <div className={styles.budgetCard}>
-        <div className={styles.budgetCardHeader}>
-          <h2>Monthly Budget</h2>
-          {!editingBudget && (
-            <button
-              onClick={() => {
-                setBudgetForm({
-                  budget_amount: monthlyBudget?.budget_amount?.toString() ?? '',
-                  calorie_budget: monthlyBudget?.calorie_budget?.toString() ?? '',
-                  protein_goal: monthlyBudget?.protein_goal?.toString() ?? '',
-                  carbs_goal: monthlyBudget?.carbs_goal?.toString() ?? '',
-                  fat_goal: monthlyBudget?.fat_goal?.toString() ?? '',
-                });
-                setEditingBudget(true);
-              }}
-              className={styles.editBudgetButton}
-            >
-              {monthlyBudget && monthlyBudget.budget_amount > 0 ? 'Edit' : 'Set Budget'}
-            </button>
-          )}
+        <div className={styles.headerTools}>
+        <ViewToggle current="month" />
+        <div className={styles.monthNav}>
+          <button onClick={handlePrevMonth} className={styles.navArrow} aria-label="Previous month">
+            <Icon name="chevronLeft" size={18} />
+          </button>
+          <button
+            onClick={() => setCurrentDate(new Date())}
+            className={styles.todayBtn}
+            disabled={isSameMonthUtil(currentDate, new Date())}
+          >
+            Today
+          </button>
+          <button onClick={handleNextMonth} className={styles.navArrow} aria-label="Next month">
+            <Icon name="chevronRight" size={18} />
+          </button>
         </div>
+        </div>
+      </header>
 
+      {loadError && (
+        <div className={styles.errorState}>
+          <span>{loadError}</span>
+          <button onClick={loadCalendarData} className="btn btn-secondary">Try again</button>
+        </div>
+      )}
+
+      <section className={styles.budgetCard}>
         {editingBudget ? (
           <form onSubmit={handleSaveBudget} className={styles.budgetForm}>
-            <div className={styles.budgetFormRow}>
-              <label className={styles.budgetFormLabel}>
-                Monthly Budget ($)
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={budgetForm.budget_amount}
-                  onChange={e => setBudgetForm({ ...budgetForm, budget_amount: e.target.value })}
-                  className={styles.budgetInput}
-                  placeholder="0.00"
-                  autoFocus
-                />
-              </label>
-              <label className={styles.budgetFormLabel}>
-                Daily Calorie Goal
-                <input
-                  type="number"
-                  min="0"
-                  value={budgetForm.calorie_budget}
-                  onChange={e => setBudgetForm({ ...budgetForm, calorie_budget: e.target.value })}
-                  className={styles.budgetInput}
-                  placeholder="2000"
-                />
-              </label>
-              <label className={styles.budgetFormLabel}>
-                Daily Protein Goal (g)
-                <input
-                  type="number"
-                  min="0"
-                  value={budgetForm.protein_goal}
-                  onChange={e => setBudgetForm({ ...budgetForm, protein_goal: e.target.value })}
-                  className={styles.budgetInput}
-                  placeholder="150"
-                />
-              </label>
-              <label className={styles.budgetFormLabel}>
-                Daily Carbs Goal (g)
-                <input
-                  type="number"
-                  min="0"
-                  value={budgetForm.carbs_goal}
-                  onChange={e => setBudgetForm({ ...budgetForm, carbs_goal: e.target.value })}
-                  className={styles.budgetInput}
-                  placeholder="250"
-                />
-              </label>
-              <label className={styles.budgetFormLabel}>
-                Daily Fat Goal (g)
-                <input
-                  type="number"
-                  min="0"
-                  value={budgetForm.fat_goal}
-                  onChange={e => setBudgetForm({ ...budgetForm, fat_goal: e.target.value })}
-                  className={styles.budgetInput}
-                  placeholder="65"
-                />
-              </label>
+            <div className={styles.budgetFormGrid}>
+              {BUDGET_FIELDS.map((f, i) => (
+                <label key={f.key} className={styles.budgetFormLabel}>
+                  {f.label}
+                  <input
+                    type="number"
+                    min="0"
+                    step={f.step}
+                    inputMode={f.step ? 'decimal' : 'numeric'}
+                    value={budgetForm[f.key]}
+                    onChange={(e) => setBudgetForm({ ...budgetForm, [f.key]: e.target.value })}
+                    className={styles.input}
+                    placeholder={f.placeholder}
+                    autoFocus={i === 0}
+                  />
+                </label>
+              ))}
             </div>
-            <div className={styles.budgetFormActions}>
-              <button type="submit" className={styles.saveBudgetButton}>Save</button>
-              <button type="button" onClick={() => setEditingBudget(false)} className={styles.cancelBudgetButton}>Cancel</button>
+            <div className={styles.formActions}>
+              <button type="button" onClick={() => setEditingBudget(false)} className="btn btn-ghost">Cancel</button>
+              <button type="submit" className="btn btn-primary">Save</button>
             </div>
           </form>
-        ) : monthlyBudget && monthlyBudget.budget_amount > 0 ? (
-          <>
-            <div className={styles.budgetStats}>
-              <div className={styles.budgetStat}>
-                <span className={styles.budgetStatLabel}>Budget</span>
-                <span className={styles.budgetStatValue}>${monthlyBudget.budget_amount.toFixed(2)}</span>
-              </div>
-              <div className={styles.budgetStat}>
-                <span className={styles.budgetStatLabel}>Estimated</span>
-                <span className={styles.budgetStatValue}>${monthlyBudget.estimated_cost.toFixed(2)}</span>
-              </div>
-              <div className={styles.budgetStat}>
-                <span className={styles.budgetStatLabel}>Actual Spent</span>
-                <span className={styles.budgetStatValue}>${monthlyBudget.actual_cost.toFixed(2)}</span>
-              </div>
-              <div className={styles.budgetStat}>
-                <span className={styles.budgetStatLabel}>Remaining</span>
-                <span className={`${styles.budgetStatValue} ${
-                  monthlyBudget.budget_amount - monthlyBudget.actual_cost < 0 ? styles.overBudget : ''
-                }`}>
-                  ${(monthlyBudget.budget_amount - monthlyBudget.actual_cost).toFixed(2)}
-                </span>
-              </div>
-            </div>
-            <div className={styles.budgetBarWrap}>
-              <div
-                className={styles.budgetBarFill}
-                style={{
-                  width: `${Math.min((monthlyBudget.actual_cost / monthlyBudget.budget_amount) * 100, 100)}%`,
-                  backgroundColor: monthlyBudget.actual_cost > monthlyBudget.budget_amount ? 'var(--danger)' : 'var(--sage)',
-                }}
-              />
-            </div>
-            {(monthlyBudget.calorie_budget || monthlyBudget.protein_goal || monthlyBudget.carbs_goal || monthlyBudget.fat_goal) && (
-              <div className={styles.calorieGoal}>
-                Daily goals:{' '}
-                {monthlyBudget.calorie_budget && <span>{monthlyBudget.calorie_budget} cal</span>}
-                {monthlyBudget.protein_goal && <span> · {monthlyBudget.protein_goal}g protein</span>}
-                {monthlyBudget.carbs_goal && <span> · {monthlyBudget.carbs_goal}g carbs</span>}
-                {monthlyBudget.fat_goal && <span> · {monthlyBudget.fat_goal}g fat</span>}
-              </div>
-            )}
-          </>
         ) : (
-          <p className={styles.noBudget}>No budget set for this month. Click "Set Budget" to get started.</p>
+          <div className={styles.budgetSummary}>
+            <div className={styles.budgetMain}>
+              {hasBudget ? (
+                <>
+                  <div className={styles.budgetLine}>
+                    <span className={styles.budgetSpent}>${monthlyBudget!.actual_cost.toFixed(0)}</span>
+                    <span className={styles.budgetOf}>of ${monthlyBudget!.budget_amount.toFixed(0)} spent</span>
+                    <span className={`${styles.budgetLeft} ${overBudget ? styles.over : ''}`}>
+                      {overBudget
+                        ? `$${(monthlyBudget!.actual_cost - monthlyBudget!.budget_amount).toFixed(0)} over`
+                        : `$${(monthlyBudget!.budget_amount - monthlyBudget!.actual_cost).toFixed(0)} left`}
+                    </span>
+                  </div>
+                  <div className={styles.bar}>
+                    <div className={`${styles.barFill} ${overBudget ? styles.barOver : ''}`} style={{ width: `${spentPct}%` }} />
+                  </div>
+                  <div className={styles.budgetMeta}>
+                    <span>Planned meals ≈ ${monthlyBudget!.estimated_cost.toFixed(0)}</span>
+                    {goals.length > 0 && <span>Daily goals: {goals.join(' · ')}</span>}
+                  </div>
+                </>
+              ) : (
+                <div className={styles.noBudget}>
+                  <strong>No budget for {formatDate(currentDate, 'MMMM')}.</strong>{' '}
+                  Set a grocery budget and daily nutrition goals to track them here and on Plan.
+                </div>
+              )}
+            </div>
+            <button onClick={startEditBudget} className={`btn btn-secondary ${styles.smallBtn}`}>
+              <Icon name="edit" size={15} /> {hasBudget ? 'Edit' : 'Set budget'}
+            </button>
+          </div>
         )}
-      </div>
+      </section>
 
-      <div className={styles.calendar}>
+      <section className={styles.calendar}>
         <div className={styles.weekDays}>
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
             <div key={day} className={styles.weekDay}>
@@ -373,57 +358,69 @@ const Calendar: React.FC = () => {
             const items = getItemsForDay(day);
             const isToday = isSameDayUtil(day, new Date());
             const isCurrentMonth = isSameMonthUtil(day, currentDate);
-            const isSelected = selectedDate && isSameDayUtil(day, selectedDate);
+            const isSelected = showMealModal && selectedDate && isSameDayUtil(day, selectedDate);
 
             return (
-              <div
+              <button
+                type="button"
                 key={day.toISOString()}
-                className={`${styles.dayCell} ${
-                  !isCurrentMonth ? styles.otherMonth : ''
-                } ${isToday ? styles.today : ''} ${isSelected ? styles.selected : ''}`}
+                className={`${styles.dayCell} ${!isCurrentMonth ? styles.otherMonth : ''} ${isToday ? styles.today : ''} ${isSelected ? styles.selected : ''}`}
                 onClick={() => handleDayClick(day)}
+                aria-label={`${formatDate(day, 'EEEE, MMMM d')}: ${items.length} planned`}
               >
-                <div className={styles.dayNumber}>{formatDate(day, 'd')}</div>
-                <div className={styles.dayItems}>
+                <span className={styles.dayNumber}>{formatDate(day, 'd')}</span>
+                <span className={styles.dayItems}>
                   {items.slice(0, 3).map((item) => (
-                    <div key={`${item.type}-${item.id}`} className={styles.item}>
+                    <span key={`${item.type}-${item.id}`} className={`${styles.item} ${mealTone(item.meal_type)}`}>
                       {item.title}
-                    </div>
+                    </span>
                   ))}
-                  {items.length > 3 && (
-                    <div className={styles.moreItems}>+{items.length - 3} more</div>
-                  )}
-                </div>
-              </div>
+                  {items.length > 3 && <span className={styles.moreItems}>+{items.length - 3} more</span>}
+                </span>
+                {items.length > 0 && (
+                  <span className={styles.dots} aria-hidden="true">
+                    {items.slice(0, 4).map((item) => (
+                      <span key={`${item.type}-${item.id}`} className={`${styles.dot} ${mealTone(item.meal_type)}`} />
+                    ))}
+                  </span>
+                )}
+              </button>
             );
           })}
         </div>
+      </section>
+
+      <div className={styles.legend}>
+        <span><i className={`${styles.dot} ${styles.toneBreakfast}`} /> Breakfast</span>
+        <span><i className={`${styles.dot} ${styles.toneLunch}`} /> Lunch</span>
+        <span><i className={`${styles.dot} ${styles.toneDinner}`} /> Dinner</span>
+        <span className={styles.legendHint}>Tap a day to plan a meal</span>
       </div>
 
       {showMealModal && selectedDate && (
-        <div className={styles.modalOverlay} onClick={() => { setShowMealModal(false); setEditingMealId(null); }}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalOverlay} onClick={closeModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="mealModalTitle">
             <div className={styles.modalHeader}>
-              <h2>Schedule Meal</h2>
-              <button onClick={() => { setShowMealModal(false); setEditingMealId(null); }} className={styles.closeButton}>
-                ×
+              <div>
+                <h2 id="mealModalTitle">{formatDate(selectedDate, 'EEEE')}</h2>
+                <p className={styles.selectedDateText}>{formatDate(selectedDate, 'MMMM d, yyyy')}</p>
+              </div>
+              <button onClick={closeModal} className={styles.closeButton} aria-label="Close">
+                <Icon name="x" size={18} />
               </button>
             </div>
-            <p className={styles.selectedDateText}>
-              {formatDate(selectedDate, 'EEEE, MMMM d, yyyy')}
-            </p>
 
-            {getItemsForDay(selectedDate).filter(i => i.type === 'meal').length > 0 && (
+            {selectedDayMeals.length > 0 && (
               <div className={styles.existingMeals}>
-                <h3 className={styles.existingMealsTitle}>Scheduled meals</h3>
-                {getItemsForDay(selectedDate).filter(i => i.type === 'meal').map(item => (
-                  <div key={item.id} className={styles.existingMealRow}>
+                {selectedDayMeals.map((item) => (
+                  <div key={item.id} className={`${styles.existingMealRow} ${mealTone(item.meal_type)}`}>
                     {editingMealId === item.id ? (
                       <div className={styles.inlineMealEdit}>
                         <select
                           value={editMealData.meal_type}
-                          onChange={e => setEditMealData({ ...editMealData, meal_type: e.target.value })}
+                          onChange={(e) => setEditMealData({ ...editMealData, meal_type: e.target.value })}
                           className={styles.inlineSelect}
+                          aria-label="Meal"
                         >
                           <option value="breakfast">Breakfast</option>
                           <option value="lunch">Lunch</option>
@@ -433,23 +430,32 @@ const Calendar: React.FC = () => {
                           type="number"
                           min="1"
                           value={editMealData.servings}
-                          onChange={e => setEditMealData({ ...editMealData, servings: e.target.value })}
+                          onChange={(e) => setEditMealData({ ...editMealData, servings: e.target.value })}
                           className={styles.inlineServingsInput}
+                          aria-label="Servings"
                         />
-                        <span className={styles.servingsLabel}>srv</span>
-                        <button className={styles.inlineSaveButton} onClick={() => handleSaveEditMeal(item.id)}>✓</button>
-                        <button className={styles.inlineCancelButton} onClick={() => setEditingMealId(null)}>✕</button>
+                        <span className={styles.servingsLabel}>servings</span>
+                        <button className={`${styles.iconBtn} ${styles.iconBtnPrimary}`} onClick={() => handleSaveEditMeal(item.id)} aria-label="Save">
+                          <Icon name="check" size={16} strokeWidth={2.5} />
+                        </button>
+                        <button className={styles.iconBtn} onClick={() => setEditingMealId(null)} aria-label="Cancel">
+                          <Icon name="x" size={16} />
+                        </button>
                       </div>
                     ) : (
                       <>
                         <div className={styles.existingMealInfo}>
                           <span className={styles.existingMealType}>{item.meal_type}</span>
                           <span className={styles.existingMealTitle}>{item.title}</span>
-                          <span className={styles.existingMealServings}>{item.servings} srv</span>
+                          {item.servings && <span className={styles.existingMealServings}>{item.servings} servings</span>}
                         </div>
                         <div className={styles.existingMealActions}>
-                          <button className={styles.inlineEditButton} onClick={() => handleStartEditMeal(item)} title="Edit">✎</button>
-                          <button className={styles.inlineDeleteButton} onClick={() => handleDeleteMeal(item.id)} title="Delete">×</button>
+                          <button className={styles.iconBtn} onClick={() => handleStartEditMeal(item)} aria-label={`Edit ${item.title}`}>
+                            <Icon name="edit" size={15} />
+                          </button>
+                          <button className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={() => handleDeleteMeal(item.id)} aria-label={`Remove ${item.title}`}>
+                            <Icon name="trash" size={15} />
+                          </button>
                         </div>
                       </>
                     )}
@@ -459,9 +465,11 @@ const Calendar: React.FC = () => {
             )}
 
             <form onSubmit={handleScheduleMeal} className={styles.form}>
+              <h3 className={styles.formTitle}>Add a meal</h3>
               <div className={styles.formGroup}>
-                <label htmlFor="recipe">Recipe *</label>
+                <label htmlFor="recipe">Recipe</label>
                 <div className={styles.recipeSearchWrap}>
+                  <Icon name="search" size={16} className={styles.searchIcon} />
                   <input
                     id="recipe"
                     type="text"
@@ -473,89 +481,88 @@ const Calendar: React.FC = () => {
                     }}
                     onFocus={() => setShowRecipeDropdown(true)}
                     onBlur={() => setShowRecipeDropdown(false)}
-                    placeholder="Type to search recipes..."
-                    className={styles.input}
+                    placeholder="Search your cookbook…"
+                    className={`${styles.input} ${styles.searchInput}`}
                     autoComplete="off"
                   />
                   {showRecipeDropdown && (
                     <div className={styles.recipeDropdown}>
-                      {recipes.filter(r => r.name.toLowerCase().includes(recipeSearch.toLowerCase().trim())).length === 0 ? (
+                      {matchingRecipes.length === 0 ? (
                         <div className={styles.recipeDropdownEmpty}>No recipes match "{recipeSearch}"</div>
                       ) : (
-                        recipes
-                          .filter(r => r.name.toLowerCase().includes(recipeSearch.toLowerCase().trim()))
-                          .slice(0, 50)
-                          .map((recipe) => (
-                            <button
-                              type="button"
-                              key={recipe.id}
-                              className={styles.recipeDropdownItem}
-                              onMouseDown={(e) => e.preventDefault()}
-                              onClick={() => {
-                                setFormData({ ...formData, recipe_id: String(recipe.id) });
-                                setRecipeSearch(recipe.name);
-                                setShowRecipeDropdown(false);
-                              }}
-                            >
-                              <span className={styles.recipeDropdownName}>{recipe.name}</span>
-                              {recipe.category && <span className={styles.recipeDropdownCategory}>{recipe.category}</span>}
-                            </button>
-                          ))
+                        matchingRecipes.slice(0, 50).map((recipe) => (
+                          <button
+                            type="button"
+                            key={recipe.id}
+                            className={styles.recipeDropdownItem}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setFormData({ ...formData, recipe_id: String(recipe.id) });
+                              setRecipeSearch(recipe.name);
+                              setShowRecipeDropdown(false);
+                            }}
+                          >
+                            <span className={styles.recipeDropdownName}>{recipe.name}</span>
+                            {recipe.category && <span className={styles.recipeDropdownCategory}>{recipe.category}</span>}
+                          </button>
+                        ))
                       )}
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className={styles.formGroup}>
-                <label htmlFor="mealType">Meal Type *</label>
-                <select
-                  id="mealType"
-                  value={formData.meal_type}
-                  onChange={(e) => setFormData({ ...formData, meal_type: e.target.value })}
-                  className={styles.select}
-                  required
-                >
-                  <option value="breakfast">Breakfast</option>
-                  <option value="lunch">Lunch</option>
-                  <option value="dinner">Dinner</option>
-                </select>
-              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <span className={styles.groupLabel}>Meal</span>
+                  <div className={styles.segmented} role="radiogroup" aria-label="Meal">
+                    {['breakfast', 'lunch', 'dinner'].map((type) => (
+                      <button
+                        type="button"
+                        key={type}
+                        role="radio"
+                        aria-checked={formData.meal_type === type}
+                        className={`${styles.segment} ${formData.meal_type === type ? styles.segmentActive : ''}`}
+                        onClick={() => setFormData({ ...formData, meal_type: type })}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-              <div className={styles.formGroup}>
-                <label htmlFor="servings">Servings *</label>
-                <input
-                  id="servings"
-                  type="number"
-                  min="1"
-                  value={formData.servings}
-                  onChange={(e) => setFormData({ ...formData, servings: e.target.value })}
-                  className={styles.input}
-                  required
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.recurringLabel}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="servings">Servings</label>
                   <input
-                    type="checkbox"
-                    checked={formData.is_recurring}
-                    onChange={(e) => setFormData({ ...formData, is_recurring: e.target.checked })}
-                    className={styles.recurringCheckbox}
+                    id="servings"
+                    type="number"
+                    min="1"
+                    value={formData.servings}
+                    onChange={(e) => setFormData({ ...formData, servings: e.target.value })}
+                    className={`${styles.input} ${styles.servingsInput}`}
+                    required
                   />
-                  Repeat this meal
-                </label>
+                </div>
               </div>
+
+              <label className={styles.recurringLabel}>
+                <input
+                  type="checkbox"
+                  checked={formData.is_recurring}
+                  onChange={(e) => setFormData({ ...formData, is_recurring: e.target.checked })}
+                />
+                Repeat this meal
+              </label>
 
               {formData.is_recurring && (
-                <>
+                <div className={styles.formRow}>
                   <div className={styles.formGroup}>
                     <label htmlFor="recurrencePattern">Repeat</label>
                     <select
                       id="recurrencePattern"
                       value={formData.recurrence_pattern}
                       onChange={(e) => setFormData({ ...formData, recurrence_pattern: e.target.value })}
-                      className={styles.select}
+                      className={styles.input}
                     >
                       <option value="daily">Every day</option>
                       <option value="weekly">Every week</option>
@@ -564,7 +571,7 @@ const Calendar: React.FC = () => {
                     </select>
                   </div>
                   <div className={styles.formGroup}>
-                    <label htmlFor="recurrenceEnd">End Date (optional)</label>
+                    <label htmlFor="recurrenceEnd">Until (optional)</label>
                     <input
                       id="recurrenceEnd"
                       type="date"
@@ -573,15 +580,15 @@ const Calendar: React.FC = () => {
                       className={styles.input}
                     />
                   </div>
-                </>
+                </div>
               )}
 
-              <div className={styles.modalActions}>
-                <button type="button" onClick={() => setShowMealModal(false)} className={styles.cancelButton}>
-                  Cancel
+              <div className={styles.formActions}>
+                <button type="button" onClick={closeModal} className="btn btn-ghost">
+                  {selectedDayMeals.length > 0 ? 'Done' : 'Cancel'}
                 </button>
-                <button type="submit" className={styles.submitButton}>
-                  Schedule Meal
+                <button type="submit" className="btn btn-primary" disabled={!formData.recipe_id}>
+                  Add to {formatDate(selectedDate, 'EEE')}
                 </button>
               </div>
             </form>

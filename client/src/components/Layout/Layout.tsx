@@ -160,7 +160,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const NAV: Array<{ to: string; label: string; icon: IconName; active?: boolean }> = [
     { to: '/', label: 'Cookbook', icon: 'book', active: isCookbook },
-    { to: '/plan', label: 'Plan', icon: 'calendar', active: ['/plan', '/calendar'].includes(location.pathname) },
+    { to: '/plan', label: 'Plan', icon: 'calendar', active: ['/plan', '/plan/auto', '/calendar'].includes(location.pathname) },
     { to: '/grocery', label: 'Grocery', icon: 'cart' },
     { to: '/pantry', label: 'Pantry', icon: 'pantry' },
   ];

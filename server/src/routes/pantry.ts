@@ -164,7 +164,7 @@ router.post('/parse-receipt', async (req: Request, res: Response) => {
 
     const message = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
+      max_tokens: 2048,
       messages: [
         {
           role: 'user',
@@ -175,16 +175,18 @@ router.post('/parse-receipt', async (req: Request, res: Response) => {
             },
             {
               type: 'text',
-              text: `Analyze this grocery receipt and extract all purchased grocery items.
-Return ONLY a JSON array with no other text:
-[{"name": "milk", "quantity": 1, "unit": "gallon"}, {"name": "eggs", "quantity": 12, "unit": "count"}]
+              text: `Analyze this grocery receipt. Extract the purchased grocery items and the receipt's final total.
+Return ONLY JSON with no other text:
+{"store": "Smith's", "date": "2026-11-03", "total": 84.12, "items": [{"name": "milk", "quantity": 1, "unit": "gallon"}, {"name": "eggs", "quantity": 12, "unit": "count"}]}
 
 Rules:
+- total: the final amount paid (after tax and discounts) as a number, or null if you can't read it
+- store: the store name, or null; date: the purchase date as YYYY-MM-DD, or null
 - name: lowercase, human-readable (e.g. "chicken breast" not "BNLS SKNLS CHKN")
 - quantity: a number, default 1 if unclear
 - unit: best guess (lb, oz, count, bag, box, gallon, unit, etc.)
-- Skip non-food items, tax lines, totals, and subtotals
-- If this is not a receipt, return []`,
+- Skip non-food items, tax lines, totals, and subtotals in items
+- If this is not a receipt, return {"store": null, "date": null, "total": null, "items": []}`,
             },
           ],
         },
@@ -197,9 +199,20 @@ Rules:
     }
 
     let rawItems: { name: string; quantity: number; unit: string }[] = [];
+    let total: number | null = null;
+    let store: string | null = null;
+    let purchasedOn: string | null = null;
     try {
-      const jsonMatch = content.text.match(/\[[\s\S]*\]/);
-      rawItems = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+      const jsonMatch = content.text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+      const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+      if (Array.isArray(parsed)) {
+        rawItems = parsed;
+      } else if (parsed && typeof parsed === 'object') {
+        rawItems = Array.isArray(parsed.items) ? parsed.items : [];
+        total = typeof parsed.total === 'number' && parsed.total >= 0 ? Math.round(parsed.total * 100) / 100 : null;
+        store = typeof parsed.store === 'string' && parsed.store.trim() ? parsed.store.trim().slice(0, 100) : null;
+        purchasedOn = typeof parsed.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(parsed.date) ? parsed.date : null;
+      }
     } catch {
       return res.status(500).json({ error: 'Failed to parse AI response' });
     }
@@ -236,7 +249,7 @@ Rules:
       });
     }
 
-    res.json(results);
+    res.json({ items: results, total, store, purchased_on: purchasedOn });
   } catch (error) {
     console.error('Error parsing receipt:', error);
     res.status(500).json({ error: 'Failed to parse receipt' });

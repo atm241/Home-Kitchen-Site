@@ -357,14 +357,15 @@ router.put('/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
-    const { quantity, unit, estimated_price, store_price } = req.body;
+    const { quantity, unit, estimated_price } = req.body;
 
+    // Only overwrite the fields that were sent.
     const result = await pool.query(`
       UPDATE grocery_list
-      SET quantity = $1, unit = $2, estimated_price = $3, store_price = COALESCE($4, store_price)
-      WHERE id = $5 AND household_id = $6
+      SET quantity = COALESCE($1, quantity), unit = COALESCE($2, unit), estimated_price = COALESCE($3, estimated_price)
+      WHERE id = $4 AND household_id = $5
       RETURNING *
-    `, [quantity, unit, estimated_price, store_price ?? null, id, req.householdId]);
+    `, [quantity ?? null, unit ?? null, estimated_price ?? null, id, req.householdId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Grocery item not found' });

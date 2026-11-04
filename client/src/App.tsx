@@ -6,6 +6,7 @@ import UpdatePrompt from './components/UpdatePrompt/UpdatePrompt';
 import Layout from './components/Layout/Layout';
 import Auth from './pages/Auth/Auth';
 import Home from './pages/Home/Home';
+import Planner from './pages/Planner/Planner';
 import Cookbook from './pages/Cookbook/Cookbook';
 import Import from './pages/Import/Import';
 import CookMode from './pages/CookMode/CookMode';
@@ -39,6 +40,7 @@ function App() {
                     <Route path="/recipes/:id" element={<RecipeDetail />} />
                     <Route path="/recipes/:id/cook" element={<CookMode />} />
                     <Route path="/plan" element={<Home />} />
+                    <Route path="/plan/auto" element={<Planner />} />
                     <Route path="/calendar" element={<Calendar />} />
                     <Route path="/pantry" element={<Pantry />} />
                     <Route path="/grocery" element={<GroceryList />} />

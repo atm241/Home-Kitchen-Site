@@ -1,246 +1,591 @@
 .container {
-  padding: 24px 0;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.header h1 {
-  margin: 0;
-}
-
-.headerActions {
-  display: flex;
-  gap: 12px;
-}
-
-.link {
-  padding: 10px 20px;
-  background-color: var(--olive);
-  color: var(--sand);
-  border-radius: 8px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.link:hover {
-  background-color: var(--sage);
-  color: var(--ink);
-}
-
-.weekGrid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 16px;
-  margin-bottom: 32px;
-}
-
-.dayCard {
-  background-color: #FFFFFF;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease;
-}
-
-.dayCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.dayCard.today {
-  border: 2px solid var(--primary);
-}
-
-.dayHeader {
-  background-color: var(--olive);
-  color: var(--sand);
-  padding: 12px;
-  text-align: center;
-  position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 20px;
 }
 
-.dayName {
-  font-size: 11px;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
+/* ---------- Header ---------- */
 
-.dayDate {
-  font-size: 12px;
-}
-
-.addMealButton {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background-color: var(--sand);
-  color: var(--olive);
-  font-size: 16px;
-  font-weight: 700;
+.pageHeader {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 0;
-  transition: all 0.2s ease;
-  padding: 0 0 3px 0;
-  border: none;
-  cursor: pointer;
-}
-
-.addMealButton:hover {
-  background-color: var(--primary);
-  color: #FFFFFF;
-  transform: translateY(-50%) scale(1.1);
-}
-
-.dayContent {
-  padding: 12px;
-  min-height: 100px;
-}
-
-.noMeals {
-  color: var(--muted);
-  font-size: 14px;
-  text-align: center;
-  padding: 20px 0;
-}
-
-.mealItem {
-  border-left: 3px solid;
-  padding: 8px 12px;
-  margin-bottom: 8px;
-  background-color: var(--bg-subtle);
-  border-radius: 4px;
-}
-
-.mealItem:last-child {
-  margin-bottom: 0;
-}
-
-.mealItemHeader {
-  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
+  gap: 12px 16px;
 }
 
-.mealType {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-  text-transform: capitalize;
-}
-
-.deleteMealButton {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background-color: transparent;
-  color: #BDC3C7;
-  font-size: 16px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-}
-
-.deleteMealButton:hover {
-  background-color: var(--danger);
-  color: #FFFFFF;
-}
-
-.mealTitle {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--ink);
+.titleBlock h1 {
   margin-bottom: 2px;
 }
 
-.mealServings {
-  font-size: 12px;
+.subtitle {
   color: var(--muted);
+  font-size: 14px;
+  margin: 0;
 }
 
-.mealCalories {
-  font-size: 11px;
-  color: var(--sage);
-  font-weight: 600;
-  margin-top: 2px;
-}
-
-.dayCalorieTotal {
-  margin-top: 12px;
-  padding-top: 8px;
-  border-top: 1px solid var(--line);
+.toolbar {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
   align-items: center;
+  gap: 8px;
 }
 
-.calorieLabel {
-  font-size: 12px;
+.weekNav {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 3px;
+}
+
+.navArrow {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-2);
+}
+
+.navArrow:hover {
+  background: var(--bg-subtle);
+  color: var(--ink);
+}
+
+.todayBtn {
+  padding: 0 12px;
+  height: 38px;
+  border-radius: 999px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--ink);
 }
 
-.calorieValue {
+.todayBtn:hover:not(:disabled) {
+  background: var(--bg-subtle);
+}
+
+.todayBtn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.errorState {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  color: var(--danger-strong);
+  font-size: 14px;
+}
+
+/* ---------- Plan saved / onboarding ---------- */
+
+.savedStrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  background: var(--sage-soft);
+  color: var(--olive-deep);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.savedLink {
+  margin-left: auto;
+}
+
+.onboard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  padding: 22px 24px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--primary-soft), var(--sand-soft));
+}
+
+.onboardText {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.onboardText h2 {
+  font-size: 24px;
+  margin: 8px 0 4px;
+}
+
+.onboardText p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 15px;
+  max-width: 560px;
+}
+
+.onboardBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--primary-strong);
   font-size: 12px;
   font-weight: 700;
-  color: var(--olive);
 }
 
-.quickActions {
-  margin-top: 32px;
-}
-
-.quickActions h2 {
-  margin-bottom: 16px;
-}
-
-.actionGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 16px;
-}
-
-.actionCard {
-  background-color: #FFFFFF;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
-}
-
-.actionCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.actionCard h3 {
-  margin-top: 0;
-  margin-bottom: 8px;
-  color: var(--olive);
-}
-
-.actionCard p {
-  margin: 0;
-  color: var(--muted);
+.cardButton {
+  align-self: flex-start;
+  min-height: 36px;
+  padding: 6px 14px;
   font-size: 14px;
+}
+
+/* ---------- Layout ----------
+   One column by default; on wide screens the summary cards sit to the right. */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+@media (min-width: 1040px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+
+  .side {
+    position: sticky;
+    top: 88px;
+  }
+}
+
+/* ---------- Week agenda ---------- */
+
+.week {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 6px;
+}
+
+.dayRow {
+  position: relative;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.dayRow + .dayRow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 72px;
+  right: 8px;
+  height: 1px;
+  background: var(--line);
+}
+
+.today {
+  background: var(--primary-soft);
+}
+
+.today::before,
+.today + .dayRow::before {
+  display: none;
+}
+
+.dayLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+  align-self: start;
+  padding-top: 4px;
+}
+
+.dayName {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.dayNum {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.today .dayName,
+.today .dayNum {
+  color: var(--primary-strong);
+}
+
+.dayMeals {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.emptyDay {
+  justify-self: start;
+  font-size: 14px;
+  color: var(--muted);
+  padding: 8px 0;
+}
+
+.emptyDay:hover {
+  color: var(--primary);
+}
+
+.meal {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 6px 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  box-shadow: inset 3px 0 0 var(--tone, var(--muted));
+  min-width: 0;
+}
+
+.today .meal {
+  background: var(--surface);
+}
+
+.toneBreakfast { --tone: var(--orange); }
+.toneLunch { --tone: var(--sage); }
+.toneDinner { --tone: var(--olive); }
+.toneOther { --tone: var(--sand); }
+
+.mealText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mealType {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.mealTitle {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink);
+  line-height: 1.3;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+a.mealTitle:hover {
+  color: var(--primary);
+}
+
+.mealMeta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.mealRemove {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.mealRemove:hover {
+  background: var(--surface);
+  color: var(--danger);
+}
+
+@media (hover: hover) {
+  .mealRemove {
+    opacity: 0;
+    transition: opacity 0.12s ease;
+  }
+
+  .meal:hover .mealRemove,
+  .meal:focus-within .mealRemove {
+    opacity: 1;
+  }
+}
+
+.dayEnd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: start;
+  padding-top: 2px;
+}
+
+.dayCalories {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.over {
+  color: var(--danger);
+}
+
+.addMeal {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  background: var(--surface);
+}
+
+.addMeal:hover {
+  color: #FFFFFF;
+  background: var(--primary);
+  box-shadow: none;
+}
+
+.weekFooter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 8px 6px;
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+}
+
+/* ---------- Side cards ---------- */
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (min-width: 640px) and (max-width: 1039px) {
+  /* Mid widths: cards in a row under the week instead of a long stack. */
+  .side {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    align-items: start;
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.cardTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--olive);
+  margin: 0;
+}
+
+.bigStat {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.bigStatOf {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--olive);
+}
+
+.barOver {
+  background: var(--danger);
+}
+
+.cardHint {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.cardLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.chipUrgent {
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
+.chipExpired {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.chipDays {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.recipeLinks {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.recipeLinks li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.recipeLinks a {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recipeLinkMeta {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.budgetList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.budgetRow {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 52px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.budgetMonth {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.budgetBarTrack {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+}
+
+.budgetBarFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--sage);
+}
+
+.budgetBarFill.barOver {
+  background: var(--danger);
+}
+
+.budgetMarker {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 14px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--ink-2);
+}
+
+.budgetAmount {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .loading {
@@ -250,292 +595,32 @@
   font-size: 18px;
 }
 
-.errorState {
-  text-align: center;
-  padding: 60px 24px;
-  color: var(--muted);
-}
+/* ---------- Narrow widths ---------- */
 
-.errorState p {
-  margin-bottom: 16px;
-  font-size: 16px;
-}
-
-.retryButton {
-  padding: 10px 24px;
-  background-color: var(--olive);
-  color: var(--sand);
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 15px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.retryButton:hover {
-  background-color: var(--sage);
-  color: var(--ink);
-}
-
-@media (max-width: 1024px) {
-  .weekGrid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .container {
-    padding: 16px 0;
+@media (max-width: 560px) {
+  .toolLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
   }
 
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
+  .dayRow {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
     gap: 10px;
+    padding: 10px 6px;
   }
 
-  .headerActions {
-    display: flex;
-    gap: 8px;
+  .dayRow + .dayRow::before {
+    left: 56px;
   }
 
-  .link {
-    padding: 8px 14px;
-    font-size: 14px;
+  .dayNum {
+    font-size: 20px;
   }
 
-  /* Switch to horizontal snap-scroll: one card fills the viewport,
-     scroll left/right to browse the week */
-  .weekGrid {
-    display: flex;
-    grid-template-columns: unset;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x mandatory;
-    gap: 12px;
-    /* bleed to viewport edges so cards go edge-to-edge */
-    margin: 0 -16px;
-    padding: 0 16px 12px;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .weekGrid::-webkit-scrollbar {
+  .dayCalories {
     display: none;
   }
-
-  .dayCard {
-    /* almost full viewport width — leaves a sliver of next card as a scroll hint */
-    min-width: calc(100vw - 48px);
-    flex-shrink: 0;
-    scroll-snap-align: start;
-  }
-}
-
-/* Nutrition card */
-.nutritionCard {
-  background-color: #FFFFFF;
-  border-radius: 12px;
-  padding: 20px 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-.nutritionCardTitle {
-  margin: 0 0 16px 0;
-  font-size: 18px;
-  color: var(--ink);
-}
-.nutritionStats {
-  display: flex;
-  gap: 32px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-.nutritionStat { display: flex; flex-direction: column; }
-.nutritionStatValue { font-size: 22px; font-weight: 700; color: var(--primary); }
-.nutritionStatLabel { font-size: 12px; color: var(--muted); margin-top: 2px; }
-.nutritionBarWrap {
-  height: 8px;
-  background-color: var(--line);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.nutritionBarFill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.4s ease;
-}
-.nutritionHint { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
-.nutritionLink { color: var(--olive); font-weight: 500; }
-
-/* ── Use It Up card on Home page ─────────────────── */
-.budgetHistoryCard {
-  background-color: #FFFFFF;
-  border: 1px solid #E8E8E8;
-  border-radius: 12px;
-  padding: 16px 20px;
-  margin-bottom: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-}
-
-.budgetHistoryTitle {
-  margin: 0 0 12px;
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--olive);
-}
-
-.budgetHistoryTableWrap {
-  overflow-x: auto;
-}
-
-.budgetHistoryTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-
-.budgetHistoryTable th {
-  text-align: left;
-  padding: 8px 12px;
-  color: var(--muted);
-  font-weight: 600;
-  border-bottom: 2px solid #EEE;
-  white-space: nowrap;
-}
-
-.budgetHistoryTable td {
-  padding: 8px 12px;
-  border-bottom: 1px solid #F2F2F2;
-  color: var(--ink);
-  white-space: nowrap;
-}
-
-.useItUpCard {
-  background-color: #FFFBF2;
-  border: 2px solid #F0C050;
-  border-radius: 12px;
-  padding: 16px 20px;
-  margin-bottom: 24px;
-}
-
-.useItUpCardHeader {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.useItUpIcon {
-  font-size: 28px;
-  flex-shrink: 0;
-}
-
-.useItUpTitle {
-  margin: 0 0 2px;
-  font-size: 17px;
-  font-weight: 700;
-  color: #7D5A00;
-}
-
-.useItUpSubtitle {
-  margin: 0;
-  font-size: 13px;
-  color: #A07800;
-}
-
-.useItUpViewAll {
-  margin-left: auto;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--olive);
-  text-decoration: none;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.useItUpViewAll:hover {
-  text-decoration: underline;
-}
-
-.useItUpIngredients {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-.useItUpChip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: capitalize;
-}
-
-.useItUpChipExpired {
-  background-color: #FDECEA;
-  color: var(--danger-strong);
-  border: 1px solid #E8A09A;
-}
-
-.useItUpChipUrgent {
-  background-color: #FFF0DC;
-  color: var(--primary-strong);
-  border: 1px solid #F0C080;
-}
-
-.useItUpChipSoon {
-  background-color: #FFF8E1;
-  color: #7D5A00;
-  border: 1px solid #F0D070;
-}
-
-.useItUpChipDays {
-  font-size: 11px;
-  font-weight: 700;
-  opacity: 0.7;
-  background-color: rgba(0,0,0,0.07);
-  padding: 1px 4px;
-  border-radius: 8px;
-}
-
-.useItUpRecipeRow {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding-top: 10px;
-  border-top: 1px solid #F0D070;
-  font-size: 13px;
-}
-
-.useItUpRecipeLabel {
-  color: #A07800;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.useItUpRecipeLink {
-  color: var(--olive);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.useItUpRecipeLink:hover {
-  text-decoration: underline;
-}
-
-.useItUpRecipeCount {
-  font-size: 11px;
-  color: var(--primary-strong);
-  font-weight: 400;
 }
