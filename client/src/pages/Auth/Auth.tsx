@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import logoImg from '../../HomeKitchen.png';
+import { LogoMark } from '../../components/Brand/Logo';
+import { BRAND_NAME, BRAND_TAGLINE } from '../../components/Brand/brand';
 import styles from './Auth.module.css';
 
 const Auth: React.FC = () => {
@@ -46,9 +47,9 @@ const Auth: React.FC = () => {
     <div className={styles.container}>
       <div className={styles.card}>
         <div className={styles.logo}>
-          <img src={logoImg} alt="Home Kitchen" className={styles.logoImg} />
-          <h1 className={styles.title}>Home Kitchen</h1>
-          <p className={styles.subtitle}>Meal planning, pantry &amp; budget tracking</p>
+          <span className={styles.logoImg}><LogoMark size={56} /></span>
+          <h1 className={styles.title}>{BRAND_NAME}</h1>
+          <p className={styles.subtitle}>{BRAND_TAGLINE}</p>
         </div>
 
         <div className={styles.toggleRow}>

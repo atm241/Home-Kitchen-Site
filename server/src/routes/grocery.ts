@@ -226,7 +226,11 @@ router.post('/from-recipe', async (req: Request, res: Response) => {
     await client.query('BEGIN');
     const householdId = req.householdId;
 
-    const { recipe_id, week_start_date, servings } = req.body;
+    // ingredient_names (optional): only add these, e.g. just what the pantry is missing.
+    const { recipe_id, week_start_date, servings, ingredient_names } = req.body;
+    const onlyNames: Set<string> | null = Array.isArray(ingredient_names)
+      ? new Set(ingredient_names.filter((n: unknown) => typeof n === 'string').map((n: string) => n.toLowerCase()))
+      : null;
 
     if (!recipe_id || !week_start_date) {
       return res.status(400).json({ error: 'recipe_id and week_start_date are required' });
@@ -256,6 +260,7 @@ router.post('/from-recipe', async (req: Request, res: Response) => {
     const addedItems = [];
 
     for (const ing of ingredientsResult.rows) {
+      if (onlyNames && !onlyNames.has(String(ing.name).toLowerCase())) continue;
       const scaledQuantity = (ing.quantity || 0) * scaleFactor;
 
       // Get price from grocery_prices
@@ -352,14 +357,15 @@ router.put('/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'Invalid ID' });
-    const { quantity, unit, estimated_price, store_price } = req.body;
+    const { quantity, unit, estimated_price } = req.body;
 
+    // Only overwrite the fields that were sent.
     const result = await pool.query(`
       UPDATE grocery_list
-      SET quantity = $1, unit = $2, estimated_price = $3, store_price = COALESCE($4, store_price)
-      WHERE id = $5 AND household_id = $6
+      SET quantity = COALESCE($1, quantity), unit = COALESCE($2, unit), estimated_price = COALESCE($3, estimated_price)
+      WHERE id = $4 AND household_id = $5
       RETURNING *
-    `, [quantity, unit, estimated_price, store_price ?? null, id, req.householdId]);
+    `, [quantity ?? null, unit ?? null, estimated_price ?? null, id, req.householdId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Grocery item not found' });

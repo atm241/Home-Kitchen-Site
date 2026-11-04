@@ -1,6 +1,6 @@
 .container {
-  padding: 24px 0;
-  max-width: 800px;
+  padding: 0;
+  max-width: 1080px;
   margin: 0 auto;
 }
 
@@ -22,41 +22,41 @@
 }
 
 .backButton {
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
 }
 
 .backButton:hover {
-  background-color: #8BAE66;
-  color: #2C3E50;
+  background-color: var(--sage);
+  color: var(--ink);
 }
 
 .deleteButton {
-  background-color: #E74C3C;
+  background-color: var(--danger);
   color: #FFFFFF;
 }
 
 .deleteButton:hover {
-  background-color: #C0392B;
+  background-color: var(--danger-strong);
 }
 
 .editButton {
-  background-color: #E67E22;
+  background-color: var(--primary);
   color: #FFFFFF;
 }
 
 .editButton:hover {
-  background-color: #D35400;
+  background-color: var(--primary-strong);
 }
 
 .saveButton {
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
 }
 
 .saveButton:hover {
-  background-color: #8BAE66;
-  color: #2C3E50;
+  background-color: var(--sage);
+  color: var(--ink);
 }
 
 .headerActions {
@@ -91,8 +91,8 @@
 
 .categoryBadge {
   display: inline-block;
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
   padding: 6px 16px;
   border-radius: 16px;
   font-size: 14px;
@@ -102,7 +102,7 @@
 .editCategoryButton,
 .addCategoryButton {
   padding: 6px 16px;
-  background-color: #E67E22;
+  background-color: var(--primary);
   color: #FFFFFF;
   border-radius: 8px;
   font-size: 14px;
@@ -112,11 +112,11 @@
 
 .editCategoryButton:hover,
 .addCategoryButton:hover {
-  background-color: #D35400;
+  background-color: var(--primary-strong);
 }
 
 .description {
-  color: #7F8C8D;
+  color: var(--muted);
   font-size: 16px;
   line-height: 1.6;
   margin-bottom: 24px;
@@ -126,8 +126,8 @@
   display: flex;
   gap: 32px;
   padding: 16px 0;
-  border-top: 1px solid #E0E0E0;
-  border-bottom: 1px solid #E0E0E0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
   margin-bottom: 24px;
 }
 
@@ -138,15 +138,15 @@
 
 .metaLabel {
   font-weight: 600;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
 .metaValue {
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .nutrition {
-  background-color: #F8F9FA;
+  background-color: var(--bg-subtle);
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 24px;
@@ -174,12 +174,12 @@
 .nutritionValue {
   font-size: 24px;
   font-weight: 700;
-  color: #E67E22;
+  color: var(--primary);
 }
 
 .nutritionLabel {
   font-size: 14px;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
 .section {
@@ -207,13 +207,13 @@
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
 .scaleInput {
   width: 64px;
   padding: 6px 8px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 6px;
   font-size: 14px;
   text-align: center;
@@ -221,13 +221,13 @@
 
 .scaleInput:focus {
   outline: none;
-  border-color: #8BAE66;
+  border-color: var(--sage);
 }
 
 .resetScaleButton {
   padding: 4px 10px;
-  background-color: #E0E0E0;
-  color: #2C3E50;
+  background-color: var(--line);
+  color: var(--ink);
   border-radius: 6px;
   font-size: 13px;
   transition: background-color 0.2s ease;
@@ -238,7 +238,7 @@
 }
 
 .originalQty {
-  color: #95A5A6;
+  color: var(--muted);
   font-size: 13px;
 }
 
@@ -246,7 +246,7 @@
 .editHeading {
   margin-top: 0;
   margin-bottom: 24px;
-  color: #628141;
+  color: var(--olive);
   font-size: 22px;
 }
 
@@ -260,7 +260,7 @@
 .editInput {
   width: 100%;
   padding: 10px 12px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 8px;
   font-size: 15px;
   box-sizing: border-box;
@@ -269,13 +269,13 @@
 
 .editInput:focus {
   outline: none;
-  border-color: #8BAE66;
+  border-color: var(--sage);
 }
 
 .editInputSmall {
   width: 80px;
   padding: 10px 8px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 8px;
   font-size: 15px;
   box-sizing: border-box;
@@ -284,13 +284,13 @@
 
 .editInputSmall:focus {
   outline: none;
-  border-color: #8BAE66;
+  border-color: var(--sage);
 }
 
 .editSelect {
   width: 100%;
   padding: 10px 12px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 8px;
   font-size: 15px;
   background-color: #FFFFFF;
@@ -300,13 +300,13 @@
 
 .editSelect:focus {
   outline: none;
-  border-color: #8BAE66;
+  border-color: var(--sage);
 }
 
 .editTextarea {
   width: 100%;
   padding: 10px 12px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 8px;
   font-size: 15px;
   resize: vertical;
@@ -317,7 +317,7 @@
 
 .editTextarea:focus {
   outline: none;
-  border-color: #8BAE66;
+  border-color: var(--sage);
 }
 
 .editIngredientsSection {
@@ -327,7 +327,7 @@
 .editIngredientsSection h3 {
   margin: 0;
   font-size: 18px;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .ingredientRow {
@@ -339,8 +339,8 @@
 
 .addIngredientButton {
   padding: 8px 16px;
-  background-color: #8BAE66;
-  color: #2C3E50;
+  background-color: var(--sage);
+  color: var(--ink);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
@@ -348,8 +348,8 @@
 }
 
 .addIngredientButton:hover {
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
 }
 
 .removeIngredientButton {
@@ -358,7 +358,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #E74C3C;
+  background-color: var(--danger);
   color: #FFFFFF;
   border-radius: 50%;
   font-size: 22px;
@@ -368,7 +368,7 @@
 }
 
 .removeIngredientButton:hover {
-  background-color: #C0392B;
+  background-color: var(--danger-strong);
 }
 
 @media (max-width: 768px) {
@@ -397,8 +397,8 @@
 
 .groceryButton {
   padding: 8px 16px;
-  background-color: #8BAE66;
-  color: #2C3E50;
+  background-color: var(--sage);
+  color: var(--ink);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
@@ -406,8 +406,8 @@
 }
 
 .groceryButton:hover {
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
 }
 
 .ingredientsList {
@@ -432,7 +432,7 @@
 .instructionsList li {
   padding: 12px 0;
   line-height: 1.6;
-  color: #2C3E50;
+  color: var(--ink);
   margin-bottom: 8px;
 }
 
@@ -443,34 +443,34 @@
 .instructions {
   white-space: pre-line;
   line-height: 1.8;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .source {
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 1px solid #E0E0E0;
+  border-top: 1px solid var(--line);
 }
 
 .source a {
-  color: #628141;
+  color: var(--olive);
   font-weight: 500;
 }
 
 .source a:hover {
-  color: #8BAE66;
+  color: var(--sage);
 }
 
 .loading,
 .notFound {
   text-align: center;
   padding: 48px;
-  color: #7F8C8D;
+  color: var(--muted);
   font-size: 18px;
 }
 
 .cookSection {
-  background-color: #F8F9FA;
+  background-color: var(--bg-subtle);
   border-radius: 8px;
   padding: 24px;
   margin-top: 32px;
@@ -480,12 +480,12 @@
   margin-top: 0;
   margin-bottom: 8px;
   font-size: 20px;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .cookSection p {
   margin-bottom: 16px;
-  color: #7F8C8D;
+  color: var(--muted);
   font-size: 14px;
 }
 
@@ -499,7 +499,7 @@
   flex: 1;
   max-width: 200px;
   padding: 10px 16px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 8px;
   font-size: 16px;
   transition: border-color 0.2s ease;
@@ -507,12 +507,12 @@
 
 .servingsInput:focus {
   outline: none;
-  border-color: #628141;
+  border-color: var(--olive);
 }
 
 .cookButton {
   padding: 10px 24px;
-  background-color: #E67E22;
+  background-color: var(--primary);
   color: #FFFFFF;
   border-radius: 8px;
   font-weight: 600;
@@ -520,7 +520,7 @@
 }
 
 .cookButton:hover {
-  background-color: #D35400;
+  background-color: var(--primary-strong);
 }
 
 @media (max-width: 768px) {
@@ -559,7 +559,7 @@
 .modalContent h2 {
   margin-top: 0;
   margin-bottom: 24px;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .formGroup {
@@ -570,13 +570,13 @@
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .select {
   width: 100%;
   padding: 10px 12px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 8px;
   font-size: 16px;
   background-color: #FFFFFF;
@@ -585,7 +585,7 @@
 
 .select:focus {
   outline: none;
-  border-color: #8BAE66;
+  border-color: var(--sage);
 }
 
 .modalActions {
@@ -602,7 +602,7 @@
 
 .cookModalHint {
   margin: -12px 0 16px;
-  color: #7F8C8D;
+  color: var(--muted);
   font-size: 14px;
 }
 
@@ -618,7 +618,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  background-color: #F8F9FA;
+  background-color: var(--bg-subtle);
   border-radius: 8px;
 }
 
@@ -635,17 +635,17 @@
 
 .cookModalRowName {
   font-weight: 600;
-  color: #2C3E50;
+  color: var(--ink);
   text-transform: capitalize;
 }
 
 .cookModalRowDetail {
   font-size: 13px;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
 .cookModalUnitWarning {
-  color: #E67E22;
+  color: var(--primary);
   font-weight: 600;
 }
 
@@ -659,14 +659,14 @@
 .cookModalDeductInput {
   width: 80px;
   padding: 8px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 8px;
   font-size: 15px;
 }
 
 .cookModalDeductUnit {
   font-size: 13px;
-  color: #7F8C8D;
+  color: var(--muted);
   white-space: nowrap;
 }
 
@@ -679,8 +679,8 @@
 }
 
 .cancelButton {
-  background-color: #E0E0E0;
-  color: #2C3E50;
+  background-color: var(--line);
+  color: var(--ink);
 }
 
 .cancelButton:hover {
@@ -688,13 +688,13 @@
 }
 
 .saveButton {
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
 }
 
 .saveButton:hover {
-  background-color: #8BAE66;
-  color: #2C3E50;
+  background-color: var(--sage);
+  color: var(--ink);
 }
 
 .notification {
@@ -709,12 +709,12 @@
 }
 
 .success {
-  background-color: #2ecc71;
+  background-color: var(--olive);
   color: #fff;
 }
 
 .error {
-  background-color: #e74c3c;
+  background-color: var(--danger);
   color: #fff;
 }
 
@@ -750,7 +750,7 @@
 .dietaryTag {
   padding: 3px 10px;
   background-color: #f0f7ea;
-  color: #628141;
+  color: var(--olive);
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
@@ -759,61 +759,61 @@
 /* Favorite + print buttons */
 .favoriteButton {
   padding: 10px 18px;
-  border: 2px solid #E67E22;
+  border: 2px solid var(--primary);
   border-radius: 8px;
   background: #fff;
-  color: #E67E22;
+  color: var(--primary);
   font-weight: 600;
   font-size: 15px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.favoriteButton:hover { background-color: #E67E22; color: #fff; }
-.favoriteButtonActive { background-color: #E67E22; color: #fff; }
+.favoriteButton:hover { background-color: var(--primary); color: #fff; }
+.favoriteButtonActive { background-color: var(--primary); color: #fff; }
 
 .printButton {
   padding: 10px 18px;
-  border: 2px solid #628141;
+  border: 2px solid var(--olive);
   border-radius: 8px;
   background: #fff;
-  color: #628141;
+  color: var(--olive);
   font-weight: 600;
   font-size: 15px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.printButton:hover { background-color: #628141; color: #EBD5AB; }
+.printButton:hover { background-color: var(--olive); color: var(--sand); }
 
 /* Personal notes */
 .notesSection {
   background-color: #fffbf0;
-  border-left: 4px solid #E67E22;
+  border-left: 4px solid var(--primary);
   border-radius: 0 8px 8px 0;
   padding: 16px 20px;
   margin-bottom: 24px;
 }
-.notesSection h2 { margin-top: 0; margin-bottom: 8px; font-size: 18px; color: #E67E22; }
-.notesText { color: #2C3E50; line-height: 1.6; margin: 0; white-space: pre-wrap; }
+.notesSection h2 { margin-top: 0; margin-bottom: 8px; font-size: 18px; color: var(--primary); }
+.notesText { color: var(--ink); line-height: 1.6; margin: 0; white-space: pre-wrap; }
 
 /* Edit dietary tags */
 .editDietaryTags { display: flex; flex-wrap: wrap; gap: 8px; }
 .editDietaryTag {
   padding: 6px 14px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 20px;
   background: #fff;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  color: #2C3E50;
+  color: var(--ink);
   transition: all 0.2s ease;
 }
-.editDietaryTag:hover { border-color: #628141; color: #628141; }
-.editDietaryTagActive { border-color: #628141; background-color: #628141; color: #fff; }
+.editDietaryTag:hover { border-color: var(--olive); color: var(--olive); }
+.editDietaryTagActive { border-color: var(--olive); background-color: var(--olive); color: #fff; }
 
 /* Print styles */
 @media print {
-  .noPrint { display: none !important; }
+  :global(.noPrint) { display: none !important; }
   .container { padding: 0; max-width: 100%; }
   .content { box-shadow: none; padding: 0; border-radius: 0; }
   .recipeImageWrap { height: 200px; }
@@ -833,8 +833,8 @@
   flex-shrink: 0;
   padding: 10px 18px;
   background-color: #FFFFFF;
-  border: 2px solid #628141;
-  color: #628141;
+  border: 2px solid var(--olive);
+  color: var(--olive);
   border-radius: 8px;
   font-weight: 600;
   font-size: 14px;
@@ -842,7 +842,7 @@
 }
 
 .uploadPhotoButton:hover:not(:disabled) {
-  background-color: #628141;
+  background-color: var(--olive);
   color: #FFFFFF;
 }
 
@@ -857,5 +857,472 @@
   max-height: 200px;
   object-fit: cover;
   border-radius: 8px;
-  border: 1px solid #E0E0E0;
+  border: 1px solid var(--line);
+}
+
+/* ===================== Recipe view (Simmer redesign) ===================== */
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: -8px 0 16px -12px;
+}
+
+.topActions {
+  display: flex;
+  gap: 4px;
+}
+
+.iconButton {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-2);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.iconButton:hover {
+  background: var(--bg-subtle);
+  color: var(--ink);
+}
+
+.iconButtonOn,
+.iconButtonOn:hover {
+  color: var(--danger);
+}
+
+.iconButtonDanger:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.importBanner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--sage-soft);
+  color: var(--olive-deep);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.importBanner span {
+  flex: 1;
+}
+
+.bannerClose {
+  color: var(--olive-deep);
+  opacity: 0.7;
+  padding: 4px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 36px;
+  align-items: start;
+  margin-bottom: 28px;
+}
+
+.hero:has(.heroMediaEmpty) {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 760px;
+}
+
+.heroMediaEmpty {
+  display: none;
+}
+
+.heroMedia {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  background: var(--sand-soft);
+  box-shadow: var(--shadow);
+}
+
+.heroImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.heroPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 96px;
+  font-weight: 600;
+  color: rgba(34, 40, 30, 0.15);
+}
+
+.heroInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 8px;
+}
+
+.eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--olive);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.recipeTitle {
+  font-size: clamp(30px, 4.5vw, 44px);
+  margin: 0;
+}
+
+.sourceLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 7px 14px 7px 8px;
+  border-radius: 999px;
+}
+
+.sourceLink:hover {
+  color: var(--ink);
+  background: var(--bg-subtle);
+}
+
+.playDot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #FFFFFF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 2px;
+}
+
+.sourceAuthor {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.heroInfo .description {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.stats {
+  display: flex;
+  gap: 28px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.statLabel {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Pantry check */
+
+.pantryCard {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--line);
+  padding: 16px 18px;
+  margin-bottom: 32px;
+}
+
+.pantryMeter {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  overflow: hidden;
+}
+
+.pantryMeterFill {
+  height: 100%;
+  background: var(--olive);
+  border-radius: 999px;
+}
+
+.pantryText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 15px;
+  min-width: 0;
+}
+
+.pantryMissing {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Ingredients + steps */
+
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 36px;
+  align-items: start;
+}
+
+.body h2 {
+  font-size: 24px;
+  margin-bottom: 0;
+}
+
+.ingredientsCol {
+  position: sticky;
+  top: 88px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--line);
+}
+
+.ingredientsCol .sectionHeader {
+  margin-bottom: 8px;
+}
+
+.scalingControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-subtle);
+  border-radius: 999px;
+  padding: 3px;
+}
+
+.stepper {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--surface);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+.scaleValue {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.ingredientsCol .ingredientsList {
+  list-style: none;
+}
+
+.ingredientsCol .ingredientsList li {
+  display: grid;
+  grid-template-columns: 76px 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 15px;
+}
+
+.ingredientsCol .ingredientsList li:last-child {
+  border-bottom: none;
+}
+
+.ingQty {
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.ingName {
+  color: var(--ink);
+}
+
+.ingNotes {
+  color: var(--muted);
+}
+
+.haveIt .ingName {
+  color: var(--ink-2);
+}
+
+.haveBadge {
+  align-self: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--sage-soft);
+  color: var(--olive);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mainCol {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.mainCol .instructionsList {
+  list-style: none;
+  padding: 0;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.mainCol .instructionsList li {
+  display: flex;
+  gap: 16px;
+  padding: 0;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.stepNumber {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.mainCol .notesSection,
+.mainCol .nutrition,
+.mainCol .cookSection {
+  margin: 0;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.mainCol .notesSection h2,
+.mainCol .nutrition h2,
+.mainCol .cookSection h2 {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.notesText {
+  white-space: pre-line;
+  color: var(--ink-2);
+}
+
+.hideOnPhone {
+  display: inline-flex;
+}
+
+@media (max-width: 860px) {
+  .hero,
+  .body {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .heroMedia {
+    aspect-ratio: 4 / 3;
+    margin: 0 -16px;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .ingredientsCol {
+    position: static;
+    padding: 18px;
+  }
+
+
+  .pantryCard {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .pantryCard .btn {
+    justify-self: start;
+  }
+
+  .heroActions .btn {
+    flex: 1;
+  }
+
+  .hideOnPhone {
+    display: none;
+  }
+
+  .notification {
+    top: auto;
+    left: 16px;
+    right: 16px;
+    bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 12px);
+    text-align: center;
+  }
+}
+
+@media print {
+  .hero,
+  .body {
+    grid-template-columns: 1fr;
+  }
+
+  .heroMedia {
+    max-height: 240px;
+  }
+
+  .ingredientsCol {
+    position: static;
+    box-shadow: none;
+  }
 }

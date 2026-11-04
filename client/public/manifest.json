@@ -1,7 +1,13 @@
 {
-  "short_name": "Home Kitchen",
-  "name": "Home Kitchen - Meal Planning & Pantry Tracker",
+  "short_name": "Simmer",
+  "name": "Simmer — save recipes from the videos you scroll",
+  "description": "Turn TikTok, YouTube and Instagram cooking videos into recipes, then plan, shop and cook.",
   "icons": [
+    {
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
     {
       "src": "favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
@@ -20,9 +26,19 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "theme_color": "#628141",
-  "background_color": "#EBD5AB"
+  "theme_color": "#FAF6EE",
+  "background_color": "#FAF6EE",
+  "share_target": {
+    "action": "/import",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }

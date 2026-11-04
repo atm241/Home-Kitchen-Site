@@ -31,17 +31,18 @@ function tokenize(text: string): Set<string> {
   );
 }
 
-/**
- * Rank the household's own saved recipes by how much of each one the current
- * pantry covers, matching by fuzzy word overlap rather than exact ingredient
- * identity. A recipe ingredient counts as "have it" when every significant
- * token of some pantry item appears in the ingredient text — so pantry
- * "Olive Oil" covers "extra-virgin olive oil" and "Garlic" covers "garlic
- * cloves, thinly sliced". Pantry staples count as available even at zero qty.
- */
-export async function findSavedRecipeMatches(
-  householdId: number
-): Promise<RecipeRecommendation[]> {
+interface RecipeCoverageRow {
+  row: any;
+  available: string[];
+  missing: string[];
+}
+
+// Match every saved recipe's ingredients against the pantry. A recipe
+// ingredient counts as "have it" when every significant token of some pantry
+// item appears in the ingredient text — so pantry "Olive Oil" covers
+// "extra-virgin olive oil" and "Garlic" covers "garlic cloves, thinly sliced".
+// Pantry staples count as available even at zero qty.
+async function computeCoverage(householdId: number): Promise<RecipeCoverageRow[]> {
   const pantryResult = await pool.query(
     `SELECT i.name
      FROM pantry p JOIN ingredients i ON i.id = p.ingredient_id
@@ -55,8 +56,6 @@ export async function findSavedRecipeMatches(
   const pantryTokenSets = pantryResult.rows
     .map((r) => [...tokenize(r.name)])
     .filter((toks) => toks.length > 0);
-
-  if (pantryTokenSets.length === 0) return [];
 
   const recipesResult = await pool.query(
     `SELECT r.id, r.name, r.description, r.image_url, r.source_url,
@@ -76,14 +75,44 @@ export async function findSavedRecipeMatches(
     return pantryTokenSets.some((toks) => toks.every((t) => words.has(t)));
   };
 
-  const recommendations: RecipeRecommendation[] = recipesResult.rows.map((row) => {
+  return recipesResult.rows.map((row) => {
     const ingredients: string[] = (row.ingredients || []).filter(Boolean);
     const available: string[] = [];
     const missing: string[] = [];
     for (const ing of ingredients) {
       (covers(ing) ? available : missing).push(ing);
     }
-    const total = ingredients.length;
+    return { row, available, missing };
+  });
+}
+
+export interface PantryCoverage {
+  have: number;
+  total: number;
+  missing: string[];
+}
+
+/** Pantry coverage for every saved recipe, keyed by recipe id. */
+export async function getPantryCoverage(householdId: number): Promise<Record<number, PantryCoverage>> {
+  const rows = await computeCoverage(householdId);
+  const out: Record<number, PantryCoverage> = {};
+  for (const { row, available, missing } of rows) {
+    out[row.id] = { have: available.length, total: available.length + missing.length, missing };
+  }
+  return out;
+}
+
+/**
+ * Rank the household's own saved recipes by how much of each one the current
+ * pantry covers.
+ */
+export async function findSavedRecipeMatches(
+  householdId: number
+): Promise<RecipeRecommendation[]> {
+  const rows = await computeCoverage(householdId);
+
+  const recommendations: RecipeRecommendation[] = rows.map(({ row, available, missing }) => {
+    const total = available.length + missing.length;
     const matchPercentage = total > 0 ? Math.round((available.length / total) * 100) : 0;
 
     return {

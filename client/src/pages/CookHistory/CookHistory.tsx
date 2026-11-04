@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { cookHistoryApi } from '../../services/api';
 import { CookHistoryEntry } from '../../types';
 import { resolveImageUrl } from '../../utils/imageUtils';
+import Icon from '../../components/Icon/Icon';
 import styles from './CookHistory.module.css';
 
 const CookHistory: React.FC = () => {
@@ -59,14 +60,14 @@ const CookHistory: React.FC = () => {
       )}
 
       <div className={styles.header}>
-        <h1>Cook History</h1>
+        <h1>Cook history</h1>
         <p className={styles.subtitle}>A log of every meal you've cooked</p>
       </div>
 
       {history.length === 0 ? (
         <div className={styles.empty}>
           <p>No cook history yet.</p>
-          <p>Use "Mark as Cooked" on a <Link to="/recipes" className={styles.link}>recipe page</Link> to start tracking.</p>
+          <p>Use "Mark as cooked" on a <Link to="/" className={styles.link}>recipe page</Link> to start tracking.</p>
         </div>
       ) : (
         <div className={styles.historyList}>
@@ -99,8 +100,9 @@ const CookHistory: React.FC = () => {
                     className={styles.deleteBtn}
                     onClick={() => handleDelete(entry.id)}
                     title="Remove from history"
+                    aria-label={`Remove ${entry.recipe_name} from history`}
                   >
-                    ×
+                    <Icon name="trash" size={16} />
                   </button>
                 </div>
               ))}

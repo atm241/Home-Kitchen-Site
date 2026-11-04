@@ -13,7 +13,8 @@ import type {
   CookHistoryEntry,
 } from '../types';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
+export const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
+// Kept from the Home Kitchen days so existing sessions stay signed in.
 const TOKEN_STORAGE_KEY = 'home_kitchen_token';
 
 const api = axios.create({
@@ -85,7 +86,9 @@ export const recipesApi = {
   update: (id: number, recipe: Partial<Recipe>) => api.put<Recipe>(`/recipes/${id}`, recipe),
   delete: (id: number) => api.delete(`/recipes/${id}`),
   toggleFavorite: (id: number) => api.patch<{ is_favorite: boolean }>(`/recipes/${id}/favorite`),
-  importFromUrl: (url: string) => api.post<Recipe>('/recipes/import', { url }),
+  // Any link: TikTok / YouTube / Instagram video or a recipe website.
+  importFromUrl: (url: string) => api.post<Recipe & { duplicate?: boolean }>('/recipes/import', { url }),
+  pantryMatch: () => api.get<Record<number, PantryCoverage>>('/recipes/pantry-match'),
   importBulk: (urls: string[]) => api.post<BulkImportResult>('/recipes/import-bulk', { urls }),
   importFromSpoonacular: (id: number) => api.post<Recipe>(`/recipes/import-spoonacular/${id}`),
   filterByNutrition: (params: { maxCarbs?: number; minProtein?: number; dietaryTag?: string }) =>
@@ -95,6 +98,23 @@ export const recipesApi = {
   parsePhoto: (data: { image: string; mediaType: string }) =>
     api.post<ParsedRecipePhoto>('/recipes/parse-photo', data),
 };
+
+export interface PantryCoverage {
+  have: number;
+  total: number;
+  missing: string[];
+}
+
+// Share key for the iPhone Shortcut
+export const shareApi = {
+  status: () => api.get<{ hasKey: boolean }>('/share/key'),
+  createKey: () => api.post<{ key: string }>('/share/key'),
+  revokeKey: () => api.delete('/share/key'),
+};
+
+/** Server error message, if the server sent one. */
+export const errorMessage = (error: any, fallback: string): string =>
+  error?.response?.data?.error || fallback;
 
 export interface ParsedRecipePhoto {
   name: string;
@@ -157,6 +177,13 @@ export interface ParsedReceiptItem {
   expiration_date: string | null;
 }
 
+export interface ParsedReceipt {
+  items: ParsedReceiptItem[];
+  total: number | null;
+  store: string | null;
+  purchased_on: string | null;
+}
+
 export interface BarcodeProduct {
   barcode: string;
   name: string;
@@ -176,7 +203,7 @@ export const pantryApi = {
   consumeServings: (data: { meal_portion_id: number; servings_consumed: number }) =>
     api.post('/pantry/consume-servings', data),
   parseReceipt: (data: { image: string; mediaType: string }) =>
-    api.post<ParsedReceiptItem[]>('/pantry/parse-receipt', data),
+    api.post<ParsedReceipt>('/pantry/parse-receipt', data),
   useItUp: (days = 5) =>
     api.get<UseItUpResult>('/pantry/use-it-up', { params: { days } }),
   suggestedExpiry: (name: string, category?: string) =>
@@ -219,7 +246,7 @@ export const groceryApi = {
     api.post<GroceryItem[]>('/grocery/generate', data),
   addManual: (data: { ingredient_name: string; quantity?: number; unit?: string; week_start_date: string }) =>
     api.post<GroceryItem>('/grocery', data),
-  addFromRecipe: (data: { recipe_id: number; week_start_date: string; servings?: number }) =>
+  addFromRecipe: (data: { recipe_id: number; week_start_date: string; servings?: number; ingredient_names?: string[] }) =>
     api.post<GroceryItem[]>('/grocery/from-recipe', data),
   markPurchased: (id: number, isPurchased: boolean) =>
     api.patch<GroceryItem>(`/grocery/${id}/purchase`, { is_purchased: isPurchased }),
@@ -331,3 +358,111 @@ export const cookHistoryApi = {
 };
 
 export default api;
+
+// Receipt totals (one per shopping trip), counted against the grocery budget
+export interface GroceryReceipt {
+  id: number;
+  total: number;
+  store_name: string | null;
+  purchased_on: string;
+}
+
+export const receiptsApi = {
+  list: (params: { from?: string; to?: string } = {}) => api.get<GroceryReceipt[]>('/budget/receipts', { params }),
+  add: (data: { total: number; store_name?: string | null; purchased_on?: string | null }) =>
+    api.post<GroceryReceipt>('/budget/receipts', data),
+  remove: (id: number) => api.delete(`/budget/receipts/${id}`),
+};
+
+// Auto meal planner
+export type MealSlot = 'breakfast' | 'lunch' | 'dinner';
+
+export interface PlannerGoals {
+  start_date: string;
+  period_days: 7 | 14 | 30;
+  daily_calories: number | null;
+  protein_goal: number | null;
+  fiber_goal: number | null;
+  carbs_limit: number | null;
+  fat_limit: number | null;
+  meal_slots: MealSlot[];
+  servings: number;
+  budget_amount: number | null;
+}
+
+export interface PlanMeal {
+  date: string;
+  slot: MealSlot;
+  recipe_id: number;
+  servings: number;
+  pinned?: boolean;
+  existing_id?: number;
+}
+
+export interface PlanRecipeCard {
+  id: number;
+  name: string;
+  category: string | null;
+  image_url: string | null;
+  calories: number | null;
+  protein: number | null;
+  fiber: number | null;
+  total_time: number | null;
+  is_favorite: boolean;
+  pantry_share: number;
+}
+
+export interface PlanDay {
+  date: string;
+  calories: number;
+  protein: number;
+  unknown: number;
+  target: number | null;
+}
+
+export interface PlanSummary {
+  days: PlanDay[];
+  avg_calories: number;
+  avg_protein: number;
+  avg_fiber: number;
+  calorie_target: number | null;
+  days_on_target: number;
+  planned_days: number;
+  items_to_buy: number;
+  distinct_recipes: number;
+  used_goals: { calories: number | null; protein: number | null; fiber: number | null; carbs: number | null; fat: number | null };
+}
+
+export interface BudgetStatus {
+  amount: number;
+  period_days: number;
+  start_date: string;
+  end_date: string;
+  spent: number;
+  remaining: number;
+}
+
+export interface PlannerStatus {
+  saved: boolean;
+  preferences: PlannerGoals;
+  recipe_count: number;
+  budget: BudgetStatus | null;
+}
+
+export interface PlanResponse {
+  meals: PlanMeal[];
+  recipes: Record<number, PlanRecipeCard>;
+  summary: PlanSummary;
+  warnings?: string[];
+}
+
+export const plannerApi = {
+  status: () => api.get<PlannerStatus>('/planner/status'),
+  generate: (data: { goals: PlannerGoals; pinned?: PlanMeal[]; keep_existing?: boolean; seed?: number }) =>
+    api.post<PlanResponse>('/planner/generate', data),
+  evaluate: (data: { goals: PlannerGoals; meals: PlanMeal[] }) => api.post<PlanResponse>('/planner/evaluate', data),
+  alternatives: (data: { goals: PlannerGoals; meals: PlanMeal[]; date: string; slot: MealSlot }) =>
+    api.post<{ recipe_ids: number[]; recipes: Record<number, PlanRecipeCard> }>('/planner/alternatives', data),
+  commit: (data: { goals: PlannerGoals; meals: PlanMeal[]; add_to_grocery: boolean }) =>
+    api.post<{ created: number; grocery_added: number; week_start_date: string }>('/planner/commit', data),
+};

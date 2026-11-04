@@ -1,0 +1,31 @@
+.toggle {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.option {
+  min-width: 64px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.option:hover {
+  color: var(--ink);
+}
+
+.active,
+.active:hover {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}

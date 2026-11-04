@@ -9,10 +9,10 @@
 .card {
   width: 100%;
   max-width: 400px;
-  background-color: #FFFFFF;
-  border-radius: 12px;
-  padding: 32px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 36px 32px;
+  box-shadow: var(--shadow-lg);
 }
 
 .logo {
@@ -23,20 +23,19 @@
 }
 
 .logoImg {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 8px;
+  display: inline-flex;
+  margin-bottom: 12px;
 }
 
 .title {
   margin: 0 0 4px;
-  color: #2C3E50;
+  color: var(--ink);
   text-align: center;
 }
 
 .subtitle {
   margin: 0 0 24px;
-  color: #7F8C8D;
+  color: var(--muted);
   text-align: center;
   font-size: 14px;
 }
@@ -51,12 +50,12 @@
 .formGroup label {
   font-size: 14px;
   font-weight: 600;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .input {
   padding: 10px 12px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 8px;
   font-size: 16px;
   font-family: inherit;
@@ -65,18 +64,18 @@
 
 .input:focus {
   outline: none;
-  border-color: #8BAE66;
+  border-color: var(--sage);
 }
 
 .hint {
   font-size: 12px;
-  color: #7F8C8D;
+  color: var(--muted);
   margin-top: 4px;
 }
 
 .error {
   background-color: #FDEDEC;
-  color: #E74C3C;
+  color: var(--danger);
   padding: 10px 12px;
   border-radius: 8px;
   font-size: 14px;
@@ -86,8 +85,8 @@
 .submitButton {
   width: 100%;
   padding: 12px 24px;
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
   border-radius: 8px;
   font-weight: 600;
   font-size: 16px;
@@ -96,8 +95,8 @@
 }
 
 .submitButton:hover:not(:disabled) {
-  background-color: #8BAE66;
-  color: #2C3E50;
+  background-color: var(--sage);
+  color: var(--ink);
 }
 
 .submitButton:disabled {
@@ -109,11 +108,11 @@
   text-align: center;
   margin-top: 20px;
   font-size: 14px;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .switchMode button {
-  color: #E67E22;
+  color: var(--primary);
   font-weight: 600;
 }
 
@@ -135,14 +134,14 @@
   content: '';
   flex: 1;
   height: 1px;
-  background-color: #E0E0E0;
+  background-color: var(--line);
 }
 
 .toggleRow {
   display: flex;
   gap: 8px;
   margin-bottom: 20px;
-  background-color: #EBD5AB;
+  background-color: var(--sand);
   border-radius: 8px;
   padding: 4px;
 }
@@ -153,12 +152,12 @@
   border-radius: 6px;
   font-weight: 600;
   font-size: 14px;
-  color: #2C3E50;
+  color: var(--ink);
   transition: all 0.2s ease;
 }
 
 .toggleButtonActive {
   background-color: #FFFFFF;
-  color: #628141;
+  color: var(--olive);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }

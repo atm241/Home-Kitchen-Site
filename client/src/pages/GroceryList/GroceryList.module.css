@@ -1,785 +1,593 @@
 .container {
-  padding: 24px 0;
-}
-
-.header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.header h1 {
+/* ---------- Header ---------- */
+
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+
+.titleBlock h1 {
+  margin-bottom: 2px;
+}
+
+.subtitle {
+  color: var(--muted);
+  font-size: 14px;
   margin: 0;
 }
 
-.buttonGroup {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.generateButton {
-  padding: 12px 24px;
-  background-color: #E67E22;
-  color: #FFFFFF;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 16px;
-  transition: all 0.2s ease;
-}
-
-.generateButton:hover:not(:disabled) {
-  background-color: #D35400;
-}
-
-.generateButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.addToPantryButton {
-  padding: 12px 24px;
-  background-color: #628141;
-  color: #EBD5AB;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 16px;
-  transition: all 0.2s ease;
-}
-
-.addToPantryButton:hover:not(:disabled) {
-  background-color: #8BAE66;
-  color: #2C3E50;
-}
-
-.addToPantryButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.shareButton {
-  padding: 12px 24px;
-  background-color: #3498DB;
-  color: #FFFFFF;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 16px;
-  transition: all 0.2s ease;
-}
-
-.shareButton:hover {
-  background-color: #2980B9;
-}
-
-.clearButton {
-  padding: 12px 24px;
-  background-color: #E74C3C;
-  color: #FFFFFF;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 16px;
-  transition: all 0.2s ease;
-}
-
-.clearButton:hover {
-  background-color: #C0392B;
-}
-
-.summary {
-  background-color: #FFFFFF;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  gap: 32px;
-}
-
-.summaryItem {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.summaryLabel {
+.budgetLine {
+  margin: 4px 0 0;
   font-size: 14px;
-  color: #7F8C8D;
-}
-
-.summaryValue {
-  font-size: 20px;
   font-weight: 600;
-  color: #2C3E50;
+  color: var(--olive);
 }
 
-.categoriesGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 24px;
+.budgetLine span {
+  font-weight: 500;
+  color: var(--muted);
 }
 
-.categoryCard {
-  background-color: #FFFFFF;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.budgetOver {
+  color: var(--danger);
 }
 
-.categoryCard h2 {
-  margin-top: 0;
-  margin-bottom: 16px;
-  color: #628141;
-  font-size: 18px;
-}
-
-.itemsList {
+.toolbar {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.item {
+/* ---------- Quick add ---------- */
+
+.quickAdd {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background-color: #F8F9FA;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  position: relative;
+  gap: 6px;
+  padding: 6px 6px 6px 14px;
+  background: var(--surface);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--line);
+  transition: box-shadow 0.15s ease;
 }
 
-.item.purchased {
-  opacity: 0.6;
-  text-decoration: line-through;
+.quickAdd:focus-within {
+  box-shadow: inset 0 0 0 2px var(--orange);
 }
 
-.actualPriceField {
-  display: flex;
-  align-items: center;
-  gap: 2px;
+.quickAddIcon {
   flex-shrink: 0;
+  color: var(--muted);
 }
 
-.dollarSign {
-  font-size: 14px;
-  color: #7F8C8D;
-}
-
-.actualPriceInput {
-  width: 68px;
-  padding: 5px 6px;
-  border: 2px solid #E0E0E0;
-  border-radius: 6px;
-  font-size: 13px;
-  text-align: right;
-  transition: border-color 0.2s ease;
-}
-
-.actualPriceInput:focus {
+.quickAdd input,
+.quickAdd select {
+  border: none;
+  background: transparent;
+  font-size: 16px;
   outline: none;
-  border-color: #8BAE66;
+  min-width: 0;
 }
 
-.recordSpendButton {
-  padding: 10px 20px;
-  background-color: #E67E22;
-  color: #FFFFFF;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  white-space: nowrap;
-  transition: background-color 0.2s ease;
+.quickAddName {
+  flex: 1;
+  padding: 8px 4px;
 }
 
-.recordSpendButton:hover:not(:disabled) {
-  background-color: #D35400;
+.quickAddQty {
+  width: 56px;
+  padding: 8px 6px;
+  text-align: right;
+  border-left: 1px solid var(--line) !important;
 }
 
-.recordSpendButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.deleteButton {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #E74C3C;
-  color: #FFFFFF;
-  border-radius: 50%;
-  font-size: 22px;
-  line-height: 0.8;
-  padding-bottom: 2px;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.deleteButton:hover {
-  background-color: #C0392B;
-  transform: scale(1.1);
-}
-
-.checkbox {
-  width: 20px;
-  height: 20px;
+.quickAddUnit {
+  width: 104px;
+  padding: 8px 4px;
+  color: var(--ink-2);
   cursor: pointer;
 }
 
-.itemInfo {
+.quickAddButton {
+  min-height: 38px;
+  padding: 6px 18px;
+}
+
+/* ---------- Progress ---------- */
+
+.progressStrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+.progressInfo {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.progressText {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.progressBar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--olive);
+  transition: width 0.25s ease;
+}
+
+.progressActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.smallBtn {
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 14px;
+}
+
+.dangerGhost:hover:not(:disabled) {
+  color: var(--danger);
+}
+
+/* ---------- Item cards ----------
+   Same masonry approach as Pantry: as many ~280px columns as fit. */
+
+.categoriesGrid {
+  columns: 280px;
+  column-gap: 16px;
+}
+
+.categoryCard {
+  break-inside: avoid;
+  margin-bottom: 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 14px 6px 6px;
+}
+
+.categoryTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--olive);
+  margin: 0 10px 6px;
+}
+
+.categoryCount {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg-subtle);
+  border-radius: 999px;
+  padding: 1px 8px;
+  letter-spacing: 0;
+}
+
+.itemsList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px 8px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.item:hover {
+  background: var(--bg-subtle);
+}
+
+.item + .item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 44px;
+  right: 10px;
+  height: 1px;
+  background: var(--line);
+}
+
+.item:hover::before,
+.item:hover + .item::before {
+  display: none;
+}
+
+.checkCircle {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.checkCircle:hover {
+  box-shadow: inset 0 0 0 2px var(--sage);
+}
+
+.checked .checkCircle {
+  background: var(--olive);
+  box-shadow: none;
+}
+
+.itemMain {
   flex: 1;
+  min-width: 0;
 }
 
 .itemName {
-  font-weight: 500;
-  color: #2C3E50;
-  margin-bottom: 4px;
-}
-
-.itemDetails {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 14px;
-  color: #7F8C8D;
-}
-
-.price {
   font-weight: 600;
-  color: #628141;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
+.checked .itemName {
+  color: var(--muted);
+  text-decoration: line-through;
+  font-weight: 500;
+}
+
+.itemMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.iconAction {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.iconAction:hover {
+  background: var(--surface);
+  color: var(--danger);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+@media (hover: hover) {
+  .item .iconAction {
+    opacity: 0;
+    transition: opacity 0.12s ease;
+  }
+
+  .item:hover .iconAction,
+  .item:focus-within .iconAction {
+    opacity: 1;
+  }
+}
+
+/* ---------- Ingredient ideas ---------- */
+
+.ideas {
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.ideasHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 14px;
+}
+
+.ideasHeader h2 {
+  font-size: 22px;
+  margin-bottom: 2px;
+}
+
+.combosGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  gap: 12px;
+}
+
+.comboCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.comboUnlock {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--olive);
+}
+
+.comboIngredients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.comboChip {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--sand-soft);
+  color: var(--ink);
+  text-transform: capitalize;
+}
+
+.comboRecipes {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.comboAdd {
+  margin-top: auto;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  padding: 2px 0;
+}
+
+.comboAdd:hover {
+  color: var(--primary-strong);
+}
+
+/* ---------- Empty / loading / toast ---------- */
 
 .empty {
-  background-color: #FFFFFF;
-  border-radius: 12px;
-  padding: 48px 24px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 40px 24px;
   text-align: center;
-  color: #7F8C8D;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 
-.empty p {
-  margin: 8px 0;
+.emptyIcon {
+  color: var(--sage);
+  margin-bottom: 8px;
+}
+
+.emptyHint {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 6px auto 0;
+  max-width: 420px;
 }
 
 .loading {
   text-align: center;
   padding: 48px;
-  color: #7F8C8D;
+  color: var(--muted);
   font-size: 18px;
 }
 
-.manualEntrySection {
-  background-color: #FFFFFF;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.manualEntrySection h2 {
-  margin-top: 0;
-  margin-bottom: 16px;
-  font-size: 18px;
-  color: #2C3E50;
-}
-
-.manualEntryForm {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.input {
-  flex: 2;
-  padding: 10px 16px;
-  border: 2px solid #E0E0E0;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 0.2s ease;
-}
-
-.input:focus {
-  outline: none;
-  border-color: #628141;
-}
-
-.inputSmall {
-  flex: 1;
-  max-width: 100px;
-  padding: 10px 16px;
-  border: 2px solid #E0E0E0;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 0.2s ease;
-}
-
-.inputSmall:focus {
-  outline: none;
-  border-color: #628141;
-}
-
-.select {
-  flex: 1;
-  max-width: 150px;
-  padding: 10px 12px;
-  border: 2px solid #E0E0E0;
-  border-radius: 8px;
-  font-size: 16px;
-  background-color: #FFFFFF;
-  transition: border-color 0.2s ease;
-}
-
-.select:focus {
-  outline: none;
-  border-color: #628141;
-}
-
-.addButton {
-  padding: 10px 24px;
-  background-color: #628141;
-  color: #EBD5AB;
-  border-radius: 8px;
+.notification {
+  position: fixed;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 18px;
+  border-radius: 999px;
   font-weight: 600;
-  font-size: 16px;
-  white-space: nowrap;
-  transition: background-color 0.2s ease;
-}
-
-.addButton:hover {
-  background-color: #8BAE66;
-  color: #2C3E50;
-}
-
-@media (max-width: 768px) {
-  .summary {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .buttonGroup {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .generateButton,
-  .addToPantryButton,
-  .clearButton {
-    width: 100%;
-  }
-
-  .manualEntryForm {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .input,
-  .inputSmall,
-  .select,
-  .addButton {
-    max-width: 100%;
-    width: 100%;
-  }
-}
-
-/* Ingredient Combo Recommendations */
-.recommendationsSection {
-  background-color: #FFFFFF;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 32px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.recommendationsHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 20px;
-}
-
-.recommendationsHeader .headerContent {
-  flex: 1;
-}
-
-.recommendationsHeader h2 {
-  margin: 0 0 8px 0;
-  color: #628141;
-  font-size: 24px;
-}
-
-.recommendationsHeader p {
-  margin: 0;
-  color: #7F8C8D;
   font-size: 14px;
+  z-index: 1000;
+  box-shadow: var(--shadow-lg);
+  animation: notifyIn 0.2s ease;
+  max-width: calc(100vw - 32px);
 }
 
-.refreshButton {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #8BAE66;
+.success {
+  background: var(--ink);
   color: #FFFFFF;
-  font-size: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  border: none;
-  cursor: pointer;
-  flex-shrink: 0;
 }
 
-.refreshButton:hover:not(:disabled) {
-  background-color: #628141;
-  transform: rotate(180deg);
-}
-
-.refreshButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.loadingRecommendations {
-  text-align: center;
-  padding: 40px;
-  color: #7F8C8D;
-  font-size: 16px;
-}
-
-.noRecommendations {
-  text-align: center;
-  padding: 40px;
-  color: #95A5A6;
-  font-size: 16px;
-  background-color: #F8F9FA;
-  border-radius: 8px;
-}
-
-.combosGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
-}
-
-.comboCard {
-  background-color: #FFFFFF;
-  border: 2px solid #E0E0E0;
-  border-radius: 12px;
-  padding: 20px;
-  transition: all 0.3s ease;
-  display: flex;
-  flex-direction: column;
-}
-
-.comboCard:hover {
-  border-color: #628141;
-  box-shadow: 0 4px 8px rgba(98, 129, 65, 0.15);
-  transform: translateY(-2px);
-}
-
-.comboHeader {
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #EBD5AB;
-}
-
-.comboHeader h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #628141;
-}
-
-.ingredientsList {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.ingredientItem {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px;
-  background-color: #F8F9FA;
-  border-radius: 8px;
-}
-
-.ingredientName {
-  font-size: 14px;
-  font-weight: 600;
-  color: #2C3E50;
-  text-transform: capitalize;
-}
-
-.recipesPreview {
-  margin-bottom: 16px;
-  padding: 12px;
-  background-color: #FFF5EB;
-  border-radius: 8px;
-  border-left: 3px solid #E67E22;
-}
-
-.recipesPreview strong {
-  display: block;
-  margin-bottom: 8px;
-  color: #E67E22;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.recipesList {
-  margin: 0;
-  padding-left: 20px;
-  font-size: 13px;
-  color: #2C3E50;
-}
-
-.recipesList li {
-  margin-bottom: 4px;
-}
-
-.addComboButton {
-  width: 100%;
-  padding: 12px 16px;
-  background-color: #628141;
+.error {
+  background: var(--danger);
   color: #FFFFFF;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  text-align: center;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-top: auto;
 }
 
-.addComboButton:hover {
-  background-color: #4A6330;
-  transform: scale(1.02);
+@keyframes notifyIn {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }
 
-@media (max-width: 768px) {
-  .combosGrid {
-    grid-template-columns: 1fr;
-  }
-}
+/* ---------- Shopping mode ----------
+   Full-screen, big tap targets, checked items sink to the bottom. */
 
-/* Shop button */
-.shopButton {
-  padding: 12px 24px;
-  background-color: #628141;
-  color: #EBD5AB;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 16px;
-  transition: all 0.2s ease;
-}
-
-.shopButton:hover {
-  background-color: #8BAE66;
-  color: #2C3E50;
-}
-
-/* Shopping Mode Overlay */
 .shoppingOverlay {
   position: fixed;
   inset: 0;
-  background-color: #F5F0E8;
   z-index: 999;
+  background: var(--bg);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
 .shoppingTopBar {
-  background-color: #628141;
-  color: #FFFFFF;
-  padding: 16px 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-
-.shoppingProgress {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  flex-shrink: 0;
+  gap: 12px;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 20px 14px;
+  background: rgba(250, 246, 238, 0.92);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid var(--line);
 }
 
-.shoppingProgressCount {
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1;
+.shoppingTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.shoppingTopBar .progressBar {
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.shoppingTitle {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.1;
 }
 
 .shoppingProgressLabel {
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-.shoppingProgressBarWrap {
-  flex: 1;
-  height: 8px;
-  background-color: rgba(255,255,255,0.3);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.shoppingProgressBarFill {
-  height: 100%;
-  background-color: #EBD5AB;
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.shoppingExitBtn {
-  flex-shrink: 0;
-  padding: 10px 20px;
-  background-color: rgba(255,255,255,0.2);
-  color: #FFFFFF;
-  border: 2px solid rgba(255,255,255,0.5);
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.shoppingExitBtn:hover {
-  background-color: rgba(255,255,255,0.35);
+  font-size: 14px;
+  color: var(--muted);
 }
 
 .shoppingList {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 16px 32px;
+  padding: 16px 16px calc(32px + var(--safe-bottom));
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 18px;
 }
 
 .shoppingCategory {
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
-.shoppingCategoryTitle {
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #628141;
-  padding: 0 4px;
+.shoppingCategory .categoryTitle {
+  margin: 0 4px 2px;
 }
 
 .shoppingItem {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 18px 16px;
-  background-color: #FFFFFF;
-  border-radius: 12px;
-  border: 2px solid transparent;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-  cursor: pointer;
+  min-height: 58px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px var(--line);
   text-align: left;
-  transition: all 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
-.shoppingItem:active {
-  transform: scale(0.98);
-}
-
-.shoppingItemChecked {
-  background-color: #F0F7E8;
-  border-color: #8BAE66;
-  opacity: 0.65;
-}
-
-.shoppingCheckbox {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 2.5px solid #C0C0C0;
-  background-color: #FFFFFF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  font-weight: 700;
-  color: #628141;
-  flex-shrink: 0;
-  transition: all 0.15s ease;
-}
-
-.shoppingItemChecked .shoppingCheckbox {
-  background-color: #628141;
-  border-color: #628141;
-  color: #FFFFFF;
-}
-
-.shoppingItemText {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+.shoppingItem .checkCircle {
+  width: 30px;
+  height: 30px;
 }
 
 .shoppingItemName {
-  font-size: 18px;
+  flex: 1;
+  min-width: 0;
+  font-size: 17px;
   font-weight: 600;
-  color: #2C3E50;
-  line-height: 1.2;
-}
-
-.shoppingItemChecked .shoppingItemName {
-  text-decoration: line-through;
-  color: #95A5A6;
 }
 
 .shoppingItemQty {
+  flex-shrink: 0;
   font-size: 14px;
-  color: #7F8C8D;
+  color: var(--muted);
 }
 
-.notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 14px 20px;
-  border-radius: 8px;
+.shoppingItem.checked {
+  opacity: 0.55;
+}
+
+.shoppingItem.checked .shoppingItemName {
+  text-decoration: line-through;
   font-weight: 500;
-  z-index: 1000;
-  animation: notifyFadeIn 0.2s ease;
 }
 
-.success {
-  background-color: #2ecc71;
-  color: #fff;
-}
+/* ---------- Narrow widths ---------- */
 
-.error {
-  background-color: #e74c3c;
-  color: #fff;
-}
+@media (max-width: 560px) {
+  .toolbar {
+    width: 100%;
+  }
 
-@keyframes notifyFadeIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  .toolbar .btn:last-child {
+    flex: 1;
+  }
+
+  .toolLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .quickAddUnit {
+    width: 76px;
+  }
+
+  .quickAddQty {
+    width: 44px;
+  }
 }

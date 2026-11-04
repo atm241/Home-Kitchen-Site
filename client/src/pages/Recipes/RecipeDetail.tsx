@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { recipesApi, pantryApi, groceryApi, cookHistoryApi } from '../../services/api';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
+import { recipesApi, pantryApi, groceryApi, cookHistoryApi, PantryCoverage } from '../../services/api';
+import Icon from '../../components/Icon/Icon';
+import { PLATFORM_LABEL, authorLabel, isVideoPlatform } from '../../components/RecipeCard/sourceLabel';
 import { Recipe } from '../../types';
 import { DIETARY_TAGS } from '../../types';
 import { getWeekStartDate } from '../../utils/dateUtils';
@@ -17,6 +19,10 @@ const CATEGORIES = [
 const RecipeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const importState = location.state as { justImported?: boolean; duplicate?: boolean } | null;
+  const [showImportBanner, setShowImportBanner] = useState(!!importState?.justImported);
+  const [coverage, setCoverage] = useState<PantryCoverage | null>(null);
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
   const [servingsCooked, setServingsCooked] = useState('');
@@ -92,6 +98,9 @@ const RecipeDetail: React.FC = () => {
       const response = await recipesApi.getOne(recipeId);
       setRecipe(response.data);
       setScaledServings(response.data.servings);
+      recipesApi.pantryMatch()
+        .then(r => setCoverage(r.data[recipeId] || null))
+        .catch(() => {});
     } catch (error) {
       console.error('Error loading recipe:', error);
     } finally {
@@ -108,7 +117,7 @@ const RecipeDetail: React.FC = () => {
     if (!recipe || !window.confirm('Are you sure you want to delete this recipe?')) return;
     try {
       await recipesApi.delete(recipe.id);
-      navigate('/recipes');
+      navigate('/');
     } catch (error) {
       showNotification('error', 'Failed to delete recipe');
     }
@@ -307,13 +316,27 @@ const RecipeDetail: React.FC = () => {
 
   const handleAddToGroceryList = async () => {
     if (!recipe) return;
-    if (!window.confirm(`Add all ingredients from "${recipe.name}" to your grocery list for this week?`)) return;
     try {
       const weekStartDate = getWeekStartDate();
       await groceryApi.addFromRecipe({ recipe_id: recipe.id, week_start_date: weekStartDate, servings: recipe.servings });
-      showNotification('success', 'Ingredients added to grocery list!');
+      showNotification('success', 'All ingredients added to your grocery list');
     } catch (error) {
       showNotification('error', 'Failed to add ingredients to grocery list');
+    }
+  };
+
+  const handleAddMissingToGrocery = async () => {
+    if (!recipe || !coverage || coverage.missing.length === 0) return;
+    try {
+      await groceryApi.addFromRecipe({
+        recipe_id: recipe.id,
+        week_start_date: getWeekStartDate(),
+        servings: recipe.servings,
+        ingredient_names: coverage.missing,
+      });
+      showNotification('success', `Added ${coverage.missing.length} item${coverage.missing.length > 1 ? 's' : ''} to your grocery list`);
+    } catch {
+      showNotification('error', 'Failed to add to grocery list');
     }
   };
 
@@ -397,7 +420,7 @@ const RecipeDetail: React.FC = () => {
                   onClick={() => editPhotoInputRef.current?.click()}
                   disabled={uploadingEditPhoto}
                 >
-                  {uploadingEditPhoto ? 'Uploading...' : '⬆ Upload Photo'}
+                  {uploadingEditPhoto ? 'Uploading...' : 'Upload photo'}
                 </button>
                 <input type="url" value={editForm.image_url}
                   onChange={e => setEditForm({ ...editForm, image_url: e.target.value })}
@@ -517,6 +540,15 @@ const RecipeDetail: React.FC = () => {
     );
   }
 
+  const totalTime = (recipe.prep_time || 0) + (recipe.cook_time || 0);
+  const author = authorLabel(recipe.source_platform, recipe.source_author);
+  const platformName = recipe.source_platform ? PLATFORM_LABEL[recipe.source_platform] : undefined;
+  const missingSet = new Set((coverage?.missing || []).map(n => n.toLowerCase()));
+  const steps = (recipe.instructions || '').split('\n').map(s => s.trim()).filter(Boolean);
+  const sourceHost = (() => {
+    try { return recipe.source_url ? new URL(recipe.source_url).hostname.replace(/^www\./, '') : undefined; } catch { return undefined; }
+  })();
+
   return (
     <div className={styles.container}>
       {notification && (
@@ -524,37 +556,100 @@ const RecipeDetail: React.FC = () => {
           {notification.message}
         </div>
       )}
-      <div className={`${styles.header} noPrint`}>
-        <button onClick={() => navigate('/recipes')} className={styles.backButton}>
-          ← Back to Recipes
+
+      <div className={`${styles.topBar} noPrint`}>
+        <button onClick={() => navigate('/')} className="btn btn-ghost">
+          <Icon name="chevronLeft" size={18} /> Cookbook
         </button>
-        <div className={styles.headerActions}>
-          <button onClick={handleToggleFavorite} className={`${styles.favoriteButton} ${recipe.is_favorite ? styles.favoriteButtonActive : ''}`} title={recipe.is_favorite ? 'Remove from favorites' : 'Add to favorites'}>
-            {recipe.is_favorite ? '★ Favorited' : '☆ Favorite'}
+        <div className={styles.topActions}>
+          <button
+            onClick={handleToggleFavorite}
+            className={`${styles.iconButton} ${recipe.is_favorite ? styles.iconButtonOn : ''}`}
+            aria-label={recipe.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
+            aria-pressed={!!recipe.is_favorite}
+          >
+            <Icon name="heart" size={20} filled={!!recipe.is_favorite} />
           </button>
-          <button onClick={handlePrint} className={styles.printButton} title="Print recipe">
-            🖨 Print
+          <button onClick={handleStartEdit} className={styles.iconButton} aria-label="Edit recipe">
+            <Icon name="edit" size={20} />
           </button>
-          <button onClick={handleStartEdit} className={styles.editButton}>Edit Recipe</button>
-          <button onClick={handleDelete} className={styles.deleteButton}>Delete Recipe</button>
+          <button onClick={handlePrint} className={`${styles.iconButton} ${styles.hideOnPhone}`} aria-label="Print recipe">
+            <Icon name="printer" size={20} />
+          </button>
+          <button onClick={handleDelete} className={`${styles.iconButton} ${styles.iconButtonDanger}`} aria-label="Delete recipe">
+            <Icon name="trash" size={20} />
+          </button>
         </div>
       </div>
 
-      <div className={styles.content}>
-        {recipe.image_url && (
-          <div className={styles.recipeImageWrap}>
-            <img src={resolveImageUrl(recipe.image_url)} alt={recipe.name} className={styles.recipeImage} />
-          </div>
-        )}
+      {showImportBanner && (
+        <div className={`${styles.importBanner} noPrint`} role="status">
+          <Icon name="check" size={18} />
+          <span>{importState?.duplicate ? 'This one was already in your cookbook.' : 'Saved to your cookbook. Give it a quick look and fix anything that came through wrong.'}</span>
+          <button onClick={() => setShowImportBanner(false)} aria-label="Dismiss" className={styles.bannerClose}>
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+      )}
 
-        <div className={styles.titleSection}>
-          <h1>{recipe.name}</h1>
-          <div className={styles.badgeRow}>
-            {recipe.category && (
-              <span className={styles.categoryBadge}>{recipe.category}</span>
+      <div className={styles.hero}>
+        <div className={`${styles.heroMedia} ${recipe.image_url ? '' : styles.heroMediaEmpty}`}>
+          {recipe.image_url ? (
+            <img src={resolveImageUrl(recipe.image_url)} alt={recipe.name} className={styles.heroImage} />
+          ) : (
+            <div className={styles.heroPlaceholder}>{recipe.name.charAt(0)}</div>
+          )}
+        </div>
+
+        <div className={styles.heroInfo}>
+          {recipe.category && <span className={styles.eyebrow}>{recipe.category}</span>}
+          <h1 className={styles.recipeTitle}>{recipe.name}</h1>
+
+          {recipe.source_url && (
+            <a href={recipe.source_url} target="_blank" rel="noopener noreferrer" className={`${styles.sourceLink} noPrint`}>
+              {isVideoPlatform(recipe.source_platform) ? (
+                <><span className={styles.playDot}><Icon name="play" size={10} filled strokeWidth={0} /></span> Watch on {platformName}</>
+              ) : (
+                <><Icon name="external" size={15} /> {author || sourceHost || 'Original recipe'}</>
+              )}
+              {isVideoPlatform(recipe.source_platform) && author && <span className={styles.sourceAuthor}>· {author}</span>}
+            </a>
+          )}
+
+          {recipe.description && <p className={styles.description}>{recipe.description}</p>}
+
+          <div className={styles.stats}>
+            {totalTime > 0 && (
+              <div className={styles.stat}>
+                <span className={styles.statValue}>{totalTime} min</span>
+                <span className={styles.statLabel}>
+                  {recipe.prep_time && recipe.cook_time ? `${recipe.prep_time} prep · ${recipe.cook_time} cook` : 'Total'}
+                </span>
+              </div>
             )}
-
+            <div className={styles.stat}>
+              <span className={styles.statValue}>{recipe.servings}</span>
+              <span className={styles.statLabel}>Servings</span>
+            </div>
+            {recipe.calories && (
+              <div className={styles.stat}>
+                <span className={styles.statValue}>{recipe.calories}</span>
+                <span className={styles.statLabel}>Cal / serving</span>
+              </div>
+            )}
           </div>
+
+          <div className={`${styles.heroActions} noPrint`}>
+            {steps.length > 0 && (
+              <Link to={`/recipes/${recipe.id}/cook`} className="btn btn-primary">
+                <Icon name="play" size={14} filled strokeWidth={0} /> Start cooking
+              </Link>
+            )}
+            <button onClick={handleAddToGroceryList} className="btn btn-secondary">
+              <Icon name="cart" size={16} /> Add to grocery list
+            </button>
+          </div>
+
           {recipe.dietary_tags && recipe.dietary_tags.length > 0 && (
             <div className={styles.dietaryTagsRow}>
               {recipe.dietary_tags.map(tag => (
@@ -563,56 +658,48 @@ const RecipeDetail: React.FC = () => {
             </div>
           )}
         </div>
+      </div>
 
-        {recipe.description && <p className={styles.description}>{recipe.description}</p>}
-
-        <div className={styles.metadata}>
-          <div className={styles.metaItem}>
-            <span className={styles.metaLabel}>Servings:</span>
-            <span className={styles.metaValue}>{recipe.servings}</span>
+      {coverage && coverage.total > 0 && (
+        <div className={`${styles.pantryCard} noPrint`}>
+          <div className={styles.pantryMeter} aria-hidden="true">
+            <div className={styles.pantryMeterFill} style={{ width: `${(coverage.have / coverage.total) * 100}%` }} />
           </div>
-          {recipe.prep_time && (
-            <div className={styles.metaItem}>
-              <span className={styles.metaLabel}>Prep:</span>
-              <span className={styles.metaValue}>{recipe.prep_time} min</span>
-            </div>
-          )}
-          {recipe.cook_time && (
-            <div className={styles.metaItem}>
-              <span className={styles.metaLabel}>Cook:</span>
-              <span className={styles.metaValue}>{recipe.cook_time} min</span>
-            </div>
+          <div className={styles.pantryText}>
+            <strong>
+              {coverage.missing.length === 0
+                ? 'Your pantry has everything for this'
+                : `You have ${coverage.have} of ${coverage.total} ingredients`}
+            </strong>
+            {coverage.missing.length > 0 && (
+              <span className={styles.pantryMissing}>Missing: {coverage.missing.join(', ')}</span>
+            )}
+          </div>
+          {coverage.missing.length > 0 && (
+            <button onClick={handleAddMissingToGrocery} className="btn btn-secondary">
+              Add {coverage.missing.length} to list
+            </button>
           )}
         </div>
+      )}
 
-        {(recipe.calories || recipe.protein || recipe.carbs || recipe.fat) && (
-          <div className={styles.nutrition}>
-            <h2>Nutrition (per serving)</h2>
-            <div className={styles.nutritionGrid}>
-              {recipe.calories && <div className={styles.nutritionItem}><span className={styles.nutritionValue}>{recipe.calories}</span><span className={styles.nutritionLabel}>Calories</span></div>}
-              {recipe.protein && <div className={styles.nutritionItem}><span className={styles.nutritionValue}>{recipe.protein}g</span><span className={styles.nutritionLabel}>Protein</span></div>}
-              {recipe.carbs && <div className={styles.nutritionItem}><span className={styles.nutritionValue}>{recipe.carbs}g</span><span className={styles.nutritionLabel}>Carbs</span></div>}
-              {recipe.fat && <div className={styles.nutritionItem}><span className={styles.nutritionValue}>{recipe.fat}g</span><span className={styles.nutritionLabel}>Fat</span></div>}
-            </div>
-          </div>
-        )}
-
+      <div className={styles.body}>
         {recipe.ingredients && recipe.ingredients.length > 0 && (
-          <div className={styles.section}>
+          <section className={styles.ingredientsCol}>
             <div className={styles.sectionHeader}>
               <h2>Ingredients</h2>
-              <div className={`${styles.sectionActions} noPrint`}>
-                <div className={styles.scalingControl}>
-                  <label htmlFor="scale-servings">Scale to:</label>
-                  <input id="scale-servings" type="number" min="1" value={scaledServings}
-                    onChange={e => setScaledServings(e.target.value === '' ? '' : parseInt(e.target.value))}
-                    className={styles.scaleInput} />
-                  <span>servings</span>
-                  {scaledServings !== recipe.servings && (
-                    <button className={styles.resetScaleButton} onClick={() => setScaledServings(recipe.servings)}>Reset</button>
-                  )}
-                </div>
-                <button onClick={handleAddToGroceryList} className={styles.groceryButton}>+ Add to Grocery List</button>
+              <div className={`${styles.scalingControl} noPrint`}>
+                <button
+                  className={styles.stepper}
+                  onClick={() => setScaledServings(Math.max(1, (Number(scaledServings) || recipe.servings) - 1))}
+                  aria-label="Fewer servings"
+                >−</button>
+                <span className={styles.scaleValue}>{scaledServings || recipe.servings} servings</span>
+                <button
+                  className={styles.stepper}
+                  onClick={() => setScaledServings((Number(scaledServings) || recipe.servings) + 1)}
+                  aria-label="More servings"
+                >+</button>
               </div>
             </div>
             <ul className={styles.ingredientsList}>
@@ -620,52 +707,68 @@ const RecipeDetail: React.FC = () => {
                 const scaledQty = ing.quantity && scaleFactor !== 1
                   ? Math.round(ing.quantity * scaleFactor * 100) / 100
                   : ing.quantity;
+                const have = coverage ? !missingSet.has(ing.name.toLowerCase()) : false;
                 return (
-                  <li key={index}>
-                    {scaledQty && `${scaledQty} `}{ing.unit && `${ing.unit} `}{ing.name}
-                    {ing.notes && `, ${ing.notes}`}
-                    {scaleFactor !== 1 && ing.quantity && <span className={styles.originalQty}> (orig: {ing.quantity})</span>}
+                  <li key={index} className={have ? styles.haveIt : undefined}>
+                    <span className={styles.ingQty}>{scaledQty ? `${scaledQty}${ing.unit ? ` ${ing.unit}` : ''}` : ''}</span>
+                    <span className={styles.ingName}>
+                      {ing.name}
+                      {ing.notes && <span className={styles.ingNotes}>, {ing.notes}</span>}
+                    </span>
+                    {have && <span className={styles.haveBadge} title="In your pantry"><Icon name="check" size={14} strokeWidth={3} /></span>}
                   </li>
                 );
               })}
             </ul>
-          </div>
+          </section>
         )}
 
-        {recipe.instructions && (
-          <div className={styles.section}>
-            <h2>Instructions</h2>
-            <ol className={styles.instructionsList}>
-              {recipe.instructions.split('\n').filter(step => step.trim()).map((step, index) => (
-                <li key={index}>{step.trim()}</li>
-              ))}
-            </ol>
-          </div>
-        )}
+        <div className={styles.mainCol}>
+          {steps.length > 0 && (
+            <section>
+              <h2>Steps</h2>
+              <ol className={styles.instructionsList}>
+                {steps.map((step, index) => (
+                  <li key={index}>
+                    <span className={styles.stepNumber}>{index + 1}</span>
+                    <p>{step}</p>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
 
-        {recipe.personal_notes && (
-          <div className={styles.notesSection}>
-            <h2>My Notes</h2>
-            <p className={styles.notesText}>{recipe.personal_notes}</p>
-          </div>
-        )}
+          {recipe.personal_notes && (
+            <section className={styles.notesSection}>
+              <h2>My notes</h2>
+              <p className={styles.notesText}>{recipe.personal_notes}</p>
+            </section>
+          )}
 
-        {recipe.source_url && (
-          <div className={`${styles.source} noPrint`}>
-            <a href={recipe.source_url} target="_blank" rel="noopener noreferrer">View Original Recipe →</a>
-          </div>
-        )}
+          {(recipe.protein || recipe.carbs || recipe.fat) && (
+            <section className={styles.nutrition}>
+              <h2>Nutrition per serving</h2>
+              <div className={styles.nutritionGrid}>
+                {recipe.calories && <div className={styles.nutritionItem}><span className={styles.nutritionValue}>{recipe.calories}</span><span className={styles.nutritionLabel}>Calories</span></div>}
+                {recipe.protein && <div className={styles.nutritionItem}><span className={styles.nutritionValue}>{recipe.protein}g</span><span className={styles.nutritionLabel}>Protein</span></div>}
+                {recipe.carbs && <div className={styles.nutritionItem}><span className={styles.nutritionValue}>{recipe.carbs}g</span><span className={styles.nutritionLabel}>Carbs</span></div>}
+                {recipe.fat && <div className={styles.nutritionItem}><span className={styles.nutritionValue}>{recipe.fat}g</span><span className={styles.nutritionLabel}>Fat</span></div>}
+              </div>
+            </section>
+          )}
 
-        <div className={`${styles.cookSection} noPrint`}>
-          <h2>Mark as Cooked</h2>
-          <p>Enter the number of servings you cooked to deduct ingredients from your pantry and log this to your cook history.</p>
-          <div className={styles.cookForm}>
-            <input type="number" step="0.1" value={servingsCooked}
-              onChange={(e) => setServingsCooked(e.target.value)}
-              placeholder={`Default: ${recipe.servings || 1} servings`}
-              className={styles.servingsInput} />
-            <button onClick={handleMarkAsCooked} className={styles.cookButton}>Mark as Cooked</button>
-          </div>
+          <section className={`${styles.cookSection} noPrint`}>
+            <h2>Made it?</h2>
+            <p>Log it to your cook history and take what you used out of the pantry.</p>
+            <div className={styles.cookForm}>
+              <input type="number" step="0.1" value={servingsCooked}
+                onChange={(e) => setServingsCooked(e.target.value)}
+                placeholder={`${recipe.servings || 1} servings`}
+                className={styles.servingsInput}
+                aria-label="Servings cooked" />
+              <button onClick={handleMarkAsCooked} className="btn btn-secondary">Mark as cooked</button>
+            </div>
+          </section>
         </div>
       </div>
 

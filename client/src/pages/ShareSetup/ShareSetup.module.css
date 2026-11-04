@@ -1,0 +1,178 @@
+.page {
+  max-width: 640px;
+  margin: 8px auto 0;
+}
+
+.page h1 {
+  margin-bottom: 8px;
+}
+
+.lead {
+  color: var(--ink-2);
+  margin-bottom: 20px;
+}
+
+.segmented {
+  display: inline-flex;
+  background: var(--bg-subtle);
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 20px;
+}
+
+.segmented button {
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.segmented .segOn {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+.note {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.steps {
+  list-style: none;
+  counter-reset: step;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.steps > li {
+  counter-increment: step;
+  position: relative;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 18px 18px 18px 60px;
+}
+
+.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 18px;
+  top: 18px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.steps h3 {
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.steps p {
+  font-size: 15px;
+  color: var(--ink-2);
+  margin-bottom: 8px;
+}
+
+.steps p:last-child {
+  margin-bottom: 0;
+}
+
+.steps code {
+  background: var(--bg-subtle);
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.config {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.config li {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+.config li > span:first-child {
+  width: 110px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.keyActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.copyField {
+  margin-top: 10px;
+}
+
+.copyLabel {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.copyRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.copyRow code {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  background: var(--bg-subtle);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.copyRow .btn {
+  min-height: 40px;
+  padding: 8px 14px;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.error {
+  color: var(--danger);
+}
+
+.revoke {
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 0;
+}

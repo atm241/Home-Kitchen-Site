@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
+    import_key_hash VARCHAR(64), -- SHA-256 of the phone Shortcut key
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -43,6 +44,8 @@ CREATE TABLE IF NOT EXISTS recipes (
     dietary_tags TEXT[] DEFAULT '{}',
     difficulty TEXT DEFAULT 'medium',
     personal_notes TEXT,
+    source_platform VARCHAR(20), -- tiktok | youtube | instagram | web
+    source_author VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -163,6 +166,33 @@ CREATE TABLE IF NOT EXISTS monthly_budgets (
     UNIQUE(household_id, month)
 );
 
+-- Auto meal planner goals (last used, to prefill the form)
+CREATE TABLE IF NOT EXISTS meal_plan_preferences (
+    household_id INTEGER PRIMARY KEY REFERENCES households(id) ON DELETE CASCADE,
+    period_days INTEGER NOT NULL DEFAULT 7,
+    budget_amount DECIMAL(10, 2),
+    budget_start_date DATE,
+    daily_calories INTEGER,
+    protein_goal INTEGER,
+    fiber_goal INTEGER,
+    carbs_limit INTEGER,
+    fat_limit INTEGER,
+    meal_slots TEXT[] NOT NULL DEFAULT '{breakfast,lunch,dinner}',
+    servings INTEGER NOT NULL DEFAULT 2,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Receipt totals (one per shopping trip), counted against the budget
+CREATE TABLE IF NOT EXISTS grocery_receipts (
+    id SERIAL PRIMARY KEY,
+    household_id INTEGER NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+    total DECIMAL(10, 2) NOT NULL CHECK (total >= 0),
+    store_name VARCHAR(100),
+    purchased_on DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_grocery_receipts_household_date ON grocery_receipts(household_id, purchased_on);
+
 -- Meal portions consumed (for tracking servings and leftovers)
 CREATE TABLE IF NOT EXISTS meal_portions (
     id SERIAL PRIMARY KEY,
@@ -245,3 +275,7 @@ INSERT INTO schema_migrations (filename) VALUES
   ('002_add_monthly_budgets.sql'),
   ('003_add_auth_and_households.sql')
 ON CONFLICT (filename) DO NOTHING;
+
+-- Video imports & phone share keys (mirrors migrations/008_video_imports.sql)
+CREATE INDEX IF NOT EXISTS idx_recipes_household_source_url ON recipes(household_id, source_url);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_import_key_hash ON users(import_key_hash) WHERE import_key_hash IS NOT NULL;

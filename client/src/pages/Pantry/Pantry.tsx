@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { pantryApi, ingredientsApi, groceryApi, recipesApi, recommendationsApi, RecipeRecommendation, ParsedReceiptItem, UseItUpResult } from '../../services/api';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { pantryApi, ingredientsApi, groceryApi, recipesApi, recommendationsApi, receiptsApi, RecipeRecommendation, ParsedReceiptItem, UseItUpResult } from '../../services/api';
 import { PantryItem, Ingredient } from '../../types';
 import { getWeekStartDate } from '../../utils/dateUtils';
 import BarcodeScanner from '../../components/BarcodeScanner/BarcodeScanner';
-import { resolveImageUrl } from '../../utils/imageUtils';
+import Icon from '../../components/Icon/Icon';
 import styles from './Pantry.module.css';
 
 // Recommendation cards shown before "Show all" — keeps the pantry itself easy
 // to reach now that the recommender surfaces the whole saved-recipe library.
-const VISIBLE_RECOMMENDATIONS = 6;
+const VISIBLE_RECOMMENDATIONS = 4;
 
 // Shelf life comes from the server's shelf_life reference table, which matches
 // on the ingredient name first (parmesan keeps far longer than milk) and falls
@@ -42,6 +43,8 @@ const Pantry: React.FC = () => {
   const [recommendations, setRecommendations] = useState<RecipeRecommendation[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [showAllRecommendations, setShowAllRecommendations] = useState(false);
+  const [itemQuery, setItemQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [lowStockMenuId, setLowStockMenuId] = useState<number | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [newItem, setNewItem] = useState({
@@ -72,6 +75,8 @@ const Pantry: React.FC = () => {
   const [receiptMediaType, setReceiptMediaType] = useState('image/jpeg');
   const [parsingReceipt, setParsingReceipt] = useState(false);
   const [parsedItems, setParsedItems] = useState<ParsedReceiptItem[] | null>(null);
+  // Receipt total, read in the same scan. Counted against the grocery budget.
+  const [receiptTotal, setReceiptTotal] = useState({ total: '', store: '', date: '', count: true });
   const [addingReceiptItems, setAddingReceiptItems] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [lookingUpBarcode, setLookingUpBarcode] = useState(false);
@@ -346,7 +351,13 @@ const Pantry: React.FC = () => {
     setParsingReceipt(true);
     try {
       const response = await pantryApi.parseReceipt({ image: receiptBase64, mediaType: receiptMediaType });
-      setParsedItems(response.data);
+      setParsedItems(response.data.items);
+      setReceiptTotal({
+        total: response.data.total !== null ? response.data.total.toFixed(2) : '',
+        store: response.data.store ?? '',
+        date: response.data.purchased_on ?? '',
+        count: true,
+      });
     } catch {
       showNotification('error', 'Failed to parse receipt. Please try a clearer photo.');
     } finally {
@@ -371,7 +382,13 @@ const Pantry: React.FC = () => {
           expiration_date: item.expiration_date || undefined,
         });
       }
-      showNotification('success', `Added ${parsedItems.length} items to your pantry!`);
+      const total = parseFloat(receiptTotal.total);
+      let logged = false;
+      if (receiptTotal.count && Number.isFinite(total) && total > 0) {
+        await receiptsApi.add({ total, store_name: receiptTotal.store || null, purchased_on: receiptTotal.date || null });
+        logged = true;
+      }
+      showNotification('success', `Added ${parsedItems.length} items to your pantry${logged ? ` and logged $${total.toFixed(2)}` : ''}`);
       setShowReceiptModal(false);
       setReceiptPreview(null);
       setReceiptBase64(null);
@@ -416,14 +433,24 @@ const Pantry: React.FC = () => {
     }
   };
 
-  const groupedItems = pantryItems.reduce((acc, item) => {
-    const category = item.category || 'Other';
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(item);
-    return acc;
-  }, {} as Record<string, PantryItem[]>);
+  const categories = useMemo(
+    () => Array.from(new Set(pantryItems.map(i => i.category || 'Other'))).sort(),
+    [pantryItems]
+  );
+
+  const groupedItems = useMemo(() => {
+    const q = itemQuery.trim().toLowerCase();
+    return pantryItems
+      .filter(item => !q || item.ingredient_name.toLowerCase().includes(q))
+      .filter(item => !activeCategory || (item.category || 'Other') === activeCategory)
+      .reduce((acc, item) => {
+        const category = item.category || 'Other';
+        (acc[category] = acc[category] || []).push(item);
+        return acc;
+      }, {} as Record<string, PantryItem[]>);
+  }, [pantryItems, itemQuery, activeCategory]);
+
+  const lowStaples = pantryItems.filter(item => item.is_staple && (item.quantity || 0) < 5);
 
   if (loading) {
     return <div className={styles.loading}>Loading pantry...</div>;
@@ -436,228 +463,87 @@ const Pantry: React.FC = () => {
           {notification.message}
         </div>
       )}
-      <div className={styles.header}>
-        <h1>Pantry</h1>
-        <div className={styles.headerActions}>
-          {pantryItems.some(item => item.is_staple && (item.quantity || 0) < 5) && (
-            <button onClick={handleAddAllStaplesToGrocery} className={styles.staplesButton}>
-              + Restock Staples
-            </button>
-          )}
+      <header className={styles.pageHeader}>
+        <div className={styles.titleBlock}>
+          <h1>Pantry</h1>
+          <p className={styles.subtitle}>
+            {pantryItems.length} item{pantryItems.length === 1 ? '' : 's'}
+            {categories.length > 0 && ` in ${categories.length} categor${categories.length === 1 ? 'y' : 'ies'}`}
+          </p>
+        </div>
+        <div className={styles.toolbar}>
           <button
             onClick={() => setShowBarcodeScanner(true)}
-            className={styles.scanReceiptButton}
+            className={`btn btn-secondary ${styles.toolButton}`}
             disabled={lookingUpBarcode}
+            title="Scan a barcode"
           >
-            {lookingUpBarcode ? 'Looking up...' : 'Scan Barcode'}
+            <Icon name="barcode" size={18} />
+            <span className={styles.toolLabel}>{lookingUpBarcode ? 'Looking up…' : 'Barcode'}</span>
           </button>
-          <button onClick={() => setShowReceiptModal(true)} className={styles.scanReceiptButton}>
-            Scan Receipt
+          <button
+            onClick={() => setShowReceiptModal(true)}
+            className={`btn btn-secondary ${styles.toolButton}`}
+            title="Scan a receipt"
+          >
+            <Icon name="receipt" size={18} />
+            <span className={styles.toolLabel}>Receipt</span>
           </button>
-          <button onClick={() => setShowAddForm(!showAddForm)} className={styles.addButton}>
-            {showAddForm ? 'Cancel' : 'Add Item'}
+          <button onClick={() => setShowAddForm(!showAddForm)} className={`btn ${showAddForm ? 'btn-secondary' : 'btn-primary'}`}>
+            {showAddForm ? <><Icon name="x" size={16} /> Cancel</> : <><Icon name="plus" size={16} strokeWidth={2.5} /> Add item</>}
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Expiry Alert Banner */}
-      {(() => {
-        const expired = pantryItems.filter(i => getExpiryStatus(i.expiration_date) === 'expired');
-        const soon = pantryItems.filter(i => getExpiryStatus(i.expiration_date) === 'soon');
-        if (expired.length === 0 && soon.length === 0) return null;
-        return (
-          <div className={styles.expiryBanner}>
-            <span className={styles.expiryBannerIcon}>⚠️</span>
-            <span className={styles.expiryBannerText}>
-              {expired.length > 0 && (
-                <strong className={styles.expiredText}>
-                  {expired.length} item{expired.length > 1 ? 's' : ''} expired
-                </strong>
-              )}
-              {expired.length > 0 && soon.length > 0 && <span> · </span>}
-              {soon.length > 0 && (
-                <span>
-                  {soon.length} item{soon.length > 1 ? 's' : ''} expire within 5 days
-                </span>
-              )}
-            </span>
-          </div>
-        );
-      })()}
-
-      {/* Use It Up Section */}
+      {/* Things that need attention, kept to one compact row each. */}
       {useItUp && useItUp.expiringItems.length > 0 && (
-        <div className={styles.useItUpSection}>
-          <div className={styles.useItUpHeader}>
-            <div>
-              <h2 className={styles.useItUpTitle}>Use It Up</h2>
-              <p className={styles.useItUpSubtitle}>
-                {useItUp.expiringItems.length} ingredient{useItUp.expiringItems.length > 1 ? 's' : ''} expiring soon
-              </p>
-            </div>
+        <section className={styles.alertStrip}>
+          <div className={styles.alertHead}>
+            <Icon name="clock" size={18} />
+            <strong>Use soon</strong>
           </div>
-
-          <div className={styles.expiringChips}>
+          <div className={styles.alertChips}>
             {useItUp.expiringItems.map(item => (
               <span
                 key={item.id}
-                className={`${styles.expiringChip} ${item.days_until_expiry < 0 ? styles.expiringChipExpired : item.days_until_expiry <= 2 ? styles.expiringChipUrgent : styles.expiringChipSoon}`}
+                className={`${styles.expiringChip} ${item.days_until_expiry < 0 ? styles.expiringChipExpired : item.days_until_expiry <= 2 ? styles.expiringChipUrgent : ''}`}
               >
                 {item.ingredient_name}
                 <span className={styles.expiringChipDays}>
-                  {item.days_until_expiry < 0
-                    ? 'expired'
-                    : item.days_until_expiry === 0
-                    ? 'today'
-                    : `${item.days_until_expiry}d`}
+                  {item.days_until_expiry < 0 ? 'expired' : item.days_until_expiry === 0 ? 'today' : `${item.days_until_expiry}d`}
                 </span>
               </span>
             ))}
           </div>
-
-          {useItUp.recipes.length > 0 ? (
-            <div className={styles.useItUpRecipes}>
-              {useItUp.recipes.map(recipe => (
-                <a key={recipe.id} href={`/recipes/${recipe.id}`} className={styles.useItUpCard}>
-                  {recipe.image_url && (
-                    <img src={resolveImageUrl(recipe.image_url)} alt={recipe.name} className={styles.useItUpCardImg} />
-                  )}
-                  <div className={styles.useItUpCardBody}>
-                    <div className={styles.useItUpCardName}>{recipe.name}</div>
-                    <div className={styles.useItUpCardMeta}>
-                      {recipe.prep_time && recipe.cook_time && (
-                        <span>{recipe.prep_time + recipe.cook_time} min</span>
-                      )}
-                      {recipe.difficulty && <span>{recipe.difficulty}</span>}
-                      {recipe.calories && <span>{recipe.calories} cal</span>}
-                    </div>
-                    <div className={styles.useItUpUsing}>
-                      Uses:{' '}
-                      {recipe.expiring_ingredients
-                        .sort((a, b) => a.days_until_expiry - b.days_until_expiry)
-                        .map((ing, i) => (
-                          <span
-                            key={i}
-                            className={`${styles.useItUpIngredient} ${ing.days_until_expiry <= 2 ? styles.useItUpIngredientUrgent : ''}`}
-                          >
-                            {ing.name}
-                          </span>
-                        ))}
-                    </div>
-                  </div>
-                </a>
+          {useItUp.recipes.length > 0 && (
+            <div className={styles.alertRecipes}>
+              <span className={styles.alertRecipesLabel}>Cook:</span>
+              {useItUp.recipes.slice(0, 3).map(recipe => (
+                <Link key={recipe.id} to={`/recipes/${recipe.id}`} className={styles.alertRecipeLink}>
+                  {recipe.name}
+                </Link>
               ))}
             </div>
-          ) : (
-            <p className={styles.useItUpNoRecipes}>
-              No saved recipes use these ingredients yet. Try importing a recipe that calls for them!
-            </p>
           )}
-        </div>
+        </section>
       )}
 
-      {/* Recommended Recipes Section */}
-      {pantryItems.length > 0 && (
-        <div className={styles.recommendationsSection}>
-          <div className={styles.recommendationsHeader}>
-            <div className={styles.headerContent}>
-              <h2>Recommended Recipes</h2>
-              <p>Top-rated recipes you can make with your pantry items</p>
-            </div>
-            <button
-              onClick={handleRefreshRecommendations}
-              className={styles.refreshButton}
-              disabled={loadingRecommendations}
-              title="Get fresh recommendations"
-            >
-              🔄
-            </button>
+      {lowStaples.length > 0 && (
+        <section className={`${styles.alertStrip} ${styles.alertStripQuiet}`}>
+          <div className={styles.alertHead}>
+            <Icon name="alert" size={18} />
+            <strong>{lowStaples.length} staple{lowStaples.length > 1 ? 's' : ''} running low</strong>
           </div>
-          {loadingRecommendations ? (
-            <div className={styles.loadingRecommendations}>Loading recommendations...</div>
-          ) : recommendations.length === 0 ? (
-            <div className={styles.noRecommendations}>
-              No recipe recommendations found. Add more ingredients to your pantry!
-            </div>
-          ) : (
-            <div className={styles.recommendationsGrid}>
-              {(showAllRecommendations ? recommendations : recommendations.slice(0, VISIBLE_RECOMMENDATIONS)).map((recipe) => (
-                <div key={`${recipe.source ?? 'spoonacular'}-${recipe.id}`} className={styles.recipeCard}>
-                  {recipe.image && (
-                    <img src={recipe.image} alt={recipe.name} className={styles.recipeImage} />
-                  )}
-                  <div className={styles.recipeContent}>
-                    <h3 className={styles.recipeName}>{recipe.name}</h3>
-                    <div className={styles.recipeMetadata}>
-                      {recipe.source === 'saved' ? (
-                        <span className={styles.recipeRating}>📌 Saved</span>
-                      ) : (
-                        <span className={styles.recipeRating}>⭐ {recipe.rating.toFixed(1)}</span>
-                      )}
-                      {recipe.prepTime > 0 && (
-                        <span className={styles.recipeTime}>🕐 {recipe.prepTime} min</span>
-                      )}
-                      <span className={styles.recipeServings}>🍽️ {recipe.servings} servings</span>
-                      {recipe.calories && (
-                        <span className={styles.recipeCalories}>🔥 {recipe.calories} cal</span>
-                      )}
-                    </div>
-                    <div className={styles.matchPercentage}>
-                      <div className={styles.matchBar}>
-                        <div
-                          className={styles.matchBarFill}
-                          style={{ width: `${recipe.matchPercentage}%` }}
-                        />
-                      </div>
-                      <span className={styles.matchText}>{recipe.matchPercentage}% match</span>
-                    </div>
-                    {recipe.missingIngredients.length > 0 && (
-                      <div className={styles.missingIngredients}>
-                        <strong>Need:</strong> {recipe.missingIngredients.join(', ')}
-                      </div>
-                    )}
-                    <div className={styles.recipeActions}>
-                      {recipe.sourceUrl && (
-                        <a
-                          href={recipe.sourceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={styles.viewRecipeButton}
-                        >
-                          View Recipe
-                        </a>
-                      )}
-                      {recipe.source !== 'saved' && (
-                        <button
-                          onClick={() => handleAddRecipe(recipe.id)}
-                          className={styles.addRecipeButton}
-                          title="Add to my recipes"
-                        >
-                          +
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {!loadingRecommendations && recommendations.length > VISIBLE_RECOMMENDATIONS && (
-            <button
-              onClick={() => setShowAllRecommendations((prev) => !prev)}
-              className={styles.showMoreButton}
-            >
-              {showAllRecommendations
-                ? 'Show fewer'
-                : `Show all ${recommendations.length} recipes`}
-            </button>
-          )}
-        </div>
+          <span className={styles.alertNames}>{lowStaples.map(i => i.ingredient_name).join(', ')}</span>
+          <button onClick={handleAddAllStaplesToGrocery} className={`btn btn-secondary ${styles.alertAction}`}>
+            <Icon name="cart" size={16} /> Add to list
+          </button>
+        </section>
       )}
 
       {showAddForm && (
         <div className={styles.addFormCard}>
-          <h2>Add Pantry Item</h2>
+          <h2>Add an item</h2>
           <form onSubmit={handleAddItem} className={styles.addForm}>
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
@@ -773,8 +659,8 @@ const Pantry: React.FC = () => {
                 />
               </div>
             </div>
-            <button type="submit" className={styles.submitButton}>
-              Add to Pantry
+            <button type="submit" className="btn btn-primary">
+              Add to pantry
             </button>
           </form>
         </div>
@@ -783,7 +669,7 @@ const Pantry: React.FC = () => {
       {editingItem && (
         <div className={styles.modal}>
           <div className={styles.modalContent}>
-            <h2>Edit Pantry Item</h2>
+            <h2>Edit item</h2>
             <div className={styles.editForm}>
               <div className={styles.formGroup}>
                 <label htmlFor="edit_ingredient_name">Ingredient Name</label>
@@ -883,12 +769,12 @@ const Pantry: React.FC = () => {
                 />
               </div>
               <div className={styles.modalActions}>
-                <button onClick={handleUpdateItem} className={styles.submitButton}>
-                  Save Changes
+                <button onClick={handleUpdateItem} className="btn btn-primary">
+                  Save changes
                 </button>
                 <button
                   onClick={() => setEditingItem(null)}
-                  className={styles.cancelButton}
+                  className="btn btn-secondary"
                 >
                   Cancel
                 </button>
@@ -900,121 +786,207 @@ const Pantry: React.FC = () => {
 
       {pantryItems.length === 0 ? (
         <div className={styles.empty}>
-          <p>Your pantry is empty. Add items using the button above!</p>
+          <p>Your pantry is empty.</p>
+          <p className={styles.emptyHint}>Add items one at a time, scan a barcode, or snap a grocery receipt to add everything at once.</p>
         </div>
       ) : (
-        <div className={styles.categoriesGrid}>
-          {Object.entries(groupedItems).map(([category, items]) => (
-            <div key={category} className={styles.categoryCard}>
-              <h2>{category}</h2>
-              <div className={styles.itemsList}>
-                {items.map((item) => {
-                  const isLowStock = (item.quantity || 0) < 5;
-                  const expiryStatus = getExpiryStatus(item.expiration_date);
-                  return (
-                    <div key={item.id} className={`${styles.item} ${isLowStock ? styles.lowStock : ''} ${expiryStatus === 'expired' ? styles.expired : expiryStatus === 'soon' ? styles.expiringSoon : ''}`}>
-                      <div className={styles.itemContent}>
-                        <div className={styles.itemInfo}>
-                          <div className={styles.itemName}>
-                            {item.ingredient_name}
-                            {item.is_staple && <span className={styles.staple}>Staple</span>}
-                            {expiryStatus === 'expired' && <span className={styles.expiredBadge}>Expired</span>}
-                            {expiryStatus === 'soon' && <span className={styles.expiringSoonBadge}>Exp. soon</span>}
-                          </div>
-                          <div className={styles.itemQuantity}>
-                            {item.quantity} {item.unit}
-                            {editingExpiryId === item.id ? (
-                              <span className={styles.expiryInlineEdit}>
-                                <input
-                                  type="date"
-                                  value={editingExpiryValue}
-                                  onChange={e => setEditingExpiryValue(e.target.value)}
-                                  className={styles.expiryDateInput}
-                                  autoFocus
-                                />
+        <>
+          <div className={styles.listToolbar}>
+            <div className={styles.searchWrap}>
+              <Icon name="search" size={16} className={styles.searchIcon} />
+              <input
+                type="search"
+                value={itemQuery}
+                onChange={(e) => setItemQuery(e.target.value)}
+                placeholder="Find an item"
+                className={styles.search}
+                aria-label="Search pantry"
+              />
+            </div>
+            {categories.length > 1 && (
+              <div className={styles.categoryChips} role="group" aria-label="Categories">
+                <button
+                  className={`chip ${activeCategory === null ? 'chip-active' : ''}`}
+                  onClick={() => setActiveCategory(null)}
+                  aria-pressed={activeCategory === null}
+                >
+                  All
+                </button>
+                {categories.map(c => (
+                  <button
+                    key={c}
+                    className={`chip ${activeCategory === c ? 'chip-active' : ''}`}
+                    onClick={() => setActiveCategory(activeCategory === c ? null : c)}
+                    aria-pressed={activeCategory === c}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {Object.keys(groupedItems).length === 0 ? (
+            <div className={styles.empty}><p>No items match.</p></div>
+          ) : (
+            <div className={styles.categoriesGrid}>
+              {Object.entries(groupedItems).map(([category, items]) => (
+                <section key={category} className={styles.categoryCard}>
+                  <h2 className={styles.categoryTitle}>
+                    {category}
+                    <span className={styles.categoryCount}>{items.length}</span>
+                  </h2>
+                  <ul className={styles.itemsList}>
+                    {items.map((item) => {
+                      const isLowStock = (item.quantity || 0) < 5;
+                      const expiryStatus = getExpiryStatus(item.expiration_date);
+                      return (
+                        <li key={item.id} className={`${styles.item} ${expiryStatus === 'expired' ? styles.expired : expiryStatus === 'soon' ? styles.expiringSoon : ''}`}>
+                          <div className={styles.itemMain}>
+                            <div className={styles.itemName}>
+                              <span className={styles.itemNameText}>{item.ingredient_name}</span>
+                              {item.is_staple && <span className={styles.staple}>Staple</span>}
+                            </div>
+                            <div className={styles.itemMeta}>
+                              <span>{item.quantity} {item.unit}</span>
+                              {editingExpiryId === item.id ? (
+                                <span className={styles.expiryInlineEdit}>
+                                  <input
+                                    type="date"
+                                    value={editingExpiryValue}
+                                    onChange={e => setEditingExpiryValue(e.target.value)}
+                                    className={styles.expiryDateInput}
+                                    autoFocus
+                                  />
+                                  <button className={styles.expiryConfirmBtn} onClick={() => handleSaveInlineExpiry(item)} aria-label="Save date">
+                                    <Icon name="check" size={14} strokeWidth={3} />
+                                  </button>
+                                  <button className={styles.expiryCancelBtn} onClick={() => setEditingExpiryId(null)} aria-label="Cancel">
+                                    <Icon name="x" size={14} />
+                                  </button>
+                                </span>
+                              ) : item.expiration_date ? (
                                 <button
-                                  className={styles.expiryConfirmBtn}
-                                  onClick={() => handleSaveInlineExpiry(item)}
-                                  title="Save"
-                                >✓</button>
+                                  className={`${styles.expiryDateBtn} ${expiryStatus === 'expired' ? styles.expiryBad : expiryStatus === 'soon' ? styles.expiryWarn : ''}`}
+                                  onClick={() => { setEditingExpiryId(item.id); setEditingExpiryValue(item.expiration_date!); }}
+                                  title="Change expiry date"
+                                >
+                                  {expiryStatus === 'expired' ? 'Expired ' : 'Exp. '}
+                                  {new Date(item.expiration_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                </button>
+                              ) : (
                                 <button
-                                  className={styles.expiryCancelBtn}
-                                  onClick={() => setEditingExpiryId(null)}
-                                  title="Cancel"
-                                >✗</button>
-                              </span>
-                            ) : item.expiration_date ? (
-                              <button
-                                className={styles.expiryDateBtn}
-                                onClick={() => { setEditingExpiryId(item.id); setEditingExpiryValue(item.expiration_date!); }}
-                                title="Click to edit expiry date"
-                              >
-                                exp. {new Date(item.expiration_date).toLocaleDateString()}
-                              </button>
-                            ) : (
-                              <button
-                                className={styles.setExpiryBtn}
-                                onClick={async () => {
-                                  setEditingExpiryId(item.id);
-                                  setEditingExpiryValue(
-                                    await fetchSuggestedExpiry(item.ingredient_name, item.category)
-                                  );
-                                }}
-                              >
-                                + Set expiry
-                              </button>
-                            )}
-                            {isLowStock && (
-                              <span className={styles.lowStockWrapper}>
-                                <button
-                                  className={styles.lowStockIndicator}
-                                  title="Low stock — tap for options"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setLowStockMenuId(lowStockMenuId === item.id ? null : item.id);
+                                  className={styles.setExpiryBtn}
+                                  onClick={async () => {
+                                    setEditingExpiryId(item.id);
+                                    setEditingExpiryValue(await fetchSuggestedExpiry(item.ingredient_name, item.category));
                                   }}
                                 >
-                                  !
+                                  + expiry
                                 </button>
-                                {lowStockMenuId === item.id && (
-                                  <div className={styles.lowStockMenu} onClick={(e) => e.stopPropagation()}>
-                                    <div className={styles.lowStockMenuLabel}>Running low</div>
-                                    <button
-                                      className={styles.lowStockMenuAction}
-                                      onClick={() => handleAddLowStockToGrocery(item)}
-                                    >
-                                      📋 Add to grocery list
-                                    </button>
-                                  </div>
-                                )}
-                              </span>
-                            )}
+                              )}
+                              {isLowStock && (
+                                <span className={styles.lowStockWrapper}>
+                                  <button
+                                    className={styles.lowStockIndicator}
+                                    title="Running low. Tap for options"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setLowStockMenuId(lowStockMenuId === item.id ? null : item.id);
+                                    }}
+                                  >
+                                    Low
+                                  </button>
+                                  {lowStockMenuId === item.id && (
+                                    <div className={styles.lowStockMenu} onClick={(e) => e.stopPropagation()}>
+                                      <button className={styles.lowStockMenuAction} onClick={() => handleAddLowStockToGrocery(item)}>
+                                        <Icon name="cart" size={14} /> Add to grocery list
+                                      </button>
+                                    </div>
+                                  )}
+                                </span>
+                              )}
+                            </div>
                           </div>
+                          <div className={styles.itemActions}>
+                            <button onClick={() => handleEditItem(item)} className={styles.iconAction} aria-label={`Edit ${item.ingredient_name}`}>
+                              <Icon name="edit" size={16} />
+                            </button>
+                            <button onClick={() => handleRemoveItem(item)} className={`${styles.iconAction} ${styles.iconActionDanger}`} aria-label={`Remove ${item.ingredient_name}`}>
+                              <Icon name="trash" size={16} />
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          )}
+
+          {/* Recipe ideas come last: the pantry list is what this page is for. */}
+          <section className={styles.ideas}>
+            <div className={styles.ideasHeader}>
+              <div>
+                <h2>Cook from your pantry</h2>
+                <p className={styles.subtitle}>Recipes that use what you already have</p>
+              </div>
+              <div className={styles.ideasActions}>
+                <Link to="/?filter=pantry" className="btn btn-ghost">See all in cookbook</Link>
+                <button
+                  onClick={handleRefreshRecommendations}
+                  className={styles.iconAction}
+                  disabled={loadingRecommendations}
+                  aria-label="Refresh recipe ideas"
+                >
+                  <Icon name="refresh" size={16} />
+                </button>
+              </div>
+            </div>
+            {loadingRecommendations ? (
+              <p className={styles.subtitle}>Finding recipes…</p>
+            ) : recommendations.length === 0 ? (
+              <p className={styles.subtitle}>No matches yet. Add more of what you have, or save more recipes.</p>
+            ) : (
+              <div className={styles.ideasGrid}>
+                {(showAllRecommendations ? recommendations : recommendations.slice(0, VISIBLE_RECOMMENDATIONS)).map((recipe) => {
+                  const saved = recipe.source === 'saved';
+                  return (
+                    <div key={`${recipe.source ?? 'spoonacular'}-${recipe.id}`} className={styles.ideaCard}>
+                      {saved ? (
+                        <Link to={`/recipes/${recipe.id}`} className={styles.ideaName}>{recipe.name}</Link>
+                      ) : (
+                        <a href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer" className={styles.ideaName}>{recipe.name}</a>
+                      )}
+                      <div className={styles.ideaMatch}>
+                        <div className={styles.matchBar}>
+                          <div className={styles.matchBarFill} style={{ width: `${recipe.matchPercentage}%` }} />
                         </div>
-                        <div className={styles.itemActions}>
-                          <button
-                            onClick={() => handleEditItem(item)}
-                            className={styles.editButton}
-                            title="Edit item"
-                          >
-                            ✎
-                          </button>
-                          <button
-                            onClick={() => handleRemoveItem(item)}
-                            className={styles.removeButton}
-                            title="Remove from pantry"
-                          >
-                            ×
-                          </button>
-                        </div>
+                        <span>{recipe.matchPercentage}%</span>
                       </div>
+                      <p className={styles.ideaMissing}>
+                        {recipe.missingIngredients.length === 0
+                          ? 'You have everything'
+                          : `Need: ${recipe.missingIngredients.join(', ')}`}
+                      </p>
+                      {!saved && (
+                        <button onClick={() => handleAddRecipe(recipe.id)} className={styles.ideaSave}>
+                          <Icon name="plus" size={14} strokeWidth={2.5} /> Save to cookbook
+                        </button>
+                      )}
                     </div>
                   );
                 })}
               </div>
-            </div>
-          ))}
-        </div>
+            )}
+            {!loadingRecommendations && recommendations.length > VISIBLE_RECOMMENDATIONS && (
+              <button onClick={() => setShowAllRecommendations((prev) => !prev)} className={`btn btn-ghost ${styles.showMore}`}>
+                {showAllRecommendations ? 'Show fewer' : `Show all ${recommendations.length}`}
+              </button>
+            )}
+          </section>
+        </>
       )}
 
       {showReceiptModal && (
@@ -1069,6 +1041,31 @@ const Pantry: React.FC = () => {
               </div>
             ) : (
               <div className={styles.parsedItemsSection}>
+                <div className={styles.receiptTotalRow}>
+                  <label className={styles.receiptTotalField}>
+                    <span>Receipt total{receiptTotal.store ? ` · ${receiptTotal.store}` : ''}</span>
+                    <span className={styles.receiptTotalInput}>
+                      $
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="0.01"
+                        value={receiptTotal.total}
+                        placeholder="0.00"
+                        onChange={(e) => setReceiptTotal({ ...receiptTotal, total: e.target.value })}
+                      />
+                    </span>
+                  </label>
+                  <label className={styles.receiptCount}>
+                    <input
+                      type="checkbox"
+                      checked={receiptTotal.count}
+                      onChange={(e) => setReceiptTotal({ ...receiptTotal, count: e.target.checked })}
+                    />
+                    Count toward my grocery budget
+                  </label>
+                </div>
                 <p className={styles.parsedCount}>
                   Found <strong>{parsedItems.length}</strong> items. Remove any you don't want.
                 </p>

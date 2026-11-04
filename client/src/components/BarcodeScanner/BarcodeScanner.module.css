@@ -26,7 +26,7 @@
 
 .header h2 {
   margin: 0;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .closeButton {
@@ -35,12 +35,12 @@
   border-radius: 50%;
   background-color: #F0F0F0;
   font-size: 20px;
-  color: #2C3E50;
+  color: var(--ink);
   line-height: 1;
 }
 
 .closeButton:hover {
-  background-color: #E0E0E0;
+  background-color: var(--line);
 }
 
 .video {
@@ -53,13 +53,13 @@
 
 .hint {
   text-align: center;
-  color: #7F8C8D;
+  color: var(--muted);
   font-size: 14px;
   margin: 12px 0 0;
 }
 
 .error {
-  color: #E74C3C;
+  color: var(--danger);
   background-color: #FDEDEC;
   padding: 16px;
   border-radius: 8px;

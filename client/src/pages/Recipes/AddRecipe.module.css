@@ -15,20 +15,20 @@
   padding: 10px 20px;
   border-radius: 8px;
   font-weight: 500;
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
   transition: all 0.2s ease;
   align-self: flex-start;
 }
 
 .backButton:hover {
-  background-color: #8BAE66;
-  color: #2C3E50;
+  background-color: var(--sage);
+  color: var(--ink);
 }
 
 .header h1 {
   margin: 0;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .form {
@@ -41,7 +41,7 @@
 .section {
   margin-bottom: 32px;
   padding-bottom: 32px;
-  border-bottom: 1px solid #E0E0E0;
+  border-bottom: 1px solid var(--line);
 }
 
 .section:last-of-type {
@@ -51,7 +51,7 @@
 .section h2 {
   margin-top: 0;
   margin-bottom: 20px;
-  color: #628141;
+  color: var(--olive);
   font-size: 20px;
 }
 
@@ -76,7 +76,7 @@
 .formGroup label {
   font-size: 14px;
   font-weight: 600;
-  color: #2C3E50;
+  color: var(--ink);
 }
 
 .formRow {
@@ -90,7 +90,7 @@
 .textarea,
 .select {
   padding: 10px 12px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 8px;
   font-size: 16px;
   font-family: inherit;
@@ -101,7 +101,7 @@
 .textarea:focus,
 .select:focus {
   outline: none;
-  border-color: #8BAE66;
+  border-color: var(--sage);
 }
 
 .textarea {
@@ -111,7 +111,7 @@
 
 .inputSmall {
   padding: 10px 12px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 8px;
   font-size: 16px;
   width: 80px;
@@ -120,12 +120,12 @@
 
 .inputSmall:focus {
   outline: none;
-  border-color: #8BAE66;
+  border-color: var(--sage);
 }
 
 .addButton {
   padding: 8px 16px;
-  background-color: #E67E22;
+  background-color: var(--primary);
   color: #FFFFFF;
   border-radius: 8px;
   font-weight: 500;
@@ -134,7 +134,7 @@
 }
 
 .addButton:hover {
-  background-color: #D35400;
+  background-color: var(--primary-strong);
 }
 
 .ingredientRow {
@@ -161,7 +161,7 @@
 
 .stepNumber {
   font-weight: 600;
-  color: #628141;
+  color: var(--olive);
   padding-top: 12px;
   min-width: 30px;
 }
@@ -177,7 +177,7 @@
   align-items: center;
   justify-content: center;
   color: #FFFFFF;
-  background-color: #E74C3C;
+  background-color: var(--danger);
   border-radius: 50%;
   font-size: 24px;
   line-height: 1;
@@ -187,7 +187,7 @@
 }
 
 .removeButton:hover {
-  background-color: #C0392B;
+  background-color: var(--danger-strong);
   transform: scale(1.1);
 }
 
@@ -197,12 +197,12 @@
   justify-content: flex-end;
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px solid #E0E0E0;
+  border-top: 1px solid var(--line);
 }
 
 .cancelButton {
   padding: 12px 24px;
-  background-color: #7F8C8D;
+  background-color: var(--muted);
   color: #FFFFFF;
   border-radius: 8px;
   font-weight: 500;
@@ -211,13 +211,13 @@
 }
 
 .cancelButton:hover {
-  background-color: #95A5A6;
+  background-color: var(--muted);
 }
 
 .submitButton {
   padding: 12px 32px;
-  background-color: #628141;
-  color: #EBD5AB;
+  background-color: var(--olive);
+  color: var(--sand);
   border-radius: 8px;
   font-weight: 600;
   font-size: 16px;
@@ -225,8 +225,8 @@
 }
 
 .submitButton:hover:not(:disabled) {
-  background-color: #8BAE66;
-  color: #2C3E50;
+  background-color: var(--sage);
+  color: var(--ink);
 }
 
 .submitButton:disabled {
@@ -295,17 +295,17 @@
 }
 .dietaryTagBtn {
   padding: 6px 14px;
-  border: 2px solid #E0E0E0;
+  border: 2px solid var(--line);
   border-radius: 20px;
   background: #fff;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  color: #2C3E50;
+  color: var(--ink);
   transition: all 0.2s ease;
 }
-.dietaryTagBtn:hover { border-color: #628141; color: #628141; }
-.dietaryTagBtnActive { border-color: #628141; background-color: #628141; color: #fff; }
+.dietaryTagBtn:hover { border-color: var(--olive); color: var(--olive); }
+.dietaryTagBtnActive { border-color: var(--olive); background-color: var(--olive); color: #fff; }
 
 .photoImportBanner {
   display: flex;
@@ -313,27 +313,27 @@
   justify-content: space-between;
   gap: 16px;
   background-color: #F3F7EE;
-  border: 2px dashed #8BAE66;
+  border: 2px dashed var(--sage);
   border-radius: 12px;
   padding: 16px 20px;
   margin-bottom: 24px;
 }
 
 .photoImportBanner strong {
-  color: #628141;
+  color: var(--olive);
   font-size: 16px;
 }
 
 .photoImportBanner p {
   margin: 4px 0 0;
-  color: #7F8C8D;
+  color: var(--muted);
   font-size: 14px;
 }
 
 .photoImportButton {
   flex-shrink: 0;
   padding: 12px 24px;
-  background-color: #628141;
+  background-color: var(--olive);
   color: #FFFFFF;
   border-radius: 8px;
   font-weight: 600;
@@ -342,7 +342,7 @@
 }
 
 .photoImportButton:hover:not(:disabled) {
-  background-color: #8BAE66;
+  background-color: var(--sage);
 }
 
 .photoImportButton:disabled {
@@ -364,8 +364,8 @@
   flex-shrink: 0;
   padding: 10px 18px;
   background-color: #FFFFFF;
-  border: 2px solid #628141;
-  color: #628141;
+  border: 2px solid var(--olive);
+  color: var(--olive);
   border-radius: 8px;
   font-weight: 600;
   font-size: 14px;
@@ -373,7 +373,7 @@
 }
 
 .uploadPhotoButton:hover:not(:disabled) {
-  background-color: #628141;
+  background-color: var(--olive);
   color: #FFFFFF;
 }
 
@@ -388,7 +388,7 @@
   max-height: 200px;
   object-fit: cover;
   border-radius: 8px;
-  border: 1px solid #E0E0E0;
+  border: 1px solid var(--line);
 }
 
 @media (max-width: 768px) {
