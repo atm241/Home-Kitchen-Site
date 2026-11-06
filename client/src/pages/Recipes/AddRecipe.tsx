@@ -228,7 +228,7 @@ const AddRecipe: React.FC = () => {
 
         {/* Basic Info */}
         <div className={styles.section}>
-          <h2>Basic Information</h2>
+          <h2>Basics</h2>
           <div className={styles.formGroup}>
             <label htmlFor="name">Recipe Name *</label>
             <input type="text" id="name" value={formData.name}
@@ -346,7 +346,7 @@ const AddRecipe: React.FC = () => {
           <div className={styles.sectionHeader}>
             <h2>Ingredients</h2>
             <button type="button" onClick={handleAddIngredient} className={styles.addButton}>
-              + Add Ingredient
+              + Add ingredient
             </button>
           </div>
           {ingredients.map((ingredient, index) => (
@@ -390,7 +390,7 @@ const AddRecipe: React.FC = () => {
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
             <h2>Instructions</h2>
-            <button type="button" onClick={handleAddStep} className={styles.addButton}>+ Add Step</button>
+            <button type="button" onClick={handleAddStep} className={styles.addButton}>+ Add step</button>
           </div>
           {instructions.map((step, index) => (
             <div key={index} className={styles.stepRow}>
@@ -407,7 +407,7 @@ const AddRecipe: React.FC = () => {
 
         {/* Nutrition */}
         <div className={styles.section}>
-          <h2>Nutrition (per serving) — Optional</h2>
+          <h2>Nutrition per serving <span style={{ fontWeight: 400, color: "var(--muted)", fontSize: 15 }}>(optional)</span></h2>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label htmlFor="calories">Calories</label>
@@ -441,7 +441,7 @@ const AddRecipe: React.FC = () => {
             Cancel
           </button>
           <button type="submit" className={styles.submitButton} disabled={submitting}>
-            {submitting ? 'Creating Recipe...' : 'Create Recipe'}
+            {submitting ? 'Saving...' : 'Save recipe'}
           </button>
         </div>
       </form>
