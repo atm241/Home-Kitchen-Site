@@ -46,8 +46,10 @@ const port = process.env.PORT || 5001;
 app.set('trust proxy', 1);
 
 // Middleware
+// CLIENT_URL may hold several comma-separated origins, e.g. the LAN address
+// plus the Tailscale HTTPS address, so the app works from both.
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: (process.env.CLIENT_URL || 'http://localhost:3000').split(',').map((s) => s.trim()),
 }));
 
 // Login and registration are the only unauthenticated, brute-forceable
