@@ -4,7 +4,7 @@ import { clientsClaim } from 'workbox-core';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
-import { StaleWhileRevalidate } from 'workbox-strategies';
+import { NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -23,6 +23,22 @@ registerRoute(
     return true;
   },
   createHandlerBoundToURL(process.env.PUBLIC_URL + '/index.html')
+);
+
+// Keep the last-fetched API data so pages stay readable away from home Wi-Fi,
+// where the server is unreachable (e.g. the grocery list at the store).
+// Network first, so on Wi-Fi nothing changes; the cache is only a fallback.
+// Writes (check-offs, edits) still need the network — only GETs are cached.
+registerRoute(
+  ({ url, request }) =>
+    request.method === 'GET' && url.pathname.startsWith('/api/'),
+  new NetworkFirst({
+    cacheName: 'api-fallback',
+    networkTimeoutSeconds: 5,
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 7 * 24 * 60 * 60 }),
+    ],
+  })
 );
 
 // Cache images so recipe/product photos are available offline after first view.

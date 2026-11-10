@@ -35,8 +35,8 @@ services:
       # nested mapping and the whole file fails to parse.
       JWT_SECRET: "${JWT_SECRET:?set in .env — generate with openssl rand -base64 48}"
       # Recipe/ingredient recommendations go quiet without this — no error, just
-      # empty results.
-      SPOONACULAR_API_KEY: "${SPOONACULAR_API_KEY:?set in .env}"
+      # empty results. Optional: everything else works without it.
+      SPOONACULAR_API_KEY: "${SPOONACULAR_API_KEY:-}"
       # CORS origin. Must be the address you actually open the app from — using
       # a phone on the LAN means the Pi's address here, not localhost, or every
       # API call is rejected and the app looks broken for no visible reason.
