@@ -108,7 +108,7 @@ const Home: React.FC = () => {
     return <div className={styles.loading}>Loading…</div>;
   }
 
-  const dailyGoal = monthlyBudget?.calorie_budget || null;
+  const dailyGoal = planner?.preferences.daily_calories || monthlyBudget?.calorie_budget || null;
   const weeklyCalorieGoal = dailyGoal ? dailyGoal * 7 : null;
   const caloriePct = weeklyCalorieGoal ? Math.min((weekCalories / weeklyCalorieGoal) * 100, 100) : null;
   const overCalories = weeklyCalorieGoal !== null && weekCalories > weeklyCalorieGoal;

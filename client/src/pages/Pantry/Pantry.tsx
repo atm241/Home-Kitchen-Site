@@ -24,6 +24,13 @@ const fetchSuggestedExpiry = async (name: string, category?: string): Promise<st
   }
 };
 
+const formatExpiry = (iso: string) => {
+  const d = new Date(iso);
+  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+  if (d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
+  return d.toLocaleDateString(undefined, opts);
+};
+
 const getExpiryStatus = (expiration_date?: string): 'expired' | 'soon' | null => {
   if (!expiration_date) return null;
   const now = new Date();
@@ -872,7 +879,7 @@ const Pantry: React.FC = () => {
                                   title="Change expiry date"
                                 >
                                   {expiryStatus === 'expired' ? 'Expired ' : 'Exp. '}
-                                  {new Date(item.expiration_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                  {formatExpiry(item.expiration_date)}
                                 </button>
                               ) : (
                                 <button

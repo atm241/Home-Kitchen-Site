@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { calendarApi, recipesApi, mealsApi, budgetApi, MonthlyBudget } from '../../services/api';
+import { calendarApi, recipesApi, mealsApi, plannerApi, PlannerStatus } from '../../services/api';
 import { CombinedCalendarItem, Recipe } from '../../types';
 import {
   getMonthDays,
@@ -35,9 +35,9 @@ const Calendar: React.FC = () => {
   const [showRecipeDropdown, setShowRecipeDropdown] = useState(false);
   const [editingMealId, setEditingMealId] = useState<number | null>(null);
   const [editMealData, setEditMealData] = useState({ meal_type: 'dinner', servings: '2' });
-  const [monthlyBudget, setMonthlyBudget] = useState<MonthlyBudget | null>(null);
+  const [plannerStatus, setPlannerStatus] = useState<PlannerStatus | null>(null);
   const [editingBudget, setEditingBudget] = useState(false);
-  const [budgetForm, setBudgetForm] = useState({ budget_amount: '', calorie_budget: '', protein_goal: '', carbs_goal: '', fat_goal: '' });
+  const [budgetForm, setBudgetForm] = useState({ budget_amount: '', daily_calories: '', protein_goal: '', carbs_limit: '', fat_limit: '' });
 
   const monthDays = getMonthDays(currentDate);
   const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
@@ -80,12 +80,13 @@ const Calendar: React.FC = () => {
       setLoadError('Failed to load calendar. Please check your connection and try again.');
     }
 
-    // Load budget separately so a failure here never blocks the calendar
+    // Load budget separately so a failure here never blocks the calendar.
+    // Same source as Plan and Grocery, so every tab shows one number.
     try {
-      const budgetResponse = await budgetApi.getMonthly(currentMonth);
-      setMonthlyBudget(budgetResponse.data);
+      const statusResponse = await plannerApi.status();
+      setPlannerStatus(statusResponse.data);
     } catch (error) {
-      console.error('Error loading monthly budget:', error);
+      console.error('Error loading budget:', error);
     }
   };
 
@@ -99,12 +100,13 @@ const Calendar: React.FC = () => {
   };
 
   const startEditBudget = () => {
+    const prefs = plannerStatus?.preferences;
     setBudgetForm({
-      budget_amount: monthlyBudget?.budget_amount?.toString() ?? '',
-      calorie_budget: monthlyBudget?.calorie_budget?.toString() ?? '',
-      protein_goal: monthlyBudget?.protein_goal?.toString() ?? '',
-      carbs_goal: monthlyBudget?.carbs_goal?.toString() ?? '',
-      fat_goal: monthlyBudget?.fat_goal?.toString() ?? '',
+      budget_amount: plannerStatus?.budget?.amount?.toString() ?? prefs?.budget_amount?.toString() ?? '',
+      daily_calories: prefs?.daily_calories?.toString() ?? '',
+      protein_goal: prefs?.protein_goal?.toString() ?? '',
+      carbs_limit: prefs?.carbs_limit?.toString() ?? '',
+      fat_limit: prefs?.fat_limit?.toString() ?? '',
     });
     setEditingBudget(true);
   };
@@ -131,15 +133,16 @@ const Calendar: React.FC = () => {
   const handleSaveBudget = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await budgetApi.createOrUpdateMonthly({
-        month: currentMonth,
-        budget_amount: parseFloat(budgetForm.budget_amount) || 0,
-        calorie_budget: budgetForm.calorie_budget ? parseInt(budgetForm.calorie_budget) : undefined,
-        protein_goal: budgetForm.protein_goal ? parseInt(budgetForm.protein_goal) : undefined,
-        carbs_goal: budgetForm.carbs_goal ? parseInt(budgetForm.carbs_goal) : undefined,
-        fat_goal: budgetForm.fat_goal ? parseInt(budgetForm.fat_goal) : undefined,
+      const response = await plannerApi.saveBudget({
+        budget_amount: parseFloat(budgetForm.budget_amount) || null,
+        daily_calories: budgetForm.daily_calories ? parseInt(budgetForm.daily_calories) : null,
+        protein_goal: budgetForm.protein_goal ? parseInt(budgetForm.protein_goal) : null,
+        carbs_limit: budgetForm.carbs_limit ? parseInt(budgetForm.carbs_limit) : null,
+        fat_limit: budgetForm.fat_limit ? parseInt(budgetForm.fat_limit) : null,
       });
-      setMonthlyBudget(response.data);
+      setPlannerStatus((prev) => prev
+        ? { ...prev, preferences: response.data.preferences, budget: response.data.budget }
+        : prev);
       setEditingBudget(false);
       showNotification('success', 'Budget saved!');
     } catch (error) {
@@ -214,22 +217,27 @@ const Calendar: React.FC = () => {
   };
 
   const BUDGET_FIELDS: Array<{ key: keyof typeof budgetForm; label: string; placeholder: string; step?: string }> = [
-    { key: 'budget_amount', label: 'Grocery budget ($/month)', placeholder: '400', step: '0.01' },
-    { key: 'calorie_budget', label: 'Calories / day', placeholder: '2000' },
+    { key: 'budget_amount', label: 'Grocery budget ($)', placeholder: '400', step: '0.01' },
+    { key: 'daily_calories', label: 'Calories / day', placeholder: '2000' },
     { key: 'protein_goal', label: 'Protein (g/day)', placeholder: '150' },
-    { key: 'carbs_goal', label: 'Carbs (g/day)', placeholder: '250' },
-    { key: 'fat_goal', label: 'Fat (g/day)', placeholder: '65' },
+    { key: 'carbs_limit', label: 'Carbs (g/day)', placeholder: '250' },
+    { key: 'fat_limit', label: 'Fat (g/day)', placeholder: '65' },
   ];
 
-  const hasBudget = !!monthlyBudget && monthlyBudget.budget_amount > 0;
-  const spentPct = hasBudget ? Math.min((monthlyBudget!.actual_cost / monthlyBudget!.budget_amount) * 100, 100) : 0;
-  const overBudget = hasBudget && monthlyBudget!.actual_cost > monthlyBudget!.budget_amount;
-  const goals = monthlyBudget
+  const budget = plannerStatus?.budget ?? null;
+  const prefs = plannerStatus?.preferences;
+  const hasBudget = !!budget && budget.amount > 0;
+  const spentPct = hasBudget ? Math.min((budget!.spent / budget!.amount) * 100, 100) : 0;
+  const overBudget = hasBudget && budget!.spent > budget!.amount;
+  const budgetWindow = budget
+    ? `${formatDate(new Date(budget.start_date + 'T12:00:00'), 'MMM d')} – ${formatDate(new Date(budget.end_date + 'T12:00:00'), 'MMM d')}`
+    : '';
+  const goals = prefs
     ? [
-        monthlyBudget.calorie_budget ? `${monthlyBudget.calorie_budget} cal` : '',
-        monthlyBudget.protein_goal ? `${monthlyBudget.protein_goal}g protein` : '',
-        monthlyBudget.carbs_goal ? `${monthlyBudget.carbs_goal}g carbs` : '',
-        monthlyBudget.fat_goal ? `${monthlyBudget.fat_goal}g fat` : '',
+        prefs.daily_calories ? `${prefs.daily_calories} cal` : '',
+        prefs.protein_goal ? `${prefs.protein_goal}g protein` : '',
+        prefs.carbs_limit ? `${prefs.carbs_limit}g carbs` : '',
+        prefs.fat_limit ? `${prefs.fat_limit}g fat` : '',
       ].filter(Boolean)
     : [];
 
@@ -314,26 +322,26 @@ const Calendar: React.FC = () => {
               {hasBudget ? (
                 <>
                   <div className={styles.budgetLine}>
-                    <span className={styles.budgetSpent}>${monthlyBudget!.actual_cost.toFixed(0)}</span>
-                    <span className={styles.budgetOf}>of ${monthlyBudget!.budget_amount.toFixed(0)} spent</span>
+                    <span className={styles.budgetSpent}>${budget!.spent.toFixed(0)}</span>
+                    <span className={styles.budgetOf}>of ${budget!.amount.toFixed(0)} spent</span>
                     <span className={`${styles.budgetLeft} ${overBudget ? styles.over : ''}`}>
                       {overBudget
-                        ? `$${(monthlyBudget!.actual_cost - monthlyBudget!.budget_amount).toFixed(0)} over`
-                        : `$${(monthlyBudget!.budget_amount - monthlyBudget!.actual_cost).toFixed(0)} left`}
+                        ? `$${(budget!.spent - budget!.amount).toFixed(0)} over`
+                        : `$${budget!.remaining.toFixed(0)} left`}
                     </span>
                   </div>
                   <div className={styles.bar}>
                     <div className={`${styles.barFill} ${overBudget ? styles.barOver : ''}`} style={{ width: `${spentPct}%` }} />
                   </div>
                   <div className={styles.budgetMeta}>
-                    <span>Planned meals ≈ ${monthlyBudget!.estimated_cost.toFixed(0)}</span>
+                    <span>{budgetWindow} · spent comes from receipts</span>
                     {goals.length > 0 && <span>Daily goals: {goals.join(' · ')}</span>}
                   </div>
                 </>
               ) : (
                 <div className={styles.noBudget}>
-                  <strong>No budget for {formatDate(currentDate, 'MMMM')}.</strong>{' '}
-                  Set a grocery budget and daily nutrition goals to track them here and on Plan.
+                  <strong>No grocery budget yet.</strong>{' '}
+                  Set one and log receipt totals — it shows here, on Plan, and on your grocery list.
                 </div>
               )}
             </div>

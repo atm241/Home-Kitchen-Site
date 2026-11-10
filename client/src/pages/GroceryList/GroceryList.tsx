@@ -16,8 +16,11 @@ const groupByCategory = (items: GroceryItem[]) =>
     return acc;
   }, {} as Record<string, GroceryItem[]>);
 
-const formatQty = (item: GroceryItem) =>
-  [item.quantity, item.unit && item.unit !== 'unit' ? item.unit : ''].filter(Boolean).join(' ');
+const formatQty = (item: GroceryItem) => {
+  // Imports sometimes leave quantity 0 (e.g. "salt and pepper to taste") — show nothing.
+  if (!(Number(item.quantity) > 0)) return '';
+  return [item.quantity, item.unit && item.unit !== 'unit' ? item.unit : ''].filter(Boolean).join(' ');
+};
 
 const GroceryList: React.FC = () => {
   const [groceryItems, setGroceryItems] = useState<GroceryItem[]>([]);

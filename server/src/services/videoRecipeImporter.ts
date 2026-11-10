@@ -6,6 +6,7 @@ import * as cheerio from 'cheerio';
 import Anthropic from '@anthropic-ai/sdk';
 import { UPLOADS_DIR, ensureUploadsDir } from '../config/uploads';
 import { scrapeRecipe } from './recipeScraper';
+import { normalizeIngredients } from './ingredientNormalizer';
 import { ParsedRecipe, RECIPE_JSON_SHAPE, RECIPE_JSON_RULES, parseRecipeResponse } from './recipeJson';
 
 // Turns a shared cooking-video link (TikTok, YouTube, Instagram) into a recipe.
@@ -359,7 +360,7 @@ export async function importVideoRecipe(url: string, platform: Platform): Promis
         return {
           ...base,
           ...scraped,
-          ingredients: scraped.ingredients || [],
+          ingredients: await normalizeIngredients(scraped.ingredients || []),
           imageUrl: (await saveRemoteImage(video.thumbnail)) || scraped.image_url,
         };
       }

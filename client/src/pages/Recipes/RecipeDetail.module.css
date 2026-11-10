@@ -1176,7 +1176,7 @@
 
 .ingredientsCol .ingredientsList li {
   display: grid;
-  grid-template-columns: 76px 1fr auto;
+  grid-template-columns: minmax(64px, max-content) minmax(0, 1fr) auto;
   gap: 10px;
   align-items: baseline;
   padding: 11px 0;

@@ -458,6 +458,14 @@ export interface PlanResponse {
 
 export const plannerApi = {
   status: () => api.get<PlannerStatus>('/planner/status'),
+  saveBudget: (data: {
+    budget_amount?: number | null;
+    daily_calories?: number | null;
+    protein_goal?: number | null;
+    carbs_limit?: number | null;
+    fat_limit?: number | null;
+    period_days?: number;
+  }) => api.post<{ preferences: PlannerGoals; budget: BudgetStatus | null }>('/planner/budget', data),
   generate: (data: { goals: PlannerGoals; pinned?: PlanMeal[]; keep_existing?: boolean; seed?: number }) =>
     api.post<PlanResponse>('/planner/generate', data),
   evaluate: (data: { goals: PlannerGoals; meals: PlanMeal[] }) => api.post<PlanResponse>('/planner/evaluate', data),

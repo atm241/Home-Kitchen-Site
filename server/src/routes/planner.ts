@@ -93,6 +93,53 @@ async function loadPrefs(householdId: number) {
   return r.rows[0] as Record<string, unknown> | undefined;
 }
 
+// Edit the household budget and daily goals without running the planner.
+// This is THE budget: Plan, Grocery and Calendar all read it from /status,
+// so there is one number everywhere. Fields not sent are left unchanged.
+router.post('/budget', async (req: Request, res: Response) => {
+  try {
+    const householdId = req.householdId!;
+    const b = (req.body ?? {}) as Record<string, unknown>;
+    const amountRaw = Number(b.budget_amount);
+    const amount = Number.isFinite(amountRaw) && amountRaw > 0 && amountRaw < 100000
+      ? Math.round(amountRaw * 100) / 100
+      : null;
+    const dailyCalories = optInt(b.daily_calories, 800, 6000);
+    const proteinGoal = optInt(b.protein_goal, 1, 400);
+    const carbsLimit = optInt(b.carbs_limit, 1, 800);
+    const fatLimit = optInt(b.fat_limit, 1, 400);
+    const periodDays = PERIODS.includes(Number(b.period_days)) ? Number(b.period_days) : null;
+
+    await pool.query(
+      `INSERT INTO meal_plan_preferences
+         (household_id, period_days, budget_amount, budget_start_date, daily_calories, protein_goal,
+          carbs_limit, fat_limit, updated_at)
+       VALUES ($1, COALESCE($2, 30), $3, CASE WHEN $3::numeric IS NULL THEN NULL ELSE CURRENT_DATE END,
+               $4, $5, $6, $7, CURRENT_TIMESTAMP)
+       ON CONFLICT (household_id) DO UPDATE SET
+         period_days = COALESCE($2, meal_plan_preferences.period_days),
+         budget_amount = $3,
+         -- Keep the current window when a budget already runs; start one today otherwise.
+         budget_start_date = CASE
+           WHEN $3::numeric IS NULL THEN NULL
+           ELSE COALESCE(meal_plan_preferences.budget_start_date, CURRENT_DATE)
+         END,
+         daily_calories = $4, protein_goal = $5, carbs_limit = $6, fat_limit = $7,
+         updated_at = CURRENT_TIMESTAMP`,
+      [householdId, periodDays, amount, dailyCalories, proteinGoal, carbsLimit, fatLimit]
+    );
+
+    const prefs = await loadPrefs(householdId);
+    res.json({
+      preferences: parseGoals(prefs ? { ...prefs, start_date: today() } : { start_date: today() }),
+      budget: await budgetStatus(householdId, prefs),
+    });
+  } catch (error) {
+    console.error('Error saving budget:', error);
+    res.status(500).json({ error: 'Failed to save budget' });
+  }
+});
+
 // Saved goals (or defaults), cookbook size and budget status, for the Plan page and the planner form.
 router.get('/status', async (req: Request, res: Response) => {
   try {

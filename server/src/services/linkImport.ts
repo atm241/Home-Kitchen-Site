@@ -1,4 +1,5 @@
 import pool from '../config/database';
+import { normalizeIngredients } from './ingredientNormalizer';
 import { scrapeRecipe } from './recipeScraper';
 import { categorizeIngredient } from './ingredientCategorizer';
 import { categorizeRecipe } from './recipeCategorizer';
@@ -101,6 +102,7 @@ export async function importFromLink(householdId: number, rawUrl: string): Promi
     }
     const recipeId = await insertRecipe(householdId, {
       ...scraped,
+      ingredients: await normalizeIngredients(scraped.ingredients ?? []),
       source_url: url,
       source_platform: 'web',
       source_author: hostLabel(url),
