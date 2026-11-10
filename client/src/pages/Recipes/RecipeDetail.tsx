@@ -368,10 +368,10 @@ const RecipeDetail: React.FC = () => {
         )}
         <div className={styles.header}>
           <button onClick={() => setIsEditing(false)} className={styles.backButton}>← Cancel</button>
-          <button onClick={handleSaveEdit} className={styles.saveButton}>Save Changes</button>
+          <button onClick={handleSaveEdit} className={styles.saveButton}>Save changes</button>
         </div>
         <div className={styles.content}>
-          <h2 className={styles.editHeading}>Edit Recipe</h2>
+          <h2 className={styles.editHeading}>Edit recipe</h2>
           <div className={styles.editGrid}>
             <div className={styles.formGroup}>
               <label>Recipe Name *</label>
@@ -511,7 +511,7 @@ const RecipeDetail: React.FC = () => {
               <h3>Ingredients</h3>
               <button type="button" className={styles.addIngredientButton}
                 onClick={() => setEditForm({ ...editForm, ingredients: [...editForm.ingredients, { name: '', quantity: '', unit: '', notes: '' }] })}>
-                + Add Ingredient
+                + Add ingredient
               </button>
             </div>
             {editForm.ingredients.map((ing, idx) => (
