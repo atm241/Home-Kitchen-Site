@@ -29,10 +29,13 @@ export async function categorizeRecipe(
   description?: string,
   sourceCategory?: string
 ): Promise<string> {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return fallbackCategorizeRecipe(name, sourceCategory);
+  }
   try {
     console.log(`🤖 Using AI to categorize recipe: "${name}"`);
     const message = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-haiku-5-5',
       max_tokens: 50,
       messages: [{
         role: 'user',

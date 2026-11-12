@@ -56,6 +56,7 @@ Rules:
  */
 export async function normalizeIngredients<T extends IngredientEntry>(ingredients: T[]): Promise<T[] | CleanIngredient[]> {
   if (!ingredients.length || !ingredients.some(looksMessy)) return ingredients;
+  if (!process.env.ANTHROPIC_API_KEY) return ingredients;
   try {
     const response = await anthropic.messages.create({
       model: 'claude-haiku-5-5',

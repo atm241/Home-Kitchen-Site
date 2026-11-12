@@ -1,8 +1,14 @@
 import Anthropic from '@anthropic-ai/sdk';
+import pool from '../config/database';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
+
+// Categories are a property of the ingredient name, not the household, so one
+// answer is good forever. The map kills repeat calls within a process; the DB
+// lookup below kills them across restarts and households.
+const categoryCache = new Map<string, string>();
 
 // Predefined categories that match your pantry categories
 const CATEGORIES = [
@@ -21,10 +27,33 @@ const CATEGORIES = [
 ];
 
 export async function categorizeIngredient(ingredientName: string): Promise<string> {
+  const key = ingredientName.trim().toLowerCase();
+  const cached = categoryCache.get(key);
+  if (cached) return cached;
+
+  // Any household that already categorized this exact name settles it.
+  try {
+    const existing = await pool.query(
+      `SELECT category FROM ingredients
+       WHERE LOWER(name) = $1 AND category IS NOT NULL AND category <> 'Other' LIMIT 1`,
+      [key]
+    );
+    if (existing.rows[0]?.category) {
+      categoryCache.set(key, existing.rows[0].category);
+      return existing.rows[0].category;
+    }
+  } catch (error) {
+    console.error('Category lookup failed, continuing:', error);
+  }
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return fallbackCategorize(ingredientName);
+  }
+
   try {
     console.log(`🤖 Using AI to categorize: "${ingredientName}"`);
     const message = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-haiku-5-5',
       max_tokens: 50,
       messages: [{
         role: 'user',
@@ -43,6 +72,7 @@ Respond with ONLY the category name, nothing else.`
 
       // Validate that the response is one of our categories
       if (CATEGORIES.includes(category)) {
+        categoryCache.set(key, category);
         return category;
       }
       console.log(`⚠️  AI response "${category}" not in valid categories, using fallback`);

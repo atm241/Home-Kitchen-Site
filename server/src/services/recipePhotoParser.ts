@@ -17,8 +17,10 @@ export async function parseRecipePhoto(
   image: string,
   mediaType: AllowedImageType
 ): Promise<ParsedRecipe | null> {
+  // Haiku handles photo transcription well at ~2% of Opus cost; bump to
+  // claude-sonnet-5-5 if handwritten cards start coming back garbled.
   const message = await anthropic.messages.create({
-    model: 'claude-opus-5',
+    model: 'claude-haiku-5-5',
     max_tokens: 4096,
     messages: [
       {
