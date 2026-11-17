@@ -474,3 +474,39 @@ export const plannerApi = {
   commit: (data: { goals: PlannerGoals; meals: PlanMeal[]; add_to_grocery: boolean }) =>
     api.post<{ created: number; grocery_added: number; week_start_date: string }>('/planner/commit', data),
 };
+
+// Store shelf prices (Kroger family: Kroger, Smith's, Ralphs, Fred Meyer...)
+export interface StoreChoice {
+  locationId: string;
+  name: string;
+}
+
+export interface StoreSearchResult extends StoreChoice {
+  chain: string;
+  address: string;
+}
+
+export interface PriceEstimateItem {
+  id: number;
+  name: string;
+  product: string | null;
+  size: string | null;
+  price: number | null;
+  /** Set when price is a sale price. */
+  regular_price: number | null;
+}
+
+export interface PriceEstimate {
+  store: StoreChoice | null;
+  total: number;
+  items: PriceEstimateItem[];
+}
+
+export const storesApi = {
+  status: () => api.get<{ configured: boolean; store: StoreChoice | null }>('/stores/status'),
+  search: (zip: string) => api.get<StoreSearchResult[]>('/stores/search', { params: { zip } }),
+  choose: (store: StoreChoice) => api.put<{ store: StoreChoice }>('/stores/mine', store),
+  clear: () => api.delete<{ store: null }>('/stores/mine'),
+  estimate: (weekStartDate: string) =>
+    api.get<PriceEstimate>('/stores/estimate', { params: { week_start_date: weekStartDate } }),
+};

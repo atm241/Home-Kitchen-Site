@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { groceryApi, recommendationsApi, plannerApi, IngredientCombo, BudgetStatus } from '../../services/api';
+import { groceryApi, recommendationsApi, plannerApi, IngredientCombo, BudgetStatus, PriceEstimate, PriceEstimateItem } from '../../services/api';
+import StorePrices from '../../components/StorePrices/StorePrices';
 import { GroceryItem } from '../../types';
 import { getWeekStartDate, getWeekEndDate, formatDate } from '../../utils/dateUtils';
 import Icon from '../../components/Icon/Icon';
@@ -32,6 +33,12 @@ const GroceryList: React.FC = () => {
   const [budget, setBudget] = useState<BudgetStatus | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
   const [shoppingMode, setShoppingMode] = useState(false);
+  const [estimate, setEstimate] = useState<PriceEstimate | null>(null);
+  const priceById = useMemo(() => {
+    const map = new Map<number, PriceEstimateItem>();
+    estimate?.items.forEach((i) => map.set(i.id, i));
+    return map;
+  }, [estimate]);
   const weekStartDate = getWeekStartDate();
   const [manualItem, setManualItem] = useState({ name: '', quantity: '1', unit: 'unit' });
 
@@ -292,6 +299,12 @@ const GroceryList: React.FC = () => {
               <span> · through {formatDate(budget.end_date, 'MMM d')}</span>
             </p>
           )}
+          <StorePrices
+            weekStartDate={weekStartDate}
+            listKey={groceryItems.map((i) => `${i.id}:${i.is_purchased ? 1 : 0}`).join(',')}
+            budgetRemaining={budget ? budget.remaining : null}
+            onEstimate={setEstimate}
+          />
         </div>
         <div className={styles.toolbar}>
           <button onClick={handleGenerate} className="btn btn-secondary" disabled={generating} title="Add ingredients for this week's planned meals">
@@ -400,14 +413,23 @@ const GroceryList: React.FC = () => {
                     </button>
                     <div className={styles.itemMain}>
                       <div className={styles.itemName}>{item.ingredient_name}</div>
-                      {(formatQty(item) || item.estimated_price) && (
-                        <div className={styles.itemMeta}>
-                          {formatQty(item) && <span>{formatQty(item)}</span>}
-                          {item.estimated_price ? (
-                            <span>~${(item.estimated_price * (item.quantity || 1)).toFixed(2)}</span>
-                          ) : null}
-                        </div>
-                      )}
+                      {(() => {
+                        const qty = formatQty(item);
+                        const store = item.is_purchased ? undefined : priceById.get(item.id);
+                        if (!qty && !store?.price) return null;
+                        return (
+                          <div className={styles.itemMeta}>
+                            {qty && <span>{qty}</span>}
+                            {store?.price != null && (
+                              <span title={[store.product, store.size].filter(Boolean).join(' · ')}>
+                                ~${store.price.toFixed(2)}
+                                {store.regular_price != null && <span className={styles.sale}> sale</span>}
+                                {store.size && <span className={styles.packSize}> · {store.size}</span>}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                     <button
                       onClick={() => handleDeleteItem(item.id)}

@@ -277,6 +277,15 @@
   color: var(--muted);
 }
 
+.sale {
+  color: var(--olive);
+  font-weight: 600;
+}
+
+.packSize {
+  color: var(--muted);
+}
+
 .iconAction {
   flex-shrink: 0;
   width: 32px;

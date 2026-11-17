@@ -37,6 +37,16 @@ services:
       # Recipe/ingredient recommendations go quiet without this — no error, just
       # empty results. Optional: everything else works without it.
       SPOONACULAR_API_KEY: "${SPOONACULAR_API_KEY:-}"
+      # Store-price estimates on the grocery list (Kroger, Smith's, Ralphs...).
+      # Free app at developer.kroger.com. Optional: the feature hides without them.
+      KROGER_CLIENT_ID: "${KROGER_CLIENT_ID:-}"
+      KROGER_CLIENT_SECRET: "${KROGER_CLIENT_SECRET:-}"
+      # Optional overrides for the per-household daily AI caps and the
+      # video-import model (see server/src/services/aiQuota.ts).
+      AI_DAILY_LIMIT_VIDEO: "${AI_DAILY_LIMIT_VIDEO:-}"
+      AI_DAILY_LIMIT_PHOTO: "${AI_DAILY_LIMIT_PHOTO:-}"
+      AI_DAILY_LIMIT_RECEIPT: "${AI_DAILY_LIMIT_RECEIPT:-}"
+      VIDEO_IMPORT_MODEL: "${VIDEO_IMPORT_MODEL:-}"
       # CORS origin. Must be the address you actually open the app from — using
       # a phone on the LAN means the Pi's address here, not localhost, or every
       # API call is rejected and the app looks broken for no visible reason.

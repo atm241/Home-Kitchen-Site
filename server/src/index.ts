@@ -19,6 +19,7 @@ import recommendationRoutes from './routes/recommendations';
 import cookHistoryRoutes from './routes/cookHistory';
 import plannerRoutes from './routes/planner';
 import shareRoutes from './routes/share';
+import storeRoutes from './routes/stores';
 
 dotenv.config();
 
@@ -96,6 +97,7 @@ app.use('/api/budget', requireAuth, budgetRoutes);
 app.use('/api/recommendations', requireAuth, recommendationRoutes);
 app.use('/api/cook-history', requireAuth, cookHistoryRoutes);
 app.use('/api/planner', requireAuth, plannerRoutes);
+app.use('/api/stores', requireAuth, storeRoutes);
 // Auth is per-route here: the Shortcut endpoint uses a share key, not a login.
 app.use('/api/share', shareRoutes);
 
