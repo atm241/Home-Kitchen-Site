@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { recipesApi, PantryCoverage } from '../../services/api';
 import { Recipe } from '../../types';
@@ -22,6 +22,9 @@ const QUICK_FILTERS: Array<{ id: QuickFilter; label: string }> = [
 // "Make with what I have" allows a couple of gaps, since almost nobody has
 // every last garnish on hand.
 const MAX_MISSING_FOR_PANTRY = 2;
+
+// Cards drawn per page; the next page is added as the user nears the bottom.
+const PAGE_SIZE = 24;
 
 const Cookbook: React.FC = () => {
   const { user } = useAuth();
@@ -102,6 +105,26 @@ const Cookbook: React.FC = () => {
     }
     return list;
   }, [recipes, coverage, query, quick, category]);
+
+  // Draw the grid in pages so a large cookbook doesn't mount hundreds of
+  // cards (and start hundreds of image loads) at once. Filtering still runs
+  // over every recipe; only the rendering is paged.
+  const [shownCount, setShownCount] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => { setShownCount(PAGE_SIZE); }, [query, quick, category]);
+  const hasMore = shownCount < visible.length;
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || !hasMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some(e => e.isIntersecting)) setShownCount(n => n + PAGE_SIZE);
+      },
+      { rootMargin: '800px 0px' }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, shownCount]);
 
   const firstName = user?.name?.split(/\s+/)[0];
   const hour = new Date().getHours();
@@ -215,11 +238,14 @@ const Cookbook: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className={styles.grid}>
-              {visible.map(r => (
-                <RecipeCard key={r.id} recipe={r} coverage={coverage[r.id]} onToggleFavorite={toggleFavorite} />
-              ))}
-            </div>
+            <>
+              <div className={styles.grid}>
+                {visible.slice(0, shownCount).map(r => (
+                  <RecipeCard key={r.id} recipe={r} coverage={coverage[r.id]} onToggleFavorite={toggleFavorite} />
+                ))}
+              </div>
+              {hasMore && <div ref={sentinelRef} aria-hidden="true" style={{ height: 1 }} />}
+            </>
           )}
         </>
       )}

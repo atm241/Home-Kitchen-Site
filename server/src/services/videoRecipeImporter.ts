@@ -8,6 +8,11 @@ import { UPLOADS_DIR, ensureUploadsDir } from '../config/uploads';
 import { scrapeRecipe } from './recipeScraper';
 import { normalizeIngredients } from './ingredientNormalizer';
 import { ParsedRecipe, RECIPE_JSON_SHAPE, RECIPE_JSON_RULES, parseRecipeResponse } from './recipeJson';
+import { reserveAiCall } from './aiQuota';
+
+// Sonnet 5.5 turns captions into recipes well at half Opus's price. Set
+// VIDEO_IMPORT_MODEL=claude-opus-5-5 in .env if results get worse.
+const VIDEO_MODEL = process.env.VIDEO_IMPORT_MODEL || 'claude-sonnet-5-5';
 
 // Turns a shared cooking-video link (TikTok, YouTube, Instagram) into a recipe.
 //
@@ -263,7 +268,7 @@ async function recipeFromVideoText(video: VideoText, platform: Platform): Promis
   if (parts.length === 0) return null;
 
   const message = await callClaude({
-    model: 'claude-opus-5-5',
+    model: VIDEO_MODEL,
     max_tokens: 8000,
     messages: [
       {
@@ -332,7 +337,7 @@ export async function normalizeSharedLink(rawUrl: string): Promise<{ url: string
 }
 
 /** Fetch and extract the recipe for an already-normalized video link. */
-export async function importVideoRecipe(url: string, platform: Platform): Promise<ImportedRecipe> {
+export async function importVideoRecipe(url: string, platform: Platform, householdId: number): Promise<ImportedRecipe> {
   let video: VideoText;
   try {
     video =
@@ -370,6 +375,7 @@ export async function importVideoRecipe(url: string, platform: Platform): Promis
   }
 
   // 2. Caption plus transcript, structured by Claude.
+  await reserveAiCall(householdId, 'video');
   const recipe = await recipeFromVideoText(video, platform);
   if (!recipe) {
     throw new ImportError(

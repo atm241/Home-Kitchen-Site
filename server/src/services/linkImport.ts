@@ -110,7 +110,7 @@ export async function importFromLink(householdId: number, rawUrl: string): Promi
     return { recipeId, duplicate: false, platform };
   }
 
-  const video = await importVideoRecipe(url, platform);
+  const video = await importVideoRecipe(url, platform, householdId);
   const recipeId = await insertRecipe(householdId, {
     ...video,
     image_url: video.imageUrl,

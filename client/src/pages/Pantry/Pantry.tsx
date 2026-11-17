@@ -365,8 +365,16 @@ const Pantry: React.FC = () => {
         date: response.data.purchased_on ?? '',
         count: true,
       });
-    } catch {
-      showNotification('error', 'Failed to parse receipt. Please try a clearer photo.');
+    } catch (err: any) {
+      // 429 (daily limit) and 503 (API key or credits) carry a message meant for the user.
+      const status = err?.response?.status;
+      const serverMessage = err?.response?.data?.error;
+      showNotification(
+        'error',
+        (status === 429 || status === 503) && serverMessage
+          ? serverMessage
+          : 'Failed to parse receipt. Please try a clearer photo.'
+      );
     } finally {
       setParsingReceipt(false);
     }

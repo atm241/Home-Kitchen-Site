@@ -9,6 +9,7 @@ import { getPantryCoverage } from '../services/savedRecipeRecommender';
 import { categorizeIngredient } from '../services/ingredientCategorizer';
 import { getRecipeDetails } from '../services/spoonacularService';
 import { parseRecipePhoto, AllowedImageType } from '../services/recipePhotoParser';
+import { reserveAiCall } from '../services/aiQuota';
 import { cleanText } from '../utils/cleanText';
 
 const router = express.Router();
@@ -67,6 +68,7 @@ router.post('/parse-photo', async (req: Request, res: Response) => {
       mediaType in ALLOWED_IMAGE_TYPES ? mediaType : 'image/jpeg'
     ) as AllowedImageType;
 
+    await reserveAiCall(req.householdId!, 'photo');
     console.log('📷 Parsing recipe photo with AI vision');
     const recipe = await parseRecipePhoto(image, safeMediaType);
     if (!recipe) {
@@ -76,6 +78,9 @@ router.post('/parse-photo', async (req: Request, res: Response) => {
     console.log(`✅ Extracted recipe "${recipe.name}" (${recipe.ingredients.length} ingredients)`);
     res.json(recipe);
   } catch (error) {
+    if (error instanceof ImportError) {
+      return res.status(error.status).json({ error: error.message });
+    }
     console.error('Error parsing recipe photo:', error);
     res.status(500).json({ error: 'Failed to parse recipe photo' });
   }

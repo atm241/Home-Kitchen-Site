@@ -4,6 +4,8 @@ import pool from '../config/database';
 import { categorizeIngredient } from '../services/ingredientCategorizer';
 import { lookupBarcode } from '../services/barcodeService';
 import { getExpirationDate } from '../services/shelfLife';
+import { reserveAiCall } from '../services/aiQuota';
+import { ImportError } from '../services/videoRecipeImporter';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -162,6 +164,7 @@ router.post('/parse-receipt', async (req: Request, res: Response) => {
     const safeMediaType = (allowedTypes.includes(mediaType) ? mediaType : 'image/jpeg') as
       'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
 
+    await reserveAiCall(req.householdId!, 'receipt');
     const message = await anthropic.messages.create({
       model: 'claude-haiku-5-5',
       max_tokens: 2048,
@@ -251,6 +254,9 @@ Rules:
 
     res.json({ items: results, total, store, purchased_on: purchasedOn });
   } catch (error) {
+    if (error instanceof ImportError) {
+      return res.status(error.status).json({ error: error.message });
+    }
     console.error('Error parsing receipt:', error);
     res.status(500).json({ error: 'Failed to parse receipt' });
   }
