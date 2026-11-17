@@ -1,8 +1,10 @@
-# Self-Hosting on a Raspberry Pi (and reaching it from your phone)
+# Self-hosting (and reaching it from your phone)
 
-This guide covers running Home Kitchen on your own hardware — a Raspberry Pi at
-home is the reference setup — and the two ways to reach it from your phone
-when you're not on your home Wi-Fi.
+This guide covers running Simmer on your own hardware and the two ways to
+reach it from your phone when you're not on your home Wi-Fi. Any machine
+that runs Docker works. A Raspberry Pi is a good always-on choice, and a Mac
+works too, as long as it stays awake. Section 0 is for setting up a Pi;
+everything after it applies to any machine.
 
 ## 0. First-time Pi setup (flash the OS, enable SSH, install Docker)
 
@@ -25,11 +27,7 @@ If your Pi doesn't have an OS on it yet:
    Log out and back in (`exit`, then SSH in again) for the group change to take effect.
 7. Verify: `docker run hello-world` should succeed.
 
-Once you're SSH'd into the Pi with Docker working, tell me and I can walk
-through (or directly run, if you'd like) the rest of the steps below over
-that same SSH connection.
-
-## 1. Running it on the Pi
+## 1. Running it
 
 The Docker images used by [docker-compose.yml](docker-compose.yml)
 (`postgres:16-alpine`, `node:20-alpine`, `nginx:1.27-alpine`) are all official
@@ -37,27 +35,31 @@ multi-arch images, so this runs as-is on a 64-bit Raspberry Pi OS (Pi 4 or 5
 recommended) with Docker + Docker Compose installed — no changes needed.
 
 ```bash
-git clone <your fork/repo> home-kitchen
-cd home-kitchen
+git clone <your fork/repo> simmer
+cd simmer
 cp .env.example .env
-# edit .env and set all five required values:
+# edit .env and set the four required values:
 #   POSTGRES_PASSWORD    database password
-#   ANTHROPIC_API_KEY    recipe photo import / receipt scanning
 #   JWT_SECRET           generate with: openssl rand -base64 48
-#   SPOONACULAR_API_KEY  recipe + ingredient-combo recommendations
-#   CLIENT_URL           the address you open the app from, e.g.
-#                        http://192.168.1.50:3000 — this is the CORS origin,
-#                        so "localhost" here breaks access from every phone
-# The server refuses to start if any are missing, rather than booting into a
-# half-broken state where recommendations silently return nothing.
-docker compose up -d
+#   ANTHROPIC_API_KEY    video, photo and receipt imports
+#   CLIENT_URL           every address you open the app from, separated by
+#                        commas, e.g. http://192.168.1.50:3000 (add the
+#                        Tailscale https address later). Requests from any
+#                        other address are rejected, so "localhost" here
+#                        breaks access from every phone
+# docker compose refuses to start if any of these are missing. The optional
+# keys (recommendations, Instagram, store prices, AI limits) are listed in
+# README.md.
+docker compose up -d --build
 ```
 
-The app is now reachable at `http://<pi-local-ip>:3000` from any device on
-your home network. The first person to sign up becomes the owner of a new
-household; anyone else who signs up with that household's invite code (visible
-in the "My Household" menu once logged in) shares the same pantry, recipes,
-and grocery list.
+The app is now reachable at `http://<machine-local-ip>:3000` from any device
+on your home network. The first person to sign up creates a new household.
+Anyone who signs up with that household's invite code (in the Account menu
+once logged in) shares the same cookbook, pantry and grocery list.
+
+To update after pulling new code, run `docker compose up -d --build` again.
+Database migrations apply automatically when the server starts.
 
 ## 2. Reaching it from your phone when you're away from home
 
@@ -70,10 +72,36 @@ from your phone out and about, pick one of these:
 between your devices — no port forwarding, no exposing the Pi to the public
 internet, and it works from any network your phone is on.
 
-1. Install Tailscale on the Pi (`curl -fsSL https://tailscale.com/install.sh | sh`, then `tailscale up`) and on your phone (App Store / Play Store), signing in with the same account.
-2. Enable HTTPS for your tailnet in the [Tailscale admin console](https://login.tailscale.com/admin/dns) (DNS → "HTTPS Certificates").
-3. On the Pi, run `tailscale cert <pi-name>.<your-tailnet>.ts.net` to get a real HTTPS certificate, then point nginx at it (or run [Tailscale serve](https://tailscale.com/kb/1242/tailscale-serve): `tailscale serve https / http://localhost:3000`, which handles the TLS termination for you with zero nginx changes).
-4. On your phone, open `https://<pi-name>.<your-tailnet>.ts.net` — this works from any network, and because it's real HTTPS, "Add to Home Screen" gets you the full installable PWA experience (see below).
+1. Install Tailscale on the host machine and on your phone (App Store / Play
+   Store), and sign in to the same account on both.
+   - **Pi / Linux:** `curl -fsSL https://tailscale.com/install.sh | sh`, then `sudo tailscale up`.
+   - **Mac:** install the Tailscale app (`brew install --cask tailscale`, or
+     download it from tailscale.com). The command-line tool is inside the
+     app at `/Applications/Tailscale.app/Contents/MacOS/Tailscale`.
+2. Enable MagicDNS and HTTPS certificates for your tailnet in the
+   [Tailscale admin console](https://login.tailscale.com/admin/dns).
+3. Put the app behind [Tailscale Serve](https://tailscale.com/kb/1242/tailscale-serve),
+   which provides the HTTPS certificate and renews it on its own:
+   ```bash
+   tailscale serve --bg --https=443 http://127.0.0.1:3000
+   tailscale serve status      # shows https://<machine>.<your-tailnet>.ts.net
+   ```
+   The first time, it may print a link to approve Serve for your tailnet.
+   Open it, approve, and run the command again. Use the explicit form above:
+   the shorthand `tailscale serve --bg 3000` fails on some installs. The
+   setting survives reboots.
+4. Add the new address to `CLIENT_URL` in `.env`, keeping the LAN address,
+   e.g. `CLIENT_URL=http://192.168.1.50:3000,https://<machine>.<your-tailnet>.ts.net`.
+   Then run `docker compose up -d server`.
+5. On your phone, with the Tailscale app connected, open
+   `https://<machine>.<your-tailnet>.ts.net`. It works from any network, and
+   because it's real HTTPS, "Add to Home Screen" gives you the full
+   installable app, including offline mode (see below).
+
+The host has to be on and awake, with Tailscale running. On a Mac, turn on
+System Settings → Displays → Advanced → "Prevent automatic sleeping when the
+display is off" (or the equivalent under Energy on your macOS version), and
+keep it plugged in.
 
 This is the setup this app was built for: nothing is exposed to the public
 internet, so there's no attack surface to harden beyond your own account
@@ -103,9 +131,10 @@ real domain — plain HTTP over a local IP won't do this):
 - **Android (Chrome)**: open the site → ⋮ menu → "Install app" (or "Add to
   Home Screen").
 
-It'll behave like a native app — its own icon, no browser chrome — and the
-app shell (everything except live pantry/recipe data, which always needs a
-live connection) keeps working if your connection drops mid-session.
+It'll behave like a native app, with its own icon and no browser bars. If
+you lose signal (say, in the back of the store), the last-loaded grocery
+list, recipes and pantry stay readable. Checking items off and other changes
+need a connection again.
 
 ## 4. Forgotten passwords
 
@@ -120,7 +149,7 @@ household of two or three people. Instead:
   same data by design.
 
 - **Everyone is locked out at once**: this can only be fixed on the server.
-  SSH to the Pi and run:
+  In the app's folder on the host (over SSH for a Pi), run:
 
   ```bash
   docker compose exec server npm run reset-password -- you@example.com new-password
@@ -139,10 +168,10 @@ deploy failed.
 
 ## 6. Backups
 
-Your recipes, pantry, and photos live in two Docker volumes on the Pi's SD
-card. SD cards are the most common way a Pi deployment dies, and
-`docker compose down -v` destroys the same data instantly. Set this up before
-you have anything you'd be upset to lose.
+Your recipes, pantry, and photos live in two Docker volumes on the host's
+disk. A failed disk (SD cards are the usual way a Pi deployment dies) or a
+`docker compose down -v` destroys them, and `down -v` does it instantly. Set
+this up before you have anything you'd be upset to lose.
 
 Two things get backed up, because they live in two different places: a
 `pg_dump` of the database, and a tar of the uploads volume. A database dump
@@ -168,24 +197,60 @@ Old backups are pruned after 14 days (`BACKUP_KEEP_DAYS` to change it), and
 pruning only happens *after* the new backup is verified, so a failed run can
 never delete your last good copy.
 
-### Running it nightly
+### Running it nightly on a Pi / Linux
 
 ```bash
 crontab -e
 ```
 
 ```cron
-0 3 * * * cd /home/pi/home-kitchen && scripts/backup.sh >> backups/backup.log 2>&1
+0 3 * * * cd /home/pi/simmer && scripts/backup.sh >> backups/backup.log 2>&1
 ```
 
-The stack must be running — the script backs up through the containers. If the
-database container is down it exits with an error rather than writing an empty
-file, so a silent failure can't masquerade as a good backup.
+### Running it nightly on a Mac
+
+Cron and launchd jobs can't read `~/Documents` (macOS privacy protection
+fails them with "Operation not permitted"), so if the repo lives there,
+`scripts/backup.sh` can't be scheduled directly. The working setup on this
+project's Mac is:
+
+- `~/.simmer/backup.sh`: a standalone copy that talks to the containers by
+  name (`homekitchensite-db-1`, `homekitchensite-server-1`, which stay fixed
+  because `docker-compose.yml` pins the project name) and writes to
+  `~/SimmerBackups`, keeping 14 days.
+- `~/Library/LaunchAgents/com.simmer.backup.plist`: runs it at 3 AM. If the
+  Mac was asleep at 3 AM, it runs on wake. Output goes to
+  `~/SimmerBackups/backup.log`.
+
+Both files are in `scripts/macos/`. To install them on a new Mac, run this
+from the repo folder:
+
+```bash
+mkdir -p ~/.simmer ~/SimmerBackups
+cp scripts/macos/backup.sh ~/.simmer/backup.sh && chmod +x ~/.simmer/backup.sh
+sed "s#__HOME__#$HOME#g" scripts/macos/com.simmer.backup.plist > ~/Library/LaunchAgents/com.simmer.backup.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.simmer.backup.plist
+```
+
+Useful commands:
+
+```bash
+launchctl kickstart gui/$(id -u)/com.simmer.backup   # run a backup now
+tail ~/SimmerBackups/backup.log                       # check recent runs
+launchctl bootout gui/$(id -u)/com.simmer.backup     # turn the schedule off
+```
+
+Either way, the stack must be running, because the script backs up through
+the containers. If the database container is down, it exits with an error
+rather than writing an empty file, so a silent failure can't pass for a good
+backup. Both versions keep backups on the same machine they protect, so copy
+one to another drive or to cloud storage now and then.
 
 ### Restoring
 
 ```bash
 scripts/restore.sh backups/db-20260904-030000.sql.gz
+scripts/restore.sh ~/SimmerBackups/db-20261117-030000.sql.gz   # Mac nightly backups
 ```
 
 The matching uploads archive is found automatically next to the database dump.
@@ -207,3 +272,7 @@ households from one instance — the foundation for eventually offering this as
 a paid-hosting service is already in place. That's a separate step (billing,
 terms of service, etc.) or you can host others yourself and just have them
 sign up with their own household.
+
+Every household shares the server's Anthropic key, so the daily AI caps
+(`AI_DAILY_LIMIT_*`, see [ARCHITECTURE.md](ARCHITECTURE.md)) are what keep
+one account from running up the bill.

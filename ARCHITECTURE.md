@@ -1,376 +1,140 @@
-# Home Kitchen - Architecture Overview
+# Architecture
 
-## System Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         Browser                              │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │                  React Frontend                       │   │
-│  │  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐    │   │
-│  │  │  Home  │  │Calendar│  │Recipes │  │ Pantry │    │   │
-│  │  └────────┘  └────────┘  └────────┘  └────────┘    │   │
-│  │  ┌────────┐                                          │   │
-│  │  │Grocery │      React Router + TypeScript          │   │
-│  │  └────────┘                                          │   │
-│  │                  ↕ Axios API Calls                   │   │
-│  └──────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-                              ↕
-                         HTTP/JSON
-                              ↕
-┌─────────────────────────────────────────────────────────────┐
-│                    Express Backend                           │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │                  REST API                             │   │
-│  │  /api/recipes    /api/calendar    /api/grocery       │   │
-│  │  /api/pantry     /api/meals       /api/budget        │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                              ↕                               │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │               Business Logic                          │   │
-│  │  • Recipe Scraper (cheerio)                          │   │
-│  │  • Grocery List Generator                            │   │
-│  │  • Budget Calculator                                 │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                              ↕                               │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │           Database Layer (pg)                         │   │
-│  │  Connection Pool → PostgreSQL                        │   │
-│  └──────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-                              ↕
-                          SQL Queries
-                              ↕
-┌─────────────────────────────────────────────────────────────┐
-│                     PostgreSQL                               │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  recipes            ingredients     pantry            │   │
-│  │  recipe_ingredients scheduled_meals grocery_list     │   │
-│  │  calendar_events    grocery_prices  budgets          │   │
-│  │  meal_portions                                        │   │
-│  └──────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## Data Flow Examples
-
-### 1. Importing a Recipe
+## The pieces
 
 ```
-User enters URL → Recipe URL Component
-                         ↓
-              POST /api/recipes/import
-                         ↓
-            Recipe Scraper Service
-            (fetch HTML, parse JSON-LD)
-                         ↓
-         Extract: name, ingredients,
-         instructions, nutrition
-                         ↓
-            INSERT INTO recipes
-            INSERT INTO ingredients
-            INSERT INTO recipe_ingredients
-                         ↓
-              Return recipe object
-                         ↓
-            Update UI with new recipe
+ Phone / browser
+      │  https://<machine>.<tailnet>.ts.net  (Tailscale Serve, optional)
+      │  or http://<LAN IP>:3000
+      ▼
+┌──────────────────────── docker compose ────────────────────────┐
+│  client   nginx :80 → host :3000                               │
+│           serves the React build, proxies /api and /uploads    │
+│               │                                                │
+│  server   Express :5001 (not exposed to the host)              │
+│           runs migrate.js, then dist/index.js                  │
+│               │                       volume: uploads (photos) │
+│  db       PostgreSQL 16               volume: pgdata           │
+└────────────────────────────────────────────────────────────────┘
+      │ outbound only
+      ▼
+ Anthropic API · Kroger API · Spoonacular · Open Food Facts · video sites
 ```
 
-### 2. Generating Grocery List
+The browser only ever talks to nginx, so the API is same-origin in normal use.
+`CLIENT_URL` (comma-separated) is the CORS allow-list for anything else.
 
-```
-User clicks "Generate" → Grocery List Component
-                         ↓
-        POST /api/grocery/generate
-        {week_start_date, week_end_date}
-                         ↓
-      SELECT scheduled_meals for week
-                         ↓
-     For each meal: get recipe ingredients
-                         ↓
-    Scale quantities by (servings / recipe_servings)
-                         ↓
-       Aggregate same ingredients
-                         ↓
-      SELECT pantry items
-                         ↓
-  Subtract pantry quantities from needed
-                         ↓
-       SELECT grocery_prices (Smith's)
-                         ↓
-  Calculate estimated cost per item
-                         ↓
-     INSERT INTO grocery_list
-                         ↓
-     Return complete shopping list
-                         ↓
-         Display on UI
-```
+## Server layout (`server/src`)
 
-### 3. Viewing Weekly Calendar
+`index.ts` sets up CORS and rate limits, and mounts every route group under
+`/api`. Everything except `/api/auth` and the share-key Shortcut endpoint
+requires a login, and every query is scoped to the caller's household.
 
-```
-Home page loads → useEffect hook
-                         ↓
-     GET /api/calendar/combined
-     ?start_date=2024-01-14
-     &end_date=2024-01-20
-                         ↓
-    SELECT scheduled_meals
-    UNION
-    SELECT calendar_events
-    WHERE date BETWEEN start AND end
-                         ↓
-     Return combined array
-                         ↓
-  Group by day, render in week grid
-```
+| Route group | What it does |
+|---|---|
+| `auth` | Sign up (new household, or join one with an invite code), log in, members, password reset by another member, invite codes |
+| `recipes` | CRUD, link import (single and bulk), photo parsing, image upload, favorites, pantry match |
+| `share` | Per-user share keys, and the endpoint the iPhone Shortcut posts links to |
+| `planner` | Budget and nutrition goals, budget status, the auto-planner (generate, evaluate, alternatives, commit) |
+| `meals`, `calendar` | Scheduled meals and other calendar events |
+| `grocery` | The weekly list: build from meals, manual items, check off, move to pantry |
+| `stores` | Kroger store choice and shelf-price estimates for the list |
+| `pantry` | Pantry items, barcode lookup, suggested expiry, use-it-up, receipt scanning |
+| `budget` | Receipt totals (`grocery_receipts`) and the older weekly/monthly budget endpoints, still used for spending history |
+| `cook-history`, `recommendations`, `ingredients` | What was cooked when, Spoonacular suggestions, the ingredient table |
 
-## Database Schema Relationships
+Services worth knowing:
 
-```
-┌─────────────┐
-│   recipes   │───┐
-└─────────────┘   │
-                  │
-    ┌─────────────┴──────────────┐
-    │                            │
-    ↓                            ↓
-┌──────────────────┐    ┌─────────────────┐
-│ recipe_          │    │ scheduled_meals │
-│ ingredients      │    └─────────────────┘
-└──────────────────┘             │
-    │                            │
-    ↓                            ↓
-┌─────────────┐         ┌─────────────────┐
-│ ingredients │────────→│  grocery_list   │
-└─────────────┘         └─────────────────┘
-    │
-    ↓
-┌─────────────┐
-│   pantry    │
-└─────────────┘
-    │
-    ↓
-┌──────────────┐
-│grocery_prices│
-└──────────────┘
-```
+- `linkImport.ts` is the entry point for every shared link. It normalizes the
+  URL, returns the existing recipe if the link was saved before, then either
+  scrapes a recipe website (`recipeScraper.ts`, schema.org JSON-LD) or hands
+  off to `videoRecipeImporter.ts`.
+- `videoRecipeImporter.ts` fetches the caption and transcript, prefers a
+  recipe page linked from the caption, and otherwise asks Claude to structure
+  the text. Thumbnails are downloaded into `uploads/`, because social image
+  URLs expire.
+- `mealPlanner.ts` is the auto-planner. It plans only from the household's
+  own cookbook and uses the budget only to favor shorter shopping lists.
+- `aiQuota.ts` enforces the per-household daily caps on AI imports.
+- `krogerService.ts` handles the Kroger token, store search and product
+  prices, with a shared 3-day price cache.
 
-## Frontend Component Tree
+## Where AI is used, and what it costs
 
-```
-App (Router)
-├── Layout
-│   ├── Header (Navigation)
-│   └── Main Content
-│       ├── Home
-│       │   ├── Weekly Calendar Grid
-│       │   ├── Budget Card
-│       │   └── Quick Actions
-│       ├── Calendar
-│       │   ├── Month Navigation
-│       │   └── Month Grid
-│       ├── Recipes
-│       │   ├── Import Form
-│       │   └── Recipe Grid
-│       ├── RecipeDetail
-│       │   ├── Metadata
-│       │   ├── Nutrition
-│       │   ├── Ingredients List
-│       │   └── Instructions
-│       ├── Pantry
-│       │   └── Category Cards
-│       │       └── Item List
-│       └── GroceryList
-│           ├── Summary Stats
-│           └── Category Cards
-│               └── Item List (with checkboxes)
-```
+Every call goes to the Anthropic API with the server's `ANTHROPIC_API_KEY`.
+Costs are rough per-use figures at current prices.
 
-## API Endpoints Summary
+| Call | Model | When it runs | Cost per use |
+|---|---|---|---|
+| Video recipe import | `claude-sonnet-5-5` (`VIDEO_IMPORT_MODEL`) | Video links whose caption doesn't link a recipe page | ~1–3¢ |
+| Recipe photo | `claude-haiku-5-5` | Each photo on Add Recipe | ~0.1¢ |
+| Receipt scan | `claude-haiku-5-5` | Each receipt photo (typing the total instead is free) | under 0.1¢ |
+| Ingredient cleanup | `claude-haiku-5-5` | Scraped recipe pages (a website, or a page linked from a video) whose ingredient lines still read like prose | ~0.1¢ |
+| Ingredient category | `claude-haiku-5-5` | A new ingredient name that no household has categorized yet | ~0.001¢ |
+| Recipe category | `claude-haiku-5-5` | Each website or video import | ~0.001¢ |
 
-### Recipes
-- `GET /api/recipes` - List all
-- `GET /api/recipes/:id` - Get one
-- `POST /api/recipes` - Create
-- `POST /api/recipes/import` - Import from URL
-- `PUT /api/recipes/:id` - Update
-- `DELETE /api/recipes/:id` - Delete
-- `GET /api/recipes/filter/nutritional` - Filter by nutrition
+Guard rails:
 
-### Calendar
-- `GET /api/calendar` - Get events
-- `GET /api/calendar/combined` - Get meals + events
-- `POST /api/calendar` - Create event
-- `PUT /api/calendar/:id` - Update event
-- `DELETE /api/calendar/:id` - Delete event
+- **Daily caps.** Video imports, photo scans and receipt scans are capped per
+  household per rolling 24 hours (25 / 20 / 30 by default; override with
+  `AI_DAILY_LIMIT_*`). Every attempt is logged in `ai_usage` before the call
+  is made.
+- **Caching.** Ingredient categories are reused from the `ingredients` table
+  and an in-memory cache, so a common name is only ever sent once.
+- **Fallbacks.** Categorizing and ingredient cleanup fall back to keyword
+  rules, or keep the original text, if the API key is missing or a call
+  fails. Imports never break because of them. Video, photo and receipt
+  imports need the API. When the key is invalid or the account is out of
+  credits, the user sees a plain message saying so.
 
-### Meals
-- `GET /api/meals` - Get scheduled meals
-- `GET /api/meals/:id` - Get one meal
-- `POST /api/meals` - Schedule meal
-- `PUT /api/meals/:id` - Update meal
-- `DELETE /api/meals/:id` - Delete meal
-- `GET /api/meals/portions/:id` - Get meal portions
+## Data model
 
-### Grocery
-- `GET /api/grocery` - Get list for week
-- `POST /api/grocery/generate` - Generate from meals
-- `PATCH /api/grocery/:id/purchase` - Mark purchased
-- `PUT /api/grocery/:id` - Update item
-- `DELETE /api/grocery/:id` - Delete item
-- `GET /api/grocery/prices` - Get prices
-- `POST /api/grocery/prices` - Add/update price
+Every table has a `household_id`, except the shared reference tables marked
+"shared" below.
 
-### Pantry
-- `GET /api/pantry` - Get all items
-- `GET /api/pantry/staples` - Get staple items
-- `POST /api/pantry` - Add item
-- `PUT /api/pantry/:id` - Update item
-- `DELETE /api/pantry/:id` - Remove item
-- `POST /api/pantry/add-servings` - Record made meal
-- `POST /api/pantry/consume-servings` - Record consumed
+- **People:** `households` (invite code, chosen Kroger store), `users`.
+- **Cookbook:** `recipes` (source URL, platform, author, nutrition, favorite),
+  `ingredients` (unique per household by name, with category),
+  `recipe_ingredients`, `cook_history`.
+- **Planning:** `scheduled_meals`, `meal_portions`, `calendar_events`,
+  `meal_plan_preferences` (budget amount and start date, period length,
+  calorie and macro goals).
+- **Shopping:** `grocery_list`, `grocery_receipts` (receipt totals that feed
+  the budget), `kroger_price_cache` (shared by all households),
+  `grocery_prices` (legacy manual prices, unused).
+- **Pantry:** `pantry`, `shelf_life` (shared default expiry rules).
+- **Budget history (legacy):** `budgets` (weekly) and `monthly_budgets`. The
+  live budget is `meal_plan_preferences` plus `grocery_receipts`, computed
+  as a rolling window in `budgetStatus()` in `routes/planner.ts`.
+- **Plumbing:** `ai_usage`, `cached_recipe_recommendations`,
+  `cached_ingredient_combos`, `schema_migrations`.
 
-### Budget
-- `GET /api/budget` - Get week budget
-- `GET /api/budget/all` - Get all budgets
-- `POST /api/budget` - Create/update budget
-- `PATCH /api/budget/:date/actual` - Update actual cost
-- `POST /api/budget/:date/recalculate` - Recalc estimate
+**Schema changes:** a new database is created from `server/schema.sql`, and
+then every file in `server/migrations/` is applied in order by `migrate.js`,
+which runs on every server start. Applied files are recorded in
+`schema_migrations`, and migrations are written with `IF NOT EXISTS`, so
+re-running them is safe. To change the schema, add a new numbered migration
+file. Don't edit an applied one.
 
-### Ingredients
-- `GET /api/ingredients` - List all
-- `GET /api/ingredients/:id` - Get one
-- `POST /api/ingredients` - Create
-- `PUT /api/ingredients/:id` - Update
-- `DELETE /api/ingredients/:id` - Delete
+## Security
 
-### Health Check
-- `GET /api/health` - Check server + DB status
+- Passwords are hashed with bcrypt (cost 12). Logins are JWTs signed with
+  `JWT_SECRET`.
+- Rate limits: 10 failed logins per 15 minutes per client, and 1000 API
+  requests per 15 minutes per client. nginx is the one trusted proxy, so
+  each person is counted separately rather than the whole household as one.
+- Every query is parameterized and scoped to the caller's household. Error
+  responses don't include internal details outside development mode.
+- The iPhone Shortcut authenticates with a revocable per-user share key, not
+  the account password.
+- Over Tailscale, nothing is exposed to the public internet. A public
+  deployment needs more hardening; see [SELF-HOSTING.md](SELF-HOSTING.md).
 
-## Tech Stack Deep Dive
+## Offline behavior
 
-### Frontend
-- **React 18**: Latest stable, with hooks
-- **TypeScript**: Type safety throughout
-- **React Router v6**: Client-side routing
-- **Axios**: HTTP client with interceptors
-- **date-fns**: Modern date library
-- **CSS Modules**: Scoped styling
-
-### Backend
-- **Node.js**: JavaScript runtime
-- **Express 5**: Web framework
-- **TypeScript**: Compiled to JavaScript
-- **pg**: PostgreSQL client
-- **cheerio**: HTML parsing for scraping
-- **axios**: HTTP client for fetching URLs
-- **cors**: Cross-origin resource sharing
-- **dotenv**: Environment variables
-
-### Database
-- **PostgreSQL 12+**: Relational database
-- **Indexes**: On dates, names for performance
-- **Constraints**: Foreign keys, unique constraints
-- **Triggers**: Could add for updated_at timestamps
-
-### Development Tools
-- **nodemon**: Auto-restart server on changes
-- **ts-node**: Run TypeScript directly
-- **TypeScript Compiler**: Build production code
-- **Create React App**: React tooling
-
-## Deployment Considerations
-
-### Frontend (Vercel/Netlify)
-- Build: `npm run build`
-- Serves static files
-- Environment variable: `REACT_APP_API_URL`
-
-### Backend (Railway/Heroku/Render)
-- Build: `npm run build`
-- Start: `npm start`
-- Needs: DATABASE_URL environment variable
-
-### Database (Railway/Heroku/Supabase)
-- PostgreSQL hosted service
-- Run schema.sql to initialize
-- Backup strategy needed
-
-## Security Considerations
-
-### Current
-- ✅ Parameterized SQL queries (SQL injection protection)
-- ✅ CORS configured
-- ✅ Environment variables for secrets
-- ✅ TypeScript type safety
-
-### TODO
-- ❌ Rate limiting
-- ❌ Input validation/sanitization
-- ❌ Authentication/authorization
-- ❌ HTTPS only in production
-- ❌ API key encryption
-- ❌ SQL query logging
-- ❌ Error message sanitization
-
-## Performance Optimizations
-
-### Current
-- ✅ Database indexes
-- ✅ Connection pooling
-- ✅ Batch inserts where possible
-
-### Potential
-- ❌ Redis caching for recipes
-- ❌ React.memo for expensive components
-- ❌ Image optimization/CDN
-- ❌ Lazy loading routes
-- ❌ Debouncing search inputs
-- ❌ Pagination for large lists
-- ❌ Database query optimization
-- ❌ Bundle size reduction
-
-## Scalability Notes
-
-**Current limits:**
-- Single PostgreSQL instance
-- No caching layer
-- No load balancing
-- Synchronous processing
-
-**To scale up:**
-1. Add Redis for caching
-2. Queue system for background jobs
-3. Database replicas for reads
-4. CDN for static assets
-5. Microservices architecture (if really needed)
-
-## Testing Strategy (TODO)
-
-### Unit Tests
-- API route handlers
-- Recipe scraper
-- Grocery list generator
-- Date utilities
-
-### Integration Tests
-- API endpoints
-- Database operations
-- Full user flows
-
-### E2E Tests
-- Cypress for user journeys
-- Recipe import → meal schedule → grocery list
-
-## Monitoring (Future)
-
-- Error tracking (Sentry)
-- Performance monitoring (New Relic)
-- Database metrics
-- API response times
-- User analytics
-
-This is a solid foundation for a production application! 🚀
+The client is a PWA (Create React App + Workbox, `client/src/service-worker.ts`).
+The app itself is cached. API GET requests are network-first, with a 5-second
+timeout, falling back to the last cached response (kept 7 days). In a dead
+zone at the store, the list, recipes and pantry stay readable, but changes
+need a connection. Service workers only run over HTTPS, so this needs the
+Tailscale (or another HTTPS) address, not a plain LAN IP.
