@@ -88,7 +88,8 @@ services:
     restart: unless-stopped
     logging: *logging
     ports:
-      - "3000:80"
+      # SIMMER_PORT lets a second copy (the e2e test stack) run beside this one.
+      - "${SIMMER_PORT:-3000}:80"
     depends_on:
       server:
         condition: service_healthy

@@ -41,12 +41,53 @@ Check it's up with `curl http://localhost:5001/api/health`.
 In dev mode, CORS defaults to `http://localhost:3000`. Set `CLIENT_URL` in
 `server/.env` to open the dev client from your phone.
 
-## Checking your changes
+## Tests
 
-There's no automated test suite yet. Before committing:
+Two suites, both run by GitHub Actions on every push (`.github/workflows/ci.yml`).
+Neither can reach a paid API: test environments blank every key and point the
+API addresses at nothing.
+
+**Server API tests** (Vitest + Supertest, about 10 seconds). They run against a
+throwaway PostgreSQL that's rebuilt from `schema.sql` and every migration on
+each run, so a broken migration fails the suite too.
 
 ```bash
-cd server && npx tsc --noEmit
+cd server
+npm run test:db      # once per boot: a throwaway Postgres on port 5433
+npm test             # or: npm run test:watch
+```
+
+They cover logins, household isolation (one household can never read,
+change or reference another's data), transactions, AI caps, the budget, the
+grocery list, store prices, rate limits and share keys. Add a test next to
+the closest existing one in `server/tests/`, using the `signUp()` and
+`createRecipe()` helpers.
+
+**Browser tests** (Playwright: desktop Chrome and iPhone Safari, about 20
+seconds). They drive the real UI against a full second copy of the Docker
+stack on port 3100, with its own database and an invalid AI key. Your real
+app on port 3000 isn't touched.
+
+```bash
+cd e2e
+npm install && npx playwright install chromium webkit   # first time only
+npm run stack:up     # build and start the test stack
+npm test             # or: npm run test:ui to watch it click through
+npm run stack:down   # remove the test stack and its data
+```
+
+`stack:down` only ever removes the `simmer-e2e` project. The real stack is
+`homekitchensite`, and that name is pinned in `docker-compose.yml`.
+
+**Client:** `cd client && CI=true npx react-scripts test --watchAll=false`.
+There's one smoke test; the browser tests cover the UI.
+
+## Checking your changes
+
+Before committing:
+
+```bash
+cd server && npx tsc --noEmit && npm test
 cd client && npx tsc --noEmit -p .
 ```
 

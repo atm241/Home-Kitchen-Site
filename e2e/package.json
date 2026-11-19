@@ -1,0 +1,17 @@
+{
+  "name": "simmer-e2e",
+  "private": true,
+  "description": "Browser tests against a throwaway copy of the full Docker stack on port 3100",
+  "scripts": {
+    "stack:up": "docker compose -p simmer-e2e --env-file .env.e2e -f ../docker-compose.yml up -d --build --wait",
+    "stack:down": "docker compose -p simmer-e2e --env-file .env.e2e -f ../docker-compose.yml down -v",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^20.19.43",
+    "typescript": "^5.9.3"
+  }
+}

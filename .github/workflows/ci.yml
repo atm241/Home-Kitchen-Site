@@ -25,8 +25,8 @@ jobs:
           --health-timeout 3s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -34,10 +34,12 @@ jobs:
       - run: npm ci
       - run: npm run lint --if-present
       - run: npx tsc --noEmit
-      - run: npm test --if-present
+      # Vitest + Supertest against the service database above. The suite
+      # drops and rebuilds it from schema.sql + migrations (the name must end
+      # in _test), and blanks every API key so nothing paid is ever called.
+      - run: npm test
         env:
-          DATABASE_URL: postgres://kitchen:test@localhost:5432/home_kitchen_test
-          ANTHROPIC_API_KEY: test-key-not-real
+          TEST_DATABASE_URL: postgres://kitchen:test@localhost:5432/home_kitchen_test
 
   client:
     runs-on: ubuntu-latest
@@ -45,8 +47,8 @@ jobs:
       run:
         working-directory: client
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -61,8 +63,39 @@ jobs:
     runs-on: ubuntu-latest
     needs: [server, client]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build server image
         run: docker build -t kitchen-server ./server
       - name: Build client image
         run: docker build -t kitchen-client ./client
+
+  e2e:
+    name: browser tests
+    runs-on: ubuntu-latest
+    needs: [server, client]
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit
+      # A throwaway copy of the full Docker stack on port 3100 (see e2e/.env.e2e).
+      - run: npm run stack:up
+      - run: npm test
+      - name: Server logs on failure
+        if: failure()
+        run: docker compose -p simmer-e2e --env-file .env.e2e -f ../docker-compose.yml logs server
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          retention-days: 7
+      - if: always()
+        run: npm run stack:down
