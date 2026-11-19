@@ -5,10 +5,19 @@
 # to, so this changes nothing for an existing deployment.
 name: homekitchensite
 
+# Docker keeps container logs forever by default. On an always-on server they
+# grow until the disk fills, so every service is capped at 3 x 10 MB.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    logging: *logging
     environment:
       POSTGRES_DB: home_kitchen
       POSTGRES_USER: ${POSTGRES_USER:-kitchen}
@@ -25,6 +34,7 @@ services:
   server:
     build: ./server
     restart: unless-stopped
+    logging: *logging
     environment:
       NODE_ENV: production
       PORT: 5001
@@ -60,6 +70,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # Healthy once migrations have run and the API answers with the database
+    # connected. start_period covers the migration step on a cold start.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5001/api/health | grep -q '\"ok\"'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
     # No ports exposed to host — nginx proxies to it on the internal network.
     # Uncomment for direct debugging:
     # ports:
@@ -68,10 +86,12 @@ services:
   client:
     build: ./client
     restart: unless-stopped
+    logging: *logging
     ports:
       - "3000:80"
     depends_on:
-      - server
+      server:
+        condition: service_healthy
 
 volumes:
   pgdata:

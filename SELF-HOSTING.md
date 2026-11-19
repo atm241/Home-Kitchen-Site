@@ -4,7 +4,7 @@ This guide covers running Simmer on your own hardware and the two ways to
 reach it from your phone when you're not on your home Wi-Fi. Any machine
 that runs Docker works. A Raspberry Pi is a good always-on choice, and a Mac
 works too, as long as it stays awake. Section 0 is for setting up a Pi;
-everything after it applies to any machine.
+everything after it applies to any machine. On Proxmox, start with section 8.
 
 ## 0. First-time Pi setup (flash the OS, enable SSH, install Docker)
 
@@ -207,6 +207,11 @@ crontab -e
 0 3 * * * cd /home/pi/simmer && scripts/backup.sh >> backups/backup.log 2>&1
 ```
 
+`scripts/linux/setup-server.sh` adds this entry for you. Cron uses the
+machine's time zone, which is UTC on a fresh Ubuntu install. Set yours with
+`sudo timedatectl set-timezone America/Denver` (or your zone) so "3 AM"
+means 3 AM.
+
 ### Running it nightly on a Mac
 
 Cron and launchd jobs can't read `~/Documents` (macOS privacy protection
@@ -218,9 +223,19 @@ project's Mac is:
   name (`homekitchensite-db-1`, `homekitchensite-server-1`, which stay fixed
   because `docker-compose.yml` pins the project name) and writes to
   `~/SimmerBackups`, keeping 14 days.
-- `~/Library/LaunchAgents/com.simmer.backup.plist`: runs it at 3 AM. If the
-  Mac was asleep at 3 AM, it runs on wake. Output goes to
+- `~/Library/LaunchAgents/com.simmer.backup.plist`: runs it at 4:30 AM. If
+  the Mac was asleep then, it runs on wake. Output goes to
   `~/SimmerBackups/backup.log`.
+- `~/.simmer/backup.env` (optional): settings for the two features below.
+
+**Pull mode.** Once the app runs on a different server, the Mac becomes the
+off-machine copy. Add `SIMMER_SERVER=you@server-name` to
+`~/.simmer/backup.env`. Each night the script then copies the server's newest
+backup pair into `~/SimmerBackups` (kept 30 days) instead of backing up local
+containers. It fails, and alerts you if monitoring is set up, when the
+server's newest backup is more than 36 hours old. It runs at 4:30 so it never
+copies a file the server's 3 AM job is still writing. ssh must log in without
+a prompt; see "Off-machine backups" in section 8.
 
 Both files are in `scripts/macos/`. To install them on a new Mac, run this
 from the repo folder:
@@ -243,8 +258,17 @@ launchctl bootout gui/$(id -u)/com.simmer.backup     # turn the schedule off
 Either way, the stack must be running, because the script backs up through
 the containers. If the database container is down, it exits with an error
 rather than writing an empty file, so a silent failure can't pass for a good
-backup. Both versions keep backups on the same machine they protect, so copy
-one to another drive or to cloud storage now and then.
+backup.
+
+### Getting told when a backup fails
+
+A failed backup only writes to a log file nobody reads. To get an email
+instead, create a free check at [healthchecks.io](https://healthchecks.io)
+(daily schedule, a few hours' grace) and set its ping URL as
+`BACKUP_PING_URL`: in `.env` for `scripts/backup.sh`, or in
+`~/.simmer/backup.env` for the Mac script. Each successful run pings the
+URL, and each failure pings `URL/fail`. If no ping arrives at all (the
+machine is off, or cron broke), healthchecks.io alerts you too.
 
 ### Restoring
 
@@ -276,3 +300,90 @@ sign up with their own household.
 Every household shares the server's Anthropic key, so the daily AI caps
 (`AI_DAILY_LIMIT_*`, see [ARCHITECTURE.md](ARCHITECTURE.md)) are what keep
 one account from running up the bill.
+
+## 8. Running on Proxmox, and moving to a new server
+
+### The VM
+
+Run Simmer in a regular VM rather than an LXC container. Docker inside an
+unprivileged LXC needs nesting and keyctl tweaks and breaks in odd ways; a
+VM just works. Recommended settings in Proxmox's "Create VM":
+
+| Setting | Value |
+|---|---|
+| OS | Ubuntu Server 24.04 LTS ISO. During install, pick "OpenSSH server" and set the hostname (e.g. `simmer`); it becomes the Tailscale name |
+| CPU | 2 cores, type `host` |
+| Memory | 4 GB (Simmer uses well under 1 GB; the rest is headroom for builds) |
+| Disk | 32 GB, VirtIO SCSI. Thin-provisioned, so it only uses what's written |
+| Network | VirtIO on `vmbr0` (your LAN bridge) |
+| Options | **Start at boot**: on. **QEMU Guest Agent**: on |
+
+Two Proxmox-level extras worth turning on:
+
+- **VM backups:** Datacenter → Backup → Add, weekly, mode "Snapshot". This
+  copies the whole VM. It's a good second layer, but if it's stored on the
+  same disk it doesn't replace off-machine copies.
+- **Disk health:** the host → Disks shows SMART status. With a single
+  spinning disk, check it now and then. A "FAILED" or growing reallocated
+  sector count means it's time to replace the drive.
+
+### Setting up the VM
+
+SSH in (`ssh you@<vm-ip>`), then:
+
+```bash
+git clone https://github.com/<you>/<repo>.git ~/simmer
+cd ~/simmer && scripts/linux/setup-server.sh
+sudo timedatectl set-timezone America/Denver    # your zone, so 3 AM backups mean 3 AM
+```
+
+The script installs updates, automatic security updates, the guest agent,
+Docker and Tailscale (open the link it prints to log in), and schedules the
+nightly backup. A private GitHub repo needs `gh auth login` or a personal
+access token for the clone.
+
+### Moving the data (from the old machine)
+
+Do these in order. Between steps 3 and 6 the app is offline, which takes a
+few minutes.
+
+1. **Copy `.env` to the new machine.** From the repo folder on the old
+   machine: `scp .env you@<vm-ip>:~/simmer/.env`. On the new machine, set
+   `CLIENT_URL` to its own addresses, e.g.
+   `CLIENT_URL=http://<vm-lan-ip>:3000,https://simmer.<your-tailnet>.ts.net`.
+2. **Start the new stack** (empty for now): `cd ~/simmer && docker compose up -d --build`.
+3. **Take a final backup on the old machine and stop it**, so nothing is
+   written after the backup. On a Mac: `launchctl kickstart gui/$(id -u)/com.simmer.backup`,
+   then `docker compose stop` in the repo folder. Use `stop`, never
+   `down -v`: the old volumes stay as a fallback.
+4. **Copy that backup pair over:**
+   `scp ~/SimmerBackups/db-<stamp>.sql.gz ~/SimmerBackups/uploads-<stamp>.tar.gz you@<vm-ip>:~/simmer/backups/`
+5. **Restore on the new machine:**
+   `scripts/restore.sh backups/db-<stamp>.sql.gz` (type `restore`), then
+   `docker compose restart server`.
+6. **Serve it over Tailscale:** `sudo tailscale serve --bg --https=443 http://127.0.0.1:3000`.
+   Open the new `https://simmer.<your-tailnet>.ts.net` address, log in, and
+   check your recipes are there.
+7. **Retire the old address.** On the Mac:
+   `/Applications/Tailscale.app/Contents/MacOS/Tailscale serve reset`. On your
+   phone, delete the old home-screen icon and add the new address
+   (Share → Add to Home Screen).
+
+### Off-machine backups
+
+The new machine backs itself up nightly to `~/simmer/backups`, which is on
+the same disk. To keep a copy elsewhere, switch the Mac's nightly job to pull
+mode (section 6):
+
+```bash
+# on the Mac, once:
+[ -f ~/.ssh/id_ed25519 ] || ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
+ssh-copy-id you@simmer                      # Tailscale name of the VM
+ssh -o BatchMode=yes you@simmer true && echo "key login works"
+echo 'SIMMER_SERVER=you@simmer' >> ~/.simmer/backup.env
+launchctl kickstart gui/$(id -u)/com.simmer.backup && tail -2 ~/SimmerBackups/backup.log
+```
+
+The last line should say `OK pulled db-...`. From then on, the newest server
+backup lands on the Mac every night at 4:30 (or when it next wakes). Add
+`BACKUP_PING_URL` on both machines to be told when either side stops.

@@ -31,6 +31,19 @@ mkdir -p "$DEST"
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 
+# Optional dead-man's switch (e.g. a free healthchecks.io check). Set
+# BACKUP_PING_URL in .env: success pings the URL, failure pings URL/fail, and
+# a night with no ping at all (machine off, cron broken) also alerts you.
+ping_monitor() {
+  [ -n "${BACKUP_PING_URL:-}" ] || return 0
+  curl -fsS -m 10 --retry 3 "${BACKUP_PING_URL%/}$1" > /dev/null 2>&1 || log "WARNING: could not reach BACKUP_PING_URL"
+}
+on_exit() {
+  local rc=$?
+  if [ "$rc" -eq 0 ]; then ping_monitor ""; else ping_monitor /fail; fi
+}
+trap on_exit EXIT
+
 # Fail loudly if the stack isn't up: a backup run that silently produces nothing
 # is worse than no backup at all, because it looks like it worked.
 if ! docker compose ps --status running --services 2>/dev/null | grep -q '^db$'; then

@@ -45,6 +45,7 @@ const port = process.env.PORT || 5001;
 // would then count the whole household as one client and lock everyone out
 // together. One hop: nginx.
 app.set('trust proxy', 1);
+app.disable('x-powered-by');
 
 // Middleware
 // CLIENT_URL may hold several comma-separated origins, e.g. the LAN address
