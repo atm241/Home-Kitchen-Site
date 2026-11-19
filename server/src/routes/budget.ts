@@ -231,8 +231,10 @@ router.get('/receipts', async (req: Request, res: Response) => {
 
 router.post('/receipts', async (req: Request, res: Response) => {
   try {
-    const total = Number(req.body.total);
-    if (!Number.isFinite(total) || total < 0 || total > 100000) {
+    // Number(null) and Number('') are 0, so check for a value first.
+    const raw = req.body.total;
+    const total = raw === null || raw === undefined || raw === '' ? NaN : Number(raw);
+    if (!Number.isFinite(total) || total <= 0 || total > 100000) {
       return res.status(400).json({ error: 'total must be a positive amount' });
     }
     const store = typeof req.body.store_name === 'string' ? req.body.store_name.trim().slice(0, 100) || null : null;

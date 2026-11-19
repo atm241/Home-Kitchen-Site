@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
-import pool from '../config/database';
+import pool, { releaseClient } from '../config/database';
+import { belongsToHousehold } from '../utils/ownership';
 import { categorizeIngredient } from '../services/ingredientCategorizer';
 import { findRecipesByIngredients } from '../services/spoonacularService';
 import { findIngredientCombos } from '../services/ingredientRecommender';
@@ -145,7 +146,7 @@ router.post('/generate', async (req: Request, res: Response) => {
     console.error('Error generating grocery list:', error);
     res.status(500).json({ error: 'Failed to generate grocery list' });
   } finally {
-    client.release();
+    await releaseClient(client);
   }
 });
 
@@ -215,7 +216,7 @@ router.post('/', async (req: Request, res: Response) => {
     console.error('Error adding grocery item:', error);
     res.status(500).json({ error: 'Failed to add grocery item' });
   } finally {
-    client.release();
+    await releaseClient(client);
   }
 });
 
@@ -323,7 +324,7 @@ router.post('/from-recipe', async (req: Request, res: Response) => {
     console.error('Error adding recipe to grocery list:', error);
     res.status(500).json({ error: 'Failed to add recipe to grocery list' });
   } finally {
-    client.release();
+    await releaseClient(client);
   }
 });
 
@@ -515,7 +516,7 @@ router.post('/add-to-pantry', async (req: Request, res: Response) => {
     console.error('Error adding purchased items to pantry:', error);
     res.status(500).json({ error: 'Failed to add items to pantry' });
   } finally {
-    client.release();
+    await releaseClient(client);
   }
 });
 
@@ -543,6 +544,9 @@ router.get('/prices', async (req: Request, res: Response) => {
 router.post('/prices', async (req: Request, res: Response) => {
   try {
     const { ingredient_id, store_name, price, quantity, unit } = req.body;
+    if (!(await belongsToHousehold(pool, 'ingredients', ingredient_id, req.householdId))) {
+      return res.status(404).json({ error: 'Ingredient not found' });
+    }
 
     const result = await pool.query(`
       INSERT INTO grocery_prices (household_id, ingredient_id, store_name, price, quantity, unit, last_updated)

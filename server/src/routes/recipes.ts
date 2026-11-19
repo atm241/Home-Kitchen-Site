@@ -2,7 +2,8 @@ import express, { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
-import pool from '../config/database';
+import pool, { releaseClient } from '../config/database';
+import { belongsToHousehold } from '../utils/ownership';
 import { UPLOADS_DIR, ensureUploadsDir } from '../config/uploads';
 import { importFromLink, ImportError } from '../services/linkImport';
 import { getPantryCoverage } from '../services/savedRecipeRecommender';
@@ -88,7 +89,9 @@ router.post('/parse-photo', async (req: Request, res: Response) => {
 
 const RECIPE_SELECT = `
   SELECT r.*,
-    json_agg(
+    -- COALESCE: a recipe with no ingredients gets [] rather than null, so
+    -- clients can always .map() it.
+    COALESCE(json_agg(
       json_build_object(
         'ingredient_id', ri.ingredient_id,
         'name', i.name,
@@ -96,7 +99,7 @@ const RECIPE_SELECT = `
         'unit', ri.unit,
         'notes', ri.notes
       )
-    ) FILTER (WHERE i.id IS NOT NULL) as ingredients
+    ) FILTER (WHERE i.id IS NOT NULL), '[]'::json) as ingredients
   FROM recipes r
   LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
   LEFT JOIN ingredients i ON ri.ingredient_id = i.id
@@ -202,6 +205,11 @@ router.post('/', async (req: Request, res: Response) => {
     if (ingredients && ingredients.length > 0) {
       for (const ing of ingredients) {
         let ingredientId = ing.ingredient_id;
+        // An id from another household is ignored; the name (if any) is used instead.
+        if (ingredientId && !(await belongsToHousehold(client, 'ingredients', ingredientId, householdId))) {
+          ingredientId = undefined;
+        }
+        if (!ingredientId && !ing.name) continue;
         if (!ingredientId && ing.name) {
           const cat = ing.category || await categorizeIngredient(ing.name);
           const ingResult = await client.query(`
@@ -230,7 +238,7 @@ router.post('/', async (req: Request, res: Response) => {
     console.error('Error creating recipe:', error);
     res.status(500).json({ error: 'Failed to create recipe' });
   } finally {
-    client.release();
+    await releaseClient(client);
   }
 });
 
@@ -329,6 +337,11 @@ router.put('/:id', async (req: Request, res: Response) => {
       if (ingredients.length > 0) {
         for (const ing of ingredients) {
           let ingredientId = ing.ingredient_id;
+          // An id from another household is ignored; the name (if any) is used instead.
+          if (ingredientId && !(await belongsToHousehold(client, 'ingredients', ingredientId, req.householdId))) {
+            ingredientId = undefined;
+          }
+          if (!ingredientId && !ing.name) continue;
           if (!ingredientId && ing.name) {
             const cat = ing.category || await categorizeIngredient(ing.name);
             const ingResult = await client.query(`
@@ -358,7 +371,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     console.error('Error updating recipe:', error);
     res.status(500).json({ error: 'Failed to update recipe' });
   } finally {
-    client.release();
+    await releaseClient(client);
   }
 });
 
@@ -459,7 +472,7 @@ router.post('/import-spoonacular/:id', async (req: Request, res: Response) => {
     console.error('❌ Error importing recipe from Spoonacular:', error);
     res.status(500).json({ error: 'Failed to import recipe from Spoonacular' });
   } finally {
-    client.release();
+    await releaseClient(client);
   }
 });
 

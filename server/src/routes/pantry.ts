@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
-import pool from '../config/database';
+import pool, { releaseClient } from '../config/database';
+import { belongsToHousehold } from '../utils/ownership';
 import { categorizeIngredient } from '../services/ingredientCategorizer';
 import { lookupBarcode } from '../services/barcodeService';
 import { getExpirationDate } from '../services/shelfLife';
@@ -62,6 +63,9 @@ router.get('/barcode/:code', async (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
   try {
     const { ingredient_id, quantity, unit, expiration_date, is_staple } = req.body;
+    if (!(await belongsToHousehold(pool, 'ingredients', ingredient_id, req.householdId))) {
+      return res.status(404).json({ error: 'Ingredient not found' });
+    }
 
     const result = await pool.query(`
       INSERT INTO pantry (household_id, ingredient_id, quantity, unit, expiration_date, is_staple, last_updated)
@@ -334,7 +338,7 @@ router.post('/add-servings', async (req: Request, res: Response) => {
     console.error('Error adding meal servings:', error);
     res.status(500).json({ error: 'Failed to add meal servings' });
   } finally {
-    client.release();
+    await releaseClient(client);
   }
 });
 

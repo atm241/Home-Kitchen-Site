@@ -7,7 +7,7 @@
 //
 // Limits are a rolling 24 hours, overridable per kind in .env, e.g.
 // AI_DAILY_LIMIT_VIDEO=40. Set a limit to 0 to switch that feature off.
-import pool from '../config/database';
+import pool, { releaseClient } from '../config/database';
 import { ImportError } from './videoRecipeImporter';
 
 export type AiKind = 'video' | 'photo' | 'receipt';
@@ -63,7 +63,7 @@ export async function reserveAiCall(householdId: number, kind: AiKind): Promise<
     await client.query('ROLLBACK').catch(() => {});
     throw error;
   } finally {
-    client.release();
+    await releaseClient(client);
   }
   if (!reserved) {
     throw new ImportError(

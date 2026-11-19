@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import pool from '../config/database';
+import { belongsToHousehold } from '../utils/ownership';
 
 const router = express.Router();
 
@@ -28,6 +29,9 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const { recipe_id, recipe_name, servings_cooked } = req.body;
     if (!recipe_name) return res.status(400).json({ error: 'recipe_name is required' });
+    if (recipe_id != null && !(await belongsToHousehold(pool, 'recipes', recipe_id, req.householdId))) {
+      return res.status(404).json({ error: 'Recipe not found' });
+    }
 
     const result = await pool.query(
       `INSERT INTO cook_history (household_id, recipe_id, recipe_name, servings_cooked)

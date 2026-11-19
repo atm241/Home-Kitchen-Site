@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import pool from '../config/database';
+import { belongsToHousehold } from '../utils/ownership';
 
 const router = express.Router();
 
@@ -73,6 +74,9 @@ router.post('/', async (req: Request, res: Response) => {
       recurrence_end_date,
       notes
     } = req.body;
+    if (recipe_id != null && !(await belongsToHousehold(pool, 'recipes', recipe_id, req.householdId))) {
+      return res.status(404).json({ error: 'Recipe not found' });
+    }
 
     const result = await pool.query(`
       INSERT INTO scheduled_meals (
@@ -115,6 +119,9 @@ router.put('/:id', async (req: Request, res: Response) => {
       recurrence_end_date,
       notes
     } = req.body;
+    if (recipe_id != null && !(await belongsToHousehold(pool, 'recipes', recipe_id, req.householdId))) {
+      return res.status(404).json({ error: 'Recipe not found' });
+    }
 
     const result = await pool.query(`
       UPDATE scheduled_meals

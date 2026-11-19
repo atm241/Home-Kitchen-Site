@@ -12,7 +12,9 @@
     "migrate": "node migrate.js",
     "backfill-expiry": "ts-node src/scripts/backfillExpiry.ts",
     "reset-password": "node reset-password.js",
-    "test": "echo \"No server test suite yet\" && exit 0"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:db": "docker start simmer-test-db 2>/dev/null || docker run -d --name simmer-test-db -p 5433:5432 -e POSTGRES_USER=simmer -e POSTGRES_PASSWORD=simmer --tmpfs /var/lib/postgresql/data postgres:16-alpine"
   },
   "keywords": [],
   "author": "",
@@ -39,8 +41,11 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.10.1",
     "@types/pg": "^8.15.6",
+    "@types/supertest": "^7.2.1",
     "nodemon": "^3.1.11",
+    "supertest": "^7.3.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.12"
   }
 }

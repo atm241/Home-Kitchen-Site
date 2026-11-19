@@ -1,4 +1,4 @@
-import pool from '../config/database';
+import pool, { releaseClient } from '../config/database';
 import { normalizeIngredients } from './ingredientNormalizer';
 import { scrapeRecipe } from './recipeScraper';
 import { categorizeIngredient } from './ingredientCategorizer';
@@ -69,7 +69,7 @@ export async function insertRecipe(householdId: number, data: RecipeInsert): Pro
     await client.query('ROLLBACK');
     throw error;
   } finally {
-    client.release();
+    await releaseClient(client);
   }
 }
 

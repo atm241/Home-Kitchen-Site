@@ -13,13 +13,12 @@
 import axios, { AxiosError } from 'axios';
 import pool from '../config/database';
 
-// Overridable only so the flow can be tested against a local fake server.
-const API = process.env.KROGER_API_BASE || 'https://api.kroger.com/v1';
+// Read per call (not at import) so tests can point it at a local fake server.
+const api = () => process.env.KROGER_API_BASE || 'https://api.kroger.com/v1';
 const CACHE_DAYS = 3;
 const CONCURRENCY = 4;
 
 const http = axios.create({
-  baseURL: API,
   timeout: 10000,
   headers: { 'User-Agent': 'SimmerRecipeApp/1.0', Accept: 'application/json' },
 });
@@ -36,6 +35,11 @@ export class KrogerError extends Error {
 
 let token: { value: string; expiresAt: number } | null = null;
 
+/** Forget the cached access token (tests switch credentials between cases). */
+export function resetKrogerToken(): void {
+  token = null;
+}
+
 async function accessToken(): Promise<string> {
   if (token && Date.now() < token.expiresAt) return token.value;
   if (!krogerConfigured()) throw new KrogerError('Store prices are not set up on this server.', 503);
@@ -43,7 +47,7 @@ async function accessToken(): Promise<string> {
   const basic = Buffer.from(`${process.env.KROGER_CLIENT_ID}:${process.env.KROGER_CLIENT_SECRET}`).toString('base64');
   try {
     const res = await http.post(
-      '/connect/oauth2/token',
+      `${api()}/connect/oauth2/token`,
       new URLSearchParams({ grant_type: 'client_credentials', scope: 'product.compact' }).toString(),
       { headers: { Authorization: `Basic ${basic}`, 'Content-Type': 'application/x-www-form-urlencoded' } }
     );
@@ -64,7 +68,7 @@ async function accessToken(): Promise<string> {
 async function get<T>(path: string, params: Record<string, string>): Promise<T> {
   const bearer = await accessToken();
   try {
-    const res = await http.get(path, { params, headers: { Authorization: `Bearer ${bearer}` } });
+    const res = await http.get(`${api()}${path}`, { params, headers: { Authorization: `Bearer ${bearer}` } });
     return res.data as T;
   } catch (error) {
     const status = (error as AxiosError).response?.status;

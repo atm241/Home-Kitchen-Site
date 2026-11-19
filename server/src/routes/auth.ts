@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import pool from '../config/database';
+import pool, { releaseClient } from '../config/database';
 import { hashPassword, comparePassword, signToken, generateInviteCode } from '../utils/auth';
 import { requireAuth } from '../middleware/auth';
 
@@ -58,7 +58,7 @@ router.post('/signup', async (req: Request, res: Response) => {
     console.error('Error signing up:', error);
     res.status(500).json({ error: 'Failed to create account' });
   } finally {
-    client.release();
+    await releaseClient(client);
   }
 });
 

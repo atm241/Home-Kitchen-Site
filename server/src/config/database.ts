@@ -1,4 +1,4 @@
-import { Pool, types } from 'pg';
+import { Pool, PoolClient, types } from 'pg';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -32,5 +32,29 @@ pool.on('error', (err: Error) => {
   console.error('Full error:', err);
   // Don't exit immediately - let the application handle it gracefully
 });
+
+/**
+ * Return a client from pool.connect() to the pool, rolling back first if a
+ * transaction is still open. Use this instead of client.release().
+ *
+ * A route that BEGINs and then returns early (bad input, not found) leaves
+ * its transaction open, and the next request on that connection would run
+ * inside it: its writes would look saved but never commit.
+ *
+ * Inside a transaction now() is the transaction's start time, which differs
+ * from statement_timestamp(); outside one they are equal (Postgres documents
+ * that they match on a transaction's first statement).
+ */
+export async function releaseClient(client: PoolClient): Promise<void> {
+  try {
+    const r = await client.query('SELECT now() <> statement_timestamp() AS in_transaction');
+    if (r.rows[0]?.in_transaction) await client.query('ROLLBACK');
+    client.release();
+  } catch (error) {
+    // A failed transaction rejects even that SELECT. Passing the error
+    // destroys the connection instead of handing a broken one to the next request.
+    client.release(error as Error);
+  }
+}
 
 export default pool;

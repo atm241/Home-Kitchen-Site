@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import pool from '../config/database';
+import pool, { releaseClient } from '../config/database';
 import { receiptSpend } from './budget';
 import {
   PlannerGoals, PlanMeal, Slot, SLOTS,
@@ -270,7 +270,7 @@ router.post('/commit', async (req: Request, res: Response) => {
     console.error('Error saving meal plan:', error);
     res.status(500).json({ error: 'Failed to save the plan' });
   } finally {
-    client.release();
+    await releaseClient(client);
   }
 });
 

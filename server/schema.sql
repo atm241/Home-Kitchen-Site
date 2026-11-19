@@ -70,7 +70,9 @@ CREATE TABLE IF NOT EXISTS recipe_ingredients (
     ingredient_id INTEGER REFERENCES ingredients(id) ON DELETE CASCADE,
     quantity DECIMAL(10, 2),
     unit VARCHAR(50), -- e.g., 'cup', 'tbsp', 'oz', 'piece', etc.
-    notes TEXT -- e.g., 'chopped', 'diced', 'to taste'
+    notes TEXT, -- e.g., 'chopped', 'diced', 'to taste'
+    -- Saving a recipe merges a repeated ingredient via ON CONFLICT on this pair.
+    CONSTRAINT recipe_ingredients_recipe_id_ingredient_id_key UNIQUE (recipe_id, ingredient_id)
 );
 
 -- Pantry items (what you currently have)
