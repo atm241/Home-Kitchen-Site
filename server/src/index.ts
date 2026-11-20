@@ -6,10 +6,12 @@ dotenv.config();
 // Check Node version
 const nodeVersion = process.versions.node;
 const majorVersion = parseInt(nodeVersion.split('.')[0]);
-if (majorVersion < 20) {
+// Node 24 is supported until April 2028. Older versions no longer get
+// security fixes (Node 20 reached end of life in April 2026).
+if (majorVersion < 24) {
   console.error(`❌ Error: Node.js version ${nodeVersion} is not supported.`);
-  console.error('This application requires Node.js version 20 or higher.');
-  console.error('Please run: nvm use 20');
+  console.error('This application requires Node.js version 24 or higher.');
+  console.error('Please run: nvm use 24');
   process.exit(1);
 }
 

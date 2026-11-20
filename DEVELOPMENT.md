@@ -10,7 +10,7 @@ For normal use, run the Docker stack instead (see [README.md](README.md)).
 
 ## Prerequisites
 
-- Node.js 20 (`server/.nvmrc`; the server exits on older versions)
+- Node.js 24 (`server/.nvmrc`; the server exits on older versions)
 - PostgreSQL 15+ running locally, e.g. `brew install postgresql@15 && brew services start postgresql@15`
 
 ## One-time setup
@@ -30,7 +30,7 @@ cd ../client && npm install
 ## Running
 
 ```bash
-./start-server.sh            # switches to Node 20 with nvm, then runs the API on :5001
+./start-server.sh            # switches to Node 24 with nvm, then runs the API on :5001
 cd client && npm start       # dev server on :3000, reloads on save
 ```
 
@@ -111,8 +111,8 @@ for `Applied N migration(s)` in `docker compose logs server`.
 
 ## Troubleshooting
 
-- **The server exits immediately:** you're on a Node version older than 20.
-  Run `nvm use 20`, or use `./start-server.sh`.
+- **The server exits immediately:** you're on a Node version older than 24.
+  Run `nvm use 24`, or use `./start-server.sh`.
 - **`nvm: command not found`:** load it with
   `export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"`, or add those lines to
   `~/.zshrc`.

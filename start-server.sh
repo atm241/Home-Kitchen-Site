@@ -13,14 +13,14 @@ if ! command -v nvm &> /dev/null; then
     exit 1
 fi
 
-# Use Node 20
-echo "📦 Switching to Node.js 20..."
-nvm use 20
+# Use Node 24 (server/.nvmrc)
+echo "📦 Switching to Node.js 24..."
+nvm use 24
 
 if [ $? -ne 0 ]; then
-    echo "⚠️  Node 20 not installed. Installing now..."
-    nvm install 20
-    nvm use 20
+    echo "⚠️  Node 24 not installed. Installing now..."
+    nvm install 24
+    nvm use 24
 fi
 
 # Navigate to server directory

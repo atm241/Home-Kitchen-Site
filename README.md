@@ -84,7 +84,7 @@ Database migrations run automatically every time the server starts.
 ## Tech stack
 
 React 19 + TypeScript (Create React App, CSS Modules), served by nginx ·
-Node 20 + Express 5 + TypeScript · PostgreSQL 16 · Claude (Anthropic API) for
+Node 24 + Express 5 + TypeScript · PostgreSQL 16 · Claude (Anthropic API) for
 imports · Docker Compose.
 
 ## License

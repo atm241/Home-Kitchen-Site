@@ -30,7 +30,7 @@ If your Pi doesn't have an OS on it yet:
 ## 1. Running it
 
 The Docker images used by [docker-compose.yml](docker-compose.yml)
-(`postgres:16-alpine`, `node:20-alpine`, `nginx:1.27-alpine`) are all official
+(`postgres:16-alpine`, `node:24-alpine`, `nginx:1.27-alpine`) are all official
 multi-arch images, so this runs as-is on a 64-bit Raspberry Pi OS (Pi 4 or 5
 recommended) with Docker + Docker Compose installed — no changes needed.
 
