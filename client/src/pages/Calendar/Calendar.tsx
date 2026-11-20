@@ -40,7 +40,6 @@ const Calendar: React.FC = () => {
   const [budgetForm, setBudgetForm] = useState({ budget_amount: '', daily_calories: '', protein_goal: '', carbs_limit: '', fat_limit: '' });
 
   const monthDays = getMonthDays(currentDate);
-  const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
 
   // Handle incoming selected date from navigation
   useEffect(() => {

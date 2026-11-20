@@ -8,6 +8,9 @@ RUN npm ci
 COPY . .
 # CRA reads REACT_APP_* at BUILD time. With the nginx proxy below,
 # the client should call relative paths (/api/...), so no URL needed here.
+# No source maps in production: they'd publish the app's source to anyone,
+# and the barcode library's broken maps only produce build warnings.
+ENV GENERATE_SOURCEMAP=false
 RUN npm run build
 
 # ---- Serve stage ----

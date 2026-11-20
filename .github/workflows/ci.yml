@@ -57,7 +57,11 @@ jobs:
       - run: npm run lint --if-present
       - run: npx tsc --noEmit
       - run: npm test --if-present -- --watchAll=false
+      # No source maps, matching the Docker image. CI treats warnings as
+      # errors, and reading third-party maps (@zxing) only produces warnings.
       - run: npm run build
+        env:
+          GENERATE_SOURCEMAP: "false"
 
   docker:
     runs-on: ubuntu-latest
